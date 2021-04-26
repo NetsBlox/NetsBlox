@@ -4,18 +4,13 @@
 (function() {
     const config = AUTOGRADER_CONFIG;
 
-    class Integration {
-        constructor() {
-        }
-    }
-
     class CustomBlockAutograder extends Extension {
         constructor(ide) {  /* TODO: Use an API wrapper instead? */
             super(config.name);
             this.ide = ide;
             this.currentAssignment = null;
             this.resultsDialog = null;
-            this.integrations = config.integrations;
+            this.integrations = config.integrations || [];
             this.assignments = config.assignments.map(assignmentConfig => {
                 const data = omit(assignmentConfig, ['name', 'starter template', 'description', 'tests']);
                 return new Assignment(
