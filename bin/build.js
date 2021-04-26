@@ -87,11 +87,20 @@ function getParamString(param) {
     return param.optional ? `${str}?` : str;
 }
 
+const SERVICE_FILTERS = {
+    all: _ => true,
+    fsonly: service => service.servicePath,
+};
+
+const SERVICE_DIR_REGEX = /(.*)\/.*\.js/;
+
 const DESC_REGEX = />>>DESC<<</g;
 const RPCS_REGEX = />>>RPCS<<</g;
 const CATS_REGEX = />>>CATS<<</g;
 const SERVICES_REGEX = />>>SERVICES<<</g;
 async function compileDocs() {
+    const serviceFilter = SERVICE_FILTERS[process.env.SERVICE_FILTER || 'all'];
+
     const docsPath = path.join(__dirname, '..', 'src', 'server', 'docs');
     const generatedPath = path.join(docsPath, '_generated');
 
@@ -113,9 +122,17 @@ async function compileDocs() {
         }
 
         const service = ServicesAPI.services.metadata[serviceName];
+        if (!serviceFilter(service)) continue;
+
         const serviceDocs = path.join(generatedPath, serviceName);
         const index = path.join(serviceDocs, 'index.rst');
 
+        if (service.servicePath) {
+            const serviceDir = service.servicePath.match(SERVICE_DIR_REGEX)[1];
+            if (await hasDirectory(serviceDir, 'docs')) {
+                await fse.copy(path.join(serviceDir, 'docs'), path.join(generatedPath, serviceName));
+            }
+        }
         if (!await hasDirectory(generatedPath, serviceName)) {
             await fsp.mkdir(serviceDocs);
             await fsp.writeFile(index, `${serviceName}\n${'='.repeat(serviceName.length)}\n\n>>>DESC<<<\n\n.. toctree::\n    :maxdepth: 2\n    :caption: Categories:\n\n    >>>CATS<<<\n\n>>>RPCS<<<\n`);

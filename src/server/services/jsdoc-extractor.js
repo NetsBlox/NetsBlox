@@ -303,6 +303,7 @@ let Docs = function(servicePath) {
     this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
     this.categories = serviceDocs.categories;
     this.tags = serviceDocs.tags;
+    this.servicePath = servicePath;
 };
 
 // get a doc for an action
