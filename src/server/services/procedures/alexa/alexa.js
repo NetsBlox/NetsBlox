@@ -327,6 +327,14 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
         j++;
     }
 
+    let promptInfosFormatted = [];
+
+    for (let i of promptInfos) {
+        for (let j of i) {
+            promptInfosFormatted.push(j);
+        }
+    }
+
     const interactionModel =
         {
             "interactionModel": {
@@ -343,7 +351,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
                     "intents": intentsSlots,
                     "delegationStrategy": "ALWAYS"
                 },
-                "prompts": promptInfos
+                "prompts": promptInfosFormatted
             }
         };
 
