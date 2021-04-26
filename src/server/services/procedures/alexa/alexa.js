@@ -230,26 +230,52 @@ const createIntentsObject = function(name, slots, samples) {
     return intent;
 };
 
-const createSecondSlotsObject = function(slots) {
+const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
+    let slotObjectsReturn = [];
 
     for (let i of slots) {
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
 
-    devLogger.log("Second intents Object: ");
-    devLogger.log(JSON.stringify(slotsObjectsList));
+    for (let i of slotsObjectsList) {
+        slotObjectsReturn.push(i.slotInfo);
+    }
 
-    return slotsObjectsList;
+    devLogger.log("Second intents Object: ");
+    devLogger.log(JSON.stringify(slotObjectsReturn));
+
+    return slotObjectsReturn;
+};
+
+const createThirdIntentsObject = function(name, slots) {
+    let slotsObjectsList = [];
+    let slotObjectsReturn = [];
+
+    for (let i of slots) {
+        slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
+    }
+
+    for (let i of slotsObjectsList) {
+        slotObjectsReturn.push(i.promptInfo);
+    }
+
+    devLogger.log("Second intents Object: ");
+    devLogger.log(JSON.stringify(slotObjectsReturn));
+
+    return slotObjectsReturn;
 };
 
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
     let intentsList = [];
     let slotInfos = [];
+    let promptInfos = [];
+
     for (let i of intents) {
         devLogger.log("Interaction model line: ");
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
-        slotInfos.push(createSecondSlotsObject(i[1]));
+        slotInfos.push(createSecondIntentsObject(i[0], i[1]));
+        promptInfos.push(createThirdIntentsObject(i[0], i[1]));
     }
 
     let intentsArray = [];
@@ -272,10 +298,13 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
                 "name": "GetTravelTime",
                 "confirmationRequired": false,
                 "prompts": {},
-                "slots": i.slotInfo
+                "slots": i
             }
         );
-        promptsSlots.push(i.promptInfo);
+    }
+
+    for (let i of promptInfos) {
+        promptsSlots.push(i);
     }
 
     const interactionModel =
