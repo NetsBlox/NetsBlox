@@ -249,7 +249,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
     for (let i of intents) {
         devLogger.log("Interaction model line: ");
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
-        slotInfos.push(createSecondSlotsObject(i[0], i[1]));
+        slotInfos.push(createSecondSlotsObject(i[1]));
     }
 
     let intentsArray = [];
