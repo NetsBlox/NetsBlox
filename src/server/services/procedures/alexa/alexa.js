@@ -339,19 +339,138 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
         {
             "interactionModel": {
                 "languageModel": {
-                    "invocationName": invocationName,
+                    "invocationName": "netsblox test",
                     "modelConfiguration": {
                         "fallbackIntentSensitivity": {
                             "level": "LOW"
                         }
                     },
-                    "intents": intentsArray,
+                    "intents": [
+                        {
+                            "name": "AMAZON.CancelIntent",
+                            "samples": []
+                        },
+                        {
+                            "name": "AMAZON.HelpIntent",
+                            "samples": []
+                        },
+                        {
+                            "name": "AMAZON.StopIntent",
+                            "samples": []
+                        },
+                        {
+                            "name": "SendMessageIntent",
+                            "slots": [
+                                {
+                                    "name": "project",
+                                    "type": "AMAZON.SearchQuery",
+                                    "samples": [
+                                        "{project}"
+                                    ]
+                                },
+                                {
+                                    "name": "message",
+                                    "type": "AMAZON.SearchQuery",
+                                    "samples": [
+                                        "{message}"
+                                    ]
+                                },
+                                {
+                                    "name": "role",
+                                    "type": "AMAZON.SearchQuery",
+                                    "samples": [
+                                        "{role}"
+                                    ]
+                                }
+                            ],
+                            "samples": [
+                                "i want to say {message}",
+                                "i want to send a message to {project}",
+                                "i want to send a message ",
+                                "say {message}",
+                                "send a message",
+                                "send message to {project}"
+                            ]
+                        },
+                        {
+                            "name": "AMAZON.NavigateHomeIntent",
+                            "samples": []
+                        },
+                        {
+                            "name": "AMAZON.FallbackIntent",
+                            "samples": []
+                        }
+                    ],
+                    "types": []
                 },
                 "dialog": {
-                    "intents": intentsSlots,
+                    "intents": [
+                        {
+                            "name": "SendMessageIntent",
+                            "confirmationRequired": false,
+                            "prompts": {},
+                            "slots": [
+                                {
+                                    "name": "project",
+                                    "type": "AMAZON.SearchQuery",
+                                    "confirmationRequired": false,
+                                    "elicitationRequired": true,
+                                    "prompts": {
+                                        "elicitation": "Elicit.Slot.1296360077917.1158962289538"
+                                    }
+                                },
+                                {
+                                    "name": "message",
+                                    "type": "AMAZON.SearchQuery",
+                                    "confirmationRequired": false,
+                                    "elicitationRequired": true,
+                                    "prompts": {
+                                        "elicitation": "Elicit.Slot.1305305936778.1064520845858"
+                                    }
+                                },
+                                {
+                                    "name": "role",
+                                    "type": "AMAZON.SearchQuery",
+                                    "confirmationRequired": false,
+                                    "elicitationRequired": true,
+                                    "prompts": {
+                                        "elicitation": "Elicit.Slot.1227397046363.614257858187"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "delegationStrategy": "ALWAYS"
                 },
-                "prompts": promptInfosFormatted
+                "prompts": [
+                    {
+                        "id": "Elicit.Slot.1296360077917.1158962289538",
+                        "variations": [
+                            {
+                                "type": "PlainText",
+                                "value": "Please provide the project to send the message to."
+                            }
+                        ]
+                    },
+                    {
+                        "id": "Elicit.Slot.1305305936778.1064520845858",
+                        "variations": [
+                            {
+                                "type": "PlainText",
+                                "value": "What message would you like to send?"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "Elicit.Slot.1227397046363.614257858187",
+                        "variations": [
+                            {
+                                "type": "PlainText",
+                                "value": "Please specify the role that you wish to send to.  If you are not sure what this means or would like to send the message to all roles, please say 'all'."
+                            }
+                        ]
+                    }
+                ]
             }
         };
 
