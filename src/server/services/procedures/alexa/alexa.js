@@ -230,22 +230,17 @@ const createIntentsObject = function(name, slots, samples) {
     return intent;
 };
 
-const createSecondIntentsObject = function(name, slots) {
+const createSecondSlotsObject = function(slots) {
     let slotsObjectsList = [];
-    let slotObjectsReturn = [];
 
     for (let i of slots) {
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
 
-    for (let i of slotsObjectsList) {
-        slotObjectsReturn.push([i.slotInfo, i.promptInfo]);
-    }
-
     devLogger.log("Second intents Object: ");
-    devLogger.log(JSON.stringify(slotObjectsReturn));
+    devLogger.log(JSON.stringify(slotsObjectsList));
 
-    return slotObjectsReturn;
+    return slotsObjectsList;
 };
 
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
@@ -254,7 +249,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
     for (let i of intents) {
         devLogger.log("Interaction model line: ");
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
-        slotInfos.push(createSecondIntentsObject(i[0], i[1]));
+        slotInfos.push(createSecondSlotsObject(i[0], i[1]));
     }
 
     let intentsArray = [];
@@ -277,10 +272,10 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
                 "name": "GetTravelTime",
                 "confirmationRequired": false,
                 "prompts": {},
-                "slots": i[0]
+                "slots": i.slotInfo
             }
         );
-        promptsSlots.push(i[1]);
+        promptsSlots.push(i.promptInfo);
     }
 
     const interactionModel =
