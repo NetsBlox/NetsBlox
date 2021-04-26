@@ -302,7 +302,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
     ];
 
     let intentsSlots = [];
-    let promptsSlots = [];
 
     for (let i of intentsList) {
         intentsArray.push(
@@ -314,7 +313,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
         );
     }
 
-    let j = 0;
+    let j = 5;
 
     for (let i of slotInfos) {
         intentsSlots.push(
@@ -326,10 +325,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
             }
         );
         j++;
-    }
-
-    for (let i of promptInfos) {
-        promptsSlots.push(i);
     }
 
     const interactionModel =
@@ -348,7 +343,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
                     "intents": intentsSlots,
                     "delegationStrategy": "ALWAYS"
                 },
-                "prompts": promptsSlots
+                "prompts": promptInfos
             }
         };
 
