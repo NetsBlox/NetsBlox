@@ -91,6 +91,10 @@ const SERVICE_FILTERS = {
     all: () => true,
     fsonly: service => service.servicePath,
 };
+function getServiceFilter(filterString = 'fsonly') {
+    const filters = filterString.split(',').map(s => s.trim()).filter(s => s.length).map(s => SERVICE_FILTERS[s]);
+    return s => filters.every(f => f(s));
+}
 
 const SERVICE_DIR_REGEX = /(.*)\/.*\.js/;
 
@@ -99,7 +103,7 @@ const RPCS_REGEX = />>>RPCS<<</g;
 const CATS_REGEX = />>>CATS<<</g;
 const SERVICES_REGEX = />>>SERVICES<<</g;
 async function compileDocs() {
-    const serviceFilter = SERVICE_FILTERS[process.env.DOCS_SERVICE_FILTER || 'fsonly'];
+    const serviceFilter = getServiceFilter(process.env.DOCS_SERVICE_FILTER);
 
     const docsPath = path.join(__dirname, '..', 'src', 'server', 'docs');
     const generatedPath = path.join(docsPath, '_generated');
