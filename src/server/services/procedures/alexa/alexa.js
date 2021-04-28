@@ -292,11 +292,11 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
             "samples": []
         },
         {
-            "name": "AMAZON.FallbackIntent",
+            "name": "AMAZON.NavigateHomeIntent",
             "samples": []
         },
         {
-            "name": "AMAZON.StartOverIntent",
+            "name": "AMAZON.FallBackIntent",
             "samples": []
         }
     ];

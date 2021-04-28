@@ -1,4 +1,5 @@
 const OAuth = require('../../../api/core/oauth');
+const request = require('request');
 const {handleErrors} = require('../../../api/rest/utils');
 const NetsBloxAddress = require('../../../netsblox-address');
 const Alexa = require('ask-sdk-core');
@@ -212,6 +213,7 @@ skillBuilder.addRequestHandlers(
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
 const port = process.env.PORT || 4675;
+let amazonResponse;
 
 if (require.main === module) {
     const app = express();
@@ -232,6 +234,26 @@ if (require.main === module) {
     router.get('/ping', (req, res) => res.send('pong'));
     router.post('/', adapter.getRequestHandlers());
     router.get('/whoami', (req, res) => res.send(req.token.username));
+    router.get('/amazon/auth', (req, res) => {
+        amazonResponse = req.body;
+    });
     devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
+}
+
+if (amazonResponse) {
+    const options = {
+        url: "https://api.amazon.com/auth/o2/token",
+        code: amazonResponse,
+        client_id: process.env.ALEXA_CLIENT_ID,
+        client_secret: process.env.ALEXA_CLIENT_SECRET
+    };
+
+    request.post(options, (err, res, body) => {
+        if (err) {
+            devLogger.log(err);
+            return;
+        }
+        devLogger.log(body);
+    });
 }
