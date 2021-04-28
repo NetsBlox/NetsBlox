@@ -13,7 +13,7 @@
         d.getElementById('amazon-root').appendChild(a);
 
         options = { scope: 'profile', response_type: 'code', popup: 'false' };
-        amazon.Login.authorize(options, 'http://localhost:8080/services/routes/alexa/login.html');
+        amazon.Login.authorize(options, 'https://alexa.netsblox.org/services/routes/alexa/login.html');
     })(document);
 </script>
 </body>
