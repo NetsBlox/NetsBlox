@@ -253,6 +253,7 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
         }
+        console.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
     router.put('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
