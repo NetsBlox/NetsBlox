@@ -239,7 +239,7 @@ if (require.main === module) {
 } else {
     const router = express();
     router.get('/ping', (req, res) => res.send('pong'));
-    router.get('/login.html', handleErrors((req, res) => {
+    router.get('/login.html', setUsername, handleErrors((req, res) => {
         const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
