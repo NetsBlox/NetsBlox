@@ -253,7 +253,7 @@ if (require.main === module) {
             }
         }
         res.render('/login.html');
-        res.send(AmazonLoginTemplate({username}));
+        res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
     router.put('/tokens', setUsername, handleErrors(async (req, res) => {
         const {username} = req.session;
