@@ -1,5 +1,12 @@
 const OAuth = require('../../../api/core/oauth');
-const {handleErrors} = require('../../../api/rest/utils');
+const {handleErrors, setUsername} = require('../../../api/rest/utils');
+const {LoginRequired} = require('../../../api/core/errors');
+const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
+const GetTokenStore = require('./tokens');
+const _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
+const AmazonLoginTemplate = _.template(fs.readFileSync(path.join(__dirname, 'login.html.ejs'), 'utf8'));
 const NetsBloxAddress = require('../../../netsblox-address');
 const Alexa = require('ask-sdk-core');
 const express = require('express');
@@ -230,6 +237,34 @@ if (require.main === module) {
 } else {
     const router = express();
     router.get('/ping', (req, res) => res.send('pong'));
+    router.get('/login.html', setUsername, handleErrors((req, res) => {
+        const {username} = req.session;
+        const isLoggedIn = !!username;
+        if (!isLoggedIn) {
+            if (LOGIN_URL) {
+                const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+                const url = baseUrl + req.originalUrl;
+                res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
+                return;
+            } else {
+                throw new LoginRequired();
+            }
+        }
+        // TODO: Render the login page?
+        res.send(AmazonLoginTemplate({username}));
+    }));
+    router.put('/tokens', setUsername, handleErrors(async (req, res) => {
+        const {username} = req.session;
+        const isLoggedIn = !!username;
+        if (!isLoggedIn) {
+            throw new LoginRequired();
+        }
+
+        const {accessToken, refreshToken} = req.body;
+        const collection = GetTokenStore();
+        await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
+        return res.sendStatus(200);
+    }));
     router.post('/', adapter.getRequestHandlers());
     router.get('/whoami', (req, res) => res.send(req.token.username));
     devLogger.log('Mounting Alexa routes on NetsBlox');
