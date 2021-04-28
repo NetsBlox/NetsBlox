@@ -97,173 +97,199 @@ function getServiceFilter(filterString = 'fsonly') {
 }
 
 const SERVICE_DIR_REGEX = /(.*)\/.*\.js/;
+const DOCS_PATH = path.join(__dirname, '..', 'src', 'server', 'docs');
+const GENERATED_PATH = path.join(DOCS_PATH, '_generated');
+
+function getCategories(obj) {
+    const cats = obj.categories;
+    return cats && cats.length ? cats : ['index'];
+}
+function updateCategories(categories, name, obj) {
+    for (const category of getCategories(obj)) {
+        const cat = categories[category];
+        if (cat) cat.items.push(name);
+        else categories[category] = { description: undefined, items: [name] };
+    }
+}
+function sortCategories(categories) {
+    for (const category in categories) {
+        categories[category].items.sort();
+    }
+}
+
+function trimText(str) {
+    str = (str || '').trim();
+    return str.length ? str : undefined;
+}
+
+function getRPCsMeta(service) {
+    const categories = { index: { description: undefined, items: [] } };
+    const rpcs = {};
+
+    for (const rpcName in service.rpcs) {
+        const rpc = service.rpcs[rpcName];
+        if (rpc.deprecated) continue;
+
+        updateCategories(categories, rpcName, rpc);
+        rpcs[rpcName] = {
+            description: trimText(rpc.rawDescription),
+            args: (rpc.args || []).map(arg => { return {
+                decl: getParamString(arg),
+                description: trimText(arg.rawDescription),
+                fields: !isObject(arg.type) || !(arg.type.params || []).length ? undefined : arg.type.params.map(field => { return {
+                    decl: getParamString(field),
+                    description: trimText(field.rawDescription),
+                }; }),
+            }; }),
+            returns: rpc.returns ? { type: getTypeString(rpc.returns.type), description: trimText(rpc.returns.rawDescription) } : undefined,
+        };
+    }
+    sortCategories(categories);
+
+    return { categories, rpcs };
+}
+function getMeta(serviceFilter) {
+    const categories = { index: { description: undefined, items: [] } };
+    const services = {};
+
+    for (const serviceName in ServicesAPI.services.metadata) {
+        const service = ServicesAPI.services.metadata[serviceName];
+        if (!serviceFilter(service)) continue;
+
+        updateCategories(categories, serviceName, service);
+        services[serviceName] = {
+            path: service.servicePath,
+            description: trimText(service.rawDescription),
+            rpcs: getRPCsMeta(service),
+        };
+    }
+    sortCategories(categories);
+
+    return { description: undefined, categories, services };
+}
 
 const DESC_REGEX = />>>DESC<<</g;
 const RPCS_REGEX = />>>RPCS<<</g;
 const CATS_REGEX = />>>CATS<<</g;
-const SERVICES_REGEX = />>>SERVICES<<</g;
-async function compileDocs() {
-    const serviceFilter = getServiceFilter(process.env.DOCS_SERVICE_FILTER);
+const SERV_REGEX = />>>SERV<<</g;
 
-    const docsPath = path.join(__dirname, '..', 'src', 'server', 'docs');
-    const generatedPath = path.join(docsPath, '_generated');
+async function loadCategoryContent(rootPath, categoryName) {
+    if ((await fsp.readdir(rootPath)).includes(`${categoryName}.rst`)) {
+        return await fsp.readFile(path.join(rootPath, `${categoryName}.rst`), { encoding: 'utf8' });
+    }
+    const content = `${categoryName}\n${'='.repeat(categoryName.length)}\n\n>>>DESC<<<\n>>>SERV<<<\n`;
+    await fsp.writeFile(path.join(rootPath, `${categoryName}.rst`), content);
+    return content;
+}
 
-    const docsFiles = new Set(await fsp.readdir(docsPath));
+async function copyServiceDocs(serviceName, service) {
+    if (service.path) {
+        const serviceDir = service.path.match(SERVICE_DIR_REGEX)[1];
+        if (await hasDirectory(serviceDir, 'docs')) {
+            await fse.copy(path.join(serviceDir, 'docs'), path.join(GENERATED_PATH, serviceName));
+            return;
+        }
+    }
+
+    const content = `${serviceName}\n${'='.repeat(serviceName.length)}\n\n>>>DESC<<<\n\n>>>CATS<<<\n\n>>>RPCS<<<\n`;
+    await fsp.mkdir(path.join(GENERATED_PATH, serviceName));
+    await fsp.writeFile(path.join(GENERATED_PATH, serviceName, 'index.rst'), content);
+}
+
+function buildRPCString(serviceName, rpcName, rpc) {
+    let str = `.. function:: ${serviceName}.${rpcName}(${rpc.args.map(x => x.decl).join(', ')})\n\n`;
+
+    if (rpc.description) {
+        str += `${rpc.description.split('\n').map(s => `    ${s}`).join('\n')}\n\n`;
+    }
+
+    if (rpc.args.length) {
+        str += '    **Arguments:**\n\n';
+        for (const arg of rpc.args) {
+            const desc = arg.description ? ` - ${arg.description}` : '';
+            str += `    - \`\`${arg.decl}\`\`${desc}\n`;
+            if (!arg.fields) continue;
+
+            str += '\n';
+            for (const field of arg.fields) {
+                const desc = field.description ? ` - ${field.description}` : '';
+                str += `        - \`\`${field.decl}\`\`${desc}\n`;
+            }
+            str += '\n';
+        }
+        str += '\n';
+    }
+
+    if (rpc.returns) {
+        const desc = rpc.returns.description ? ` - ${rpc.returns.description}` : '';
+        str += `    **Returns:** \`\`${rpc.returns.type}\`\`${desc}\n\n`;
+    }
+
+    return str;
+}
+
+async function cleanCopy() {
+    const docsFiles = new Set(await fsp.readdir(DOCS_PATH));
     if (docsFiles.has('_generated')) {
-        await fsp.rmdir(generatedPath, { recursive: true });
+        await fsp.rmdir(GENERATED_PATH, { recursive: true });
         docsFiles.delete('_generated');
     }
-    await fsp.mkdir(generatedPath);
+    await fsp.mkdir(GENERATED_PATH);
     
     await Promise.all(Array.from(docsFiles).map(file => {
-        return fse.copy(path.join(docsPath, file), path.join(generatedPath, file));
+        return fse.copy(path.join(DOCS_PATH, file), path.join(GENERATED_PATH, file));
     }));
+}
+async function compileDocs() {
+    const clean = cleanCopy();
+    const serviceFilter = getServiceFilter(process.env.DOCS_SERVICE_FILTER);
+    const meta = getMeta(serviceFilter);
+    const servicesString = '.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n    '
+        + (Object.keys(meta.categories).concat(meta.categories.index.items)).filter(s => s !== 'index').sort().map(item => {
+            const isCategory = !!meta.categories[item];
+            return isCategory ? `${item}.rst` : `${item}/index.rst`;
+        }).join('\n    ');
+    await clean;
 
-    const serviceCategories = { index: [] };
-    for (const serviceName in ServicesAPI.services.metadata) {
-        if (serviceCategories[serviceName] !== undefined) {
-            throw Error(`service name was a category name: ${serviceName}`);
-        }
+    for (const serviceName in meta.services) {
+        const service = meta.services[serviceName];
+        await copyServiceDocs(serviceName, service);
 
-        const service = ServicesAPI.services.metadata[serviceName];
-        if (!serviceFilter(service)) continue;
+        const categories = Object.keys(service.rpcs.categories).sort();
+        const catsString = '.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: RPC Categories\n\n'
+            + categories.filter(s => s !== 'index').map(s => `    ${s}.rst\n`).join('');
+        for (const categoryName of categories) {
+            const category = service.rpcs.categories[categoryName];
+            const rpcsString = 'RPCS\n----\n\n' + category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s])).join('\n');
 
-        const serviceDocs = path.join(generatedPath, serviceName);
-        const index = path.join(serviceDocs, 'index.rst');
-
-        if (service.servicePath) {
-            const serviceDir = service.servicePath.match(SERVICE_DIR_REGEX)[1];
-            if (await hasDirectory(serviceDir, 'docs')) {
-                await fse.copy(path.join(serviceDir, 'docs'), path.join(generatedPath, serviceName));
-            }
-        }
-        if (!await hasDirectory(generatedPath, serviceName)) {
-            await fsp.mkdir(serviceDocs);
-            await fsp.writeFile(index, `${serviceName}\n${'='.repeat(serviceName.length)}\n\n>>>DESC<<<\n\n.. toctree::\n    :maxdepth: 2\n    :caption: Categories:\n\n    >>>CATS<<<\n\n>>>RPCS<<<\n`);
-        }
-        
-        const serviceCats = service.categories ? service.categories : [];
-        for (const cat of serviceCats) {
-            const group = serviceCategories[cat];
-            if (group) group.push(serviceName);
-            else serviceCategories[cat] = [serviceName];
-        }
-        if (!serviceCats.length) serviceCategories.index.push(serviceName); // go in index if nothing else
-
-        const categories = {};
-        for (const rpcName in service.rpcs) {
-            const rpc = service.rpcs[rpcName];
-            if (rpc.deprecated) continue;
-
-            const cats = rpc.categories !== undefined && rpc.categories.length ? rpc.categories : ['index'];
-            for (const category of cats) {
-                if (categories[category] === undefined) {
-                    categories[category] = {};
-                }
-                categories[category][rpcName] = rpc;
-            }
-        }
-
-        const categoryStrings = {};
-        for (const category in categories) {
-            const rpcs = categories[category];
-            const rpcNamesSorted = Object.keys(rpcs).sort();
-
-            let str = '';
-            for (const rpcName of rpcNamesSorted) {
-                const rpc = rpcs[rpcName];
-                const args = rpc.args ? rpc.args : [];
-                const paramStrings = args.map(getParamString);
-
-                str += `.. function:: ${serviceName}.${rpcName}(${paramStrings.join(', ')})\n\n`;
-                if (rpc.rawDescription) {
-                    str += `${rpc.rawDescription.split('\n').map(s => `    ${s}`).join('\n')}\n\n`;
-                }
-                if (args.length) {
-                    str += '    **Arguments:**\n\n';
-                    for (let i = 0; i < args.length; ++i) {
-                        const desc = args[i].rawDescription ? ` - ${args[i].rawDescription}` : '';
-                        str += `    - \`\`${paramStrings[i]}\`\`${desc}\n`;
-
-                        if (isObject(args[i].type) && args[i].type.params.length) {
-                            str += '\n';
-                            const fields = args[i].type.params;
-                            for (const field of fields) {
-                                const desc = field.rawDescription ? ` - ${field.rawDescription}` : '';
-                                const paramString = getParamString(field);
-                                str += `        - \`\`${paramString}\`\`${desc}\n`;
-                            }
-                            str += '\n';
-                        }
-                    }
-                    str += '\n';
-                }
-                if (rpc.returns) {
-                    const ret = rpc.returns;
-                    const type = getTypeString(ret.type);
-                    const desc = ret.rawDescription ? ` - ${ret.rawDescription}` : '';
-                    str += `    **Returns:** \`\`${type}\`\`${desc}\n`;
-                }
-                str += '\n\n';
-            }
-            categoryStrings[category] = str;
-        }
-
-        const files = new Set(await fsp.readdir(serviceDocs));
-        for (const category in categoryStrings) {
-            const rstPath = path.join(serviceDocs, `${category}.rst`);
-            if (!files.has(`${category}.rst`)) {
-                await fsp.writeFile(rstPath, `${category}\n${'='.repeat(category.length)}\n\n>>>RPCS<<<\n`);
-            }
-
-            let content = await fsp.readFile(rstPath, { encoding: 'utf8' });
-            content = content.replace(RPCS_REGEX, categoryStrings[category]);
-            await fsp.writeFile(rstPath, content);
-        }
-
-        const catsSorted = Object.keys(categoryStrings).filter(s => s !== 'index').sort();
-        const catsString = catsSorted.join('\n    ');
-
-        let indexContent = await fsp.readFile(index, { encoding: 'utf8' });
-        indexContent = indexContent.replace(DESC_REGEX, service.rawDescription);
-        indexContent = indexContent.replace(CATS_REGEX, catsString);
-        await fsp.writeFile(index, indexContent);
-    }
-
-    const serviceItems = new Set(Object.keys(serviceCategories));
-    serviceItems.delete('index');
-    for (const service of serviceCategories.index) serviceItems.add(service);
-
-    let servicesString = '.. toctree::\n    :maxdepth: 2\n    :caption: Services\n\n';
-    for (const item of Array.from(serviceItems).sort()) {
-        const group = serviceCategories[item];
-        const isCategory = serviceCategories[item] !== undefined;
-
-        if (isCategory) {
-            let catstring = `${item}\n${'='.repeat(item.length)}\n\n.. toctree::\n    :maxdepth: 2\n    :caption: Services\n\n`;
-            for (const service of group) catstring += `    ${service}/index.rst\n`;
-            await fsp.writeFile(path.join(generatedPath, `${item}.rst`), catstring);
-            servicesString += `    ${item}.rst\n`;
-        }
-        else {
-            servicesString += `    ${item}/index.rst\n`;
+            let content = await loadCategoryContent(path.join(GENERATED_PATH, serviceName), categoryName);
+            content = content.replace(DESC_REGEX, (categoryName === 'index' ? service : category).description || '');
+            content = content.replace(CATS_REGEX, catsString);
+            content = content.replace(RPCS_REGEX, rpcsString);
+            await fsp.writeFile(path.join(GENERATED_PATH, serviceName, `${categoryName}.rst`), content);
         }
     }
 
-    const index = path.join(generatedPath, 'index.rst');
-    let indexContent = await fsp.readFile(index, { encoding: 'utf8' });
-    indexContent = indexContent.replace(SERVICES_REGEX, servicesString);
-    await fsp.writeFile(index, indexContent);
+    for (const categoryName in meta.categories) {
+        const category = meta.categories[categoryName];
+        const servString = categoryName === 'index' ? servicesString : '.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n'
+            + category.items.map(s => `    ${s}/index.rst\n`).join('');
+
+        let content = await loadCategoryContent(GENERATED_PATH, categoryName);
+        content = content.replace(DESC_REGEX, (categoryName === 'index' ? meta : category).description || '');
+        content = content.replace(SERV_REGEX, servString);
+        await fsp.writeFile(path.join(GENERATED_PATH, `${categoryName}.rst`), content);
+    }
 
     await new Promise((resolve, reject) => {
-        exec('make clean && make html', { cwd: generatedPath }, async (error, stdout, stderr) => {
+        exec('make clean && make html', { cwd: GENERATED_PATH }, async (error, stdout, stderr) => {
             if (error || stderr.length !== 0) {
                 reject(Error(`failed to compile docs: error: ${error ? error : ''}, stderr: ${stderr}, stdout: ${stdout}`));
             }
-            else if (!await hasDirectory(generatedPath, '_build')) {
+            else if (!await hasDirectory(GENERATED_PATH, '_build')) {
                 reject(Error(`failed to find docs build directory`));
             }
-            else if (!await hasDirectory(path.join(generatedPath, '_build'), 'html')) {
+            else if (!await hasDirectory(path.join(GENERATED_PATH, '_build'), 'html')) {
                 reject(Error(`failed to find html in docs build directory`));
             }
             else {
