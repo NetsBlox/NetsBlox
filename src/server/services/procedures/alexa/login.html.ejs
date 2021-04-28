@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+<div id="amazon-root"></div>
+<script type="text/javascript">
+    window.onAmazonLoginReady = function() {
+        amazon.Login.setClientId(process.env.ALEXA_CLIENT_ID);
+    };
+    (function(d) {
+        var a = d.createElement('script'); a.type = 'text/javascript';
+        a.async = true; a.id = 'amazon-login-sdk';
+        a.src = 'https://assets.loginwithamazon.com/sdk/na/login1.js';
+        d.getElementById('amazon-root').appendChild(a);
+
+        options = { scope: 'profile', response_type: 'code', popup: 'false' };
+        amazon.Login.authorize(options, 'http://localhost:8080/services/routes/alexa/login.html');
+    })(document);
+</script>
+</body>
+</html>
