@@ -258,16 +258,38 @@ if (require.main === module) {
         console.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
+    router.post('/login.html/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
         const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             throw new LoginRequired();
         }
 
-        const {accessToken, refreshToken} = req.body;
-        const collection = GetTokenStore();
-        await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
+        const amazonResponse = req.body;
+        if (amazonResponse) {
+            const options = {
+                url: "https://api.amazon.com/auth/o2/token",
+                code: amazonResponse,
+                client_id: process.env.ALEXA_CLIENT_ID,
+                client_secret: process.env.ALEXA_CLIENT_SECRET
+            };
+
+            const tokens = request.post(options, (err, res, body) => {
+                if (err) {
+                    devLogger.log(err);
+                    return;
+                }
+                devLogger.log(body);
+                return body;
+            });
+
+            if (tokens) {
+                const accessToken = tokens.access_token;
+                const refreshToken = tokens.refresh_token;
+                const collection = GetTokenStore();
+                await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
+            }
+        }
         return res.sendStatus(200);
     }));
     router.post('/', adapter.getRequestHandlers());
@@ -276,19 +298,4 @@ if (require.main === module) {
     module.exports = router;
 }
 
-if (amazonResponse) {
-    const options = {
-        url: "https://api.amazon.com/auth/o2/token",
-        code: amazonResponse,
-        client_id: process.env.ALEXA_CLIENT_ID,
-        client_secret: process.env.ALEXA_CLIENT_SECRET
-    };
 
-    request.post(options, (err, res, body) => {
-        if (err) {
-            devLogger.log(err);
-            return;
-        }
-        devLogger.log(body);
-    });
-}
