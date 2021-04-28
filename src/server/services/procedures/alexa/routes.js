@@ -14,7 +14,7 @@ const express = require('express');
 const { ExpressAdapter } = require('ask-sdk-express-adapter');
 const devLogger = require('../utils/dev-logger');
 const RemoteClient = require('../../remote-client');
-
+const cookieParser = require('cookie-parser');
 const skillBuilder = Alexa.SkillBuilders.custom();
 
 /**
@@ -238,8 +238,9 @@ if (require.main === module) {
     });
 } else {
     const router = express();
+    const parseCookies = cookieParser();
     router.get('/ping', (req, res) => res.send('pong'));
-    router.get('/login.html', setUsername, handleErrors((req, res) => {
+    router.get('/login.html', parseCookies, setUsername, handleErrors((req, res) => {
         const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
@@ -254,7 +255,7 @@ if (require.main === module) {
         }
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', setUsername, handleErrors(async (req, res) => {
+    router.put('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
         const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
