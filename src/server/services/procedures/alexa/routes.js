@@ -240,7 +240,7 @@ if (require.main === module) {
     const router = express();
     router.get('/ping', (req, res) => res.send('pong'));
     router.get('/login.html', handleErrors((req, res) => {
-        const {username} = "tabithalee";
+        const {username} = req.session;
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             if (LOGIN_URL) {
@@ -252,7 +252,6 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
         }
-        res.render('/login.html');
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
     router.put('/tokens', setUsername, handleErrors(async (req, res) => {
