@@ -252,7 +252,7 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
         }
-        // TODO: Render the login page?
+        res.render('/login.html');
         res.send(AmazonLoginTemplate({username}));
     }));
     router.put('/tokens', setUsername, handleErrors(async (req, res) => {
