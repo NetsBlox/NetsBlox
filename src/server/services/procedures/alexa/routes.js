@@ -220,7 +220,6 @@ skillBuilder.addRequestHandlers(
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
 const port = process.env.PORT || 4675;
-let amazonResponse;
 
 if (require.main === module) {
     const app = express();
@@ -239,7 +238,6 @@ if (require.main === module) {
 } else {
     const router = express();
     const parseCookies = cookieParser();
-    const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
     router.get('/ping', (req, res) => res.send('pong'));
     router.get('/login.html', parseCookies, setUsername, handleErrors((req, res) => {
         //const {username} = req.session;
@@ -248,6 +246,7 @@ if (require.main === module) {
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             if (LOGIN_URL) {
+                const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
                 const url = baseUrl + req.originalUrl;
                 res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
                 return;
@@ -292,6 +291,7 @@ if (require.main === module) {
                 await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
             }
         }
+        const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
         res.redirect(baseUrl);
         return res.sendStatus(200);
     }));
