@@ -23,14 +23,15 @@
         options = {
             scope: 'profile',
             response_type: 'code',
-            popup: 'false'
+            popup: 'false',
+            redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
         amazon.Login.authorize(options, function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
                 return;
             }
-            fetch("/tokens", {
+            fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
                 method: "POST",
                 body: response.code
             });
