@@ -166,7 +166,9 @@ class ServicesWorker {
             });
 
         serviceDoc.description = service._docs.description;
+        serviceDoc.rawDescription = service._docs.rawDescription;
         serviceDoc.categories = service._docs.categories;
+        serviceDoc.servicePath = service._docs.servicePath;
         return serviceDoc;
     }
 

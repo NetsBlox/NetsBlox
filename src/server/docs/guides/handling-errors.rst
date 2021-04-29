@@ -1,7 +1,7 @@
 Handling Errors
 ===============
 
-When using PhoneIoT from NetsBlox, as is the case with many pre-existing NetsBlox services, some operations (e.g. from ``call`` or ``run`` blocks) might fail.
+When using NetsBlox, it's possible that some operations (e.g. from ``call`` or ``run`` blocks) might fail due to various reasons including usage error or networking issues.
 As the programmer, it's your responsibility to handle these failure cases.
 
 Types of Errors
@@ -19,7 +19,6 @@ An easy way to fix a dropped packet error is to simply repeat the operation over
 Errors in NetsBlox
 ------------------
 
-Because PhoneIoT is a NetsBlox service, we use the same error handling.
 In NetsBlox, each ``call`` or ``run`` block will update the ``error`` variable in the ``Network`` tab.
 If the last RPC executed successfully, the ``error`` variable will be empty, otherwise it will have the error message.
 Because of this, you can use an ``if (error)`` block after a ``run`` or ``call`` block to check if there was an error.

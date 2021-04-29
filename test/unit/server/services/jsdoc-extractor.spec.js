@@ -68,12 +68,14 @@ describe(utils.suiteName(__filename), function() {
                     params: []
                 },
                 description,
+                rawDescription: description,
             });
             let simpleMetadata = jp._simplify(metadata.parsed);
 
             assert.deepEqual(simpleMetadata, {
                 name: 'doStuff',
                 description: metadata.parsed.description,
+                rawDescription: metadata.parsed.description,
                 deprecated: false,
                 args: [
                     arg('address', 'String', 'target address'),
@@ -81,7 +83,7 @@ describe(utils.suiteName(__filename), function() {
                     arg('options', 'Object', null),
                 ],
                 categories: [],
-                returns: {type: {name: 'String', params: []}, description: null}
+                returns: {type: {name: 'String', params: []}, description: null, rawDescription: null}
             });
         });
 
