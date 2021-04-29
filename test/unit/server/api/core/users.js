@@ -4,6 +4,7 @@ describe(utils.suiteName(__filename), function() {
     const utils = require('../../../../assets/utils');
     const UsersAPI = utils.reqSrc('./api/core/users');
     const UsersStorage = utils.reqSrc('./storage/users');
+    const GroupsStorage = utils.reqSrc('./storage/groups');
     const username = 'brian';
 
     before(async () => {
@@ -13,55 +14,92 @@ describe(utils.suiteName(__filename), function() {
     describe('create', function() {
         it('should create new user', async function() {
             const username = 'newUser2233';
-            await UsersAPI.create(username, 'some@email.com', undefined, 'password');
+            await UsersAPI.create(null, username, 'some@email.com', undefined, 'password');
             const user = await UsersStorage.collection.findOne({username});
             assert(user);
         });
 
         it('should fail if user exists', async function() {
-            assert.rejects(
-                () => UsersAPI.create(username, 'some@email.com', undefined, 'password'),
+            await assert.rejects(
+                () => UsersAPI.create(null, username, 'some@email.com', undefined, 'password'),
                 /already exists/
             );
         });
 
         it('should not allow usernames starting with _', async function() {
-            assert.rejects(
-                () => UsersAPI.create('_username', 'some@email.com', undefined, 'password'),
+            await assert.rejects(
+                () => UsersAPI.create(null, '_username', 'some@email.com', undefined, 'password'),
                 /Invalid argument/
             );
         });
 
-        it('should not be able to add users to other groups', async function() {
-            // TODO
+        describe('groups', function() {
+            let groupId;
+            before(async () => {
+                const group = await GroupsStorage.new('testUsers', username);
+                groupId = group.getId();
+            });
+
+            it('should be able to add users to own groups', async function() {
+                await UsersAPI.create('brian', 'username43', 'some@email.com', groupId, 'password');
+                const user = await UsersStorage.collection.findOne({username: 'username43'});
+                assert(user);
+            });
+
+            it('should not be able to add users to other groups', async function() {
+                await assert.rejects(
+                    () => UsersAPI.create('', 'username44', 'some@email.com', groupId, 'password'),
+                    /edit the requested group/
+                );
+            });
         });
 
         describe('dryrun', function() {
             it('should not create user', async function() {
-                // TODO
+                const username = 'newUser223344';
+                await UsersAPI.create(null, username, 'some@email.com', undefined, 'password', true);
+                const user = await UsersStorage.collection.findOne({username});
+                assert(!user);
             });
 
             it('should throw error if user exists', async function() {
-                // TODO
+                const {username} = await UsersStorage.collection.findOne({});
+                await assert.rejects(
+                    () => UsersAPI.create(null, username, 'some@email.com', undefined, 'password', true),
+                    /already exists/
+                );
             });
         });
     });
 
-    describe('get', function() {
-        it('should get user with given name', function() {
-            // TODO
+    describe('view', function() {
+        it('should view own user', async function() {
+            const user = await UsersAPI.view(username, username);
+            assert(user);
         });
 
-        it('should clean user', function() {
-            // TODO
+        it('should not view other users', async function() {
+            await assert.rejects(
+                () => UsersAPI.view(null, username),
+                /view user/
+            );
         });
 
-        it('should throw error if user doesnt exist', function() {
-            // TODO
+        it('should clean user', async function() {
+            const user = await UsersAPI.view(username, username);
+            assert(!user._id);
+            assert(!user.hash);
+        });
+
+        it('should throw error if user doesnt exist', async function() {
+            await assert.rejects(
+                () => UsersAPI.view(null, username),
+                /view user/
+            );
         });
     });
 
-    describe('cancelAccount', function() {
+    describe.only('delete', function() {
         it('should delete user', function() {
             // TODO
         });

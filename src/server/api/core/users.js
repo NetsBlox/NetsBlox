@@ -8,13 +8,14 @@ const P = Auth.Permission;
 const {hex_sha512} = require('../../../common/sha512');
 const randomString = require('just.randomstring');
 const mailer = require('../../mailer');
+const _ = require('lodash');
 
 class Users {
     constructor() {
         this.logger = new Logger('netsblox:users');
     }
 
-    async create(username, email, groupId, password) {
+    async create(requestor, username, email, groupId, password, dryrun=false) {
         // Must have an email and username
         if (!username) throw new MissingArguments('username');
         if (!email) throw new MissingArguments('email');
@@ -25,6 +26,9 @@ class Users {
             throw new InvalidArgument('username');
         }
 
+        if (groupId) {
+            await Auth.ensureAuthorized(requestor, P.Group.WRITE(groupId));
+        }
 
         const user = UsersStorage.new(username, email, groupId, password);
         await user.prepare();
@@ -33,10 +37,24 @@ class Users {
         const query = {username};
         const update = {$setOnInsert: userData};
 
-        const result = await UsersStorage.collection.updateOne(query, update, {upsert: true});
-        if (result.upsertedCount === 0) {
+        let alreadyExists = false;
+        if (dryrun) {
+            const doc = await UsersStorage.collection.findOne(query);
+            alreadyExists = !!doc;
+        } else {
+            const result = await UsersStorage.collection.updateOne(query, update, {upsert: true});
+            alreadyExists = result.upsertedCount === 0;
+        }
+
+        if (alreadyExists) {
             throw new RequestError(`User "${username}" already exists.`);
         }
+    }
+
+    async view(requestor, username) {
+        await Auth.ensureAuthorized(requestor, P.User.READ(username));
+        const user = await UsersStorage.collection.findOne({username});
+        return _.omit(user, ['_id', 'hash']);
     }
 
     async login(username, password, strategy, projectId) {
@@ -84,7 +102,7 @@ class Users {
         //}
     }
 
-    async cancelAccount(requestor, username) {
+    async delete(requestor, username) {
         await Auth.ensureAuthorized(requestor, P.User.DELETE(username));
         const result = await UsersStorage.collection.deleteOne({username});
         if (result.deletedCount === 0) {

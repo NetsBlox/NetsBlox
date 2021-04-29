@@ -6,14 +6,12 @@ const {handleErrors, setUsername} = require('./utils');
 UsersRouter.route('/create')
     .post(handleErrors(async (req, res) => {
         const {username, password, groupId, email} = req.body;
-        await Users.create(username, email, groupId, password);
-        res.sendStatus(200);
-    }));
-
-UsersRouter.route('/create')
-    .post(handleErrors(async (req, res) => {
-        const {username, password, groupId, email} = req.body;
-        await Users.create(username, email, groupId, password);
+        const dryrun = req.query.dryrun === 'true';
+        let requestor = null;
+        if (groupId) {
+            // TODO: get the requestor username
+        }
+        await Users.create(requestor, username, email, groupId, password, dryrun);
         res.sendStatus(200);
     }));
 
@@ -32,11 +30,11 @@ UsersRouter.route('/logout')
         res.sendStatus(200);
     }));
 
-UsersRouter.route('/cancel/:username')
+UsersRouter.route('/delete/:username')
     .post(handleErrors(async (req, res) => {
         const {username} = req.params;
         const requestor = req.session.username;
-        await Users.cancelAccount(requestor, username);
+        await Users.delete(requestor, username);
         req.session.destroy();
         res.sendStatus(200);
     }));
