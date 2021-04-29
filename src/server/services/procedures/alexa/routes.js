@@ -239,6 +239,7 @@ if (require.main === module) {
 } else {
     const router = express();
     const parseCookies = cookieParser();
+    const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
     router.get('/ping', (req, res) => res.send('pong'));
     router.get('/login.html', parseCookies, setUsername, handleErrors((req, res) => {
         //const {username} = req.session;
@@ -247,7 +248,6 @@ if (require.main === module) {
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             if (LOGIN_URL) {
-                const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
                 const url = baseUrl + req.originalUrl;
                 res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
                 return;
@@ -255,11 +255,11 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
         }
-        console.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
+        devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.post('/login.html/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
-        const {username} = req.session;
+    router.post('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
+        const {username} = 'tabithalee';
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             throw new LoginRequired();
@@ -268,10 +268,12 @@ if (require.main === module) {
         const amazonResponse = req.body;
         if (amazonResponse) {
             const options = {
+                grant_type: 'Authorization_code',
                 url: "https://api.amazon.com/auth/o2/token",
                 code: amazonResponse,
                 client_id: process.env.ALEXA_CLIENT_ID,
-                client_secret: process.env.ALEXA_CLIENT_SECRET
+                client_secret: process.env.ALEXA_CLIENT_SECRET,
+                redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
             };
 
             const tokens = request.post(options, (err, res, body) => {
@@ -290,6 +292,7 @@ if (require.main === module) {
                 await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
             }
         }
+        res.redirect(baseUrl);
         return res.sendStatus(200);
     }));
     router.post('/', adapter.getRequestHandlers());
