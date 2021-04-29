@@ -1,5 +1,5 @@
 /**
- * Charting service powered by gnuplot
+ * A charting service powered by gnuplot.
  *
  * @service
  */
@@ -232,9 +232,9 @@ chart._parseDrawInputs = function(lines, options){
 };
 
 /**
- * Create charts and histograms from data
+ * Create charts and histograms from data.
  *
- * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
+ * @param {Array} lines a single line or list of lines. Each line should be ``[[x1,y1], [x2,y2], ...]``.
  * @param {Object=} options Configuration for graph title, axes, and more
  * @param {String=} options.title title to show on the graph
  * @param {Number=} options.width width of the returned image
@@ -253,6 +253,8 @@ chart._parseDrawInputs = function(lines, options){
  * @param {String=} options.timeInputFormat input time format for time series data
  * @param {String=} options.timeDisplayFormat output time format for time series data
  * @param {Array=} options.logscale logscale settings to use
+ * 
+ * @returns {Image} the generated chart
  */
 chart.draw = function(lines, options={}){
     const [data, parsedOptions] = this._parseDrawInputs(lines, options);
@@ -267,7 +269,9 @@ chart.draw = function(lines, options={}){
 };
 
 /**
- * Get the default options for the "draw" RPC.
+ * Get the default options for the :func:`Chart.draw` RPC.
+ * 
+ * @returns {Object} the default draw options
  */
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);

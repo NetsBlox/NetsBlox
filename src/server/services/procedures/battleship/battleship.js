@@ -245,7 +245,7 @@ Battleship.prototype.remainingShips = function(roleId) {
 
 /**
  * Get list of ship types
- * @returns {Array} Types of ships
+ * @returns {Array<String>} Types of ships
  */
 Battleship.prototype.allShips = function() {
     return Object.keys(SHIPS);

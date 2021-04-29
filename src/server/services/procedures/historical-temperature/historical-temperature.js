@@ -1,10 +1,14 @@
 /**
- * Access to Berkeley Earth data
- *
+ * Access to Berkeley Earth data.
  * See http://berkeleyearth.org/data/ for additional details.
  * 
- * Use 'all land' for all land area, 'global' for all surface area,
- * or 'northern hemisphere' and 'southern hemisphere' for the land in those hemispheres.
+ * These RPCs take a ``region`` argument, which can either be a country
+ * or one of the following special values:
+ * 
+ * - ``all land`` - get data for all landmasses around the world
+ * - ``global`` - get data for the entire Earth (including oceans)
+ * - ``northern hemisphere`` - only northern landmasses
+ * - ``southern hemisphere`` - only southern landmasses
  *
  * @service
  * @category Science

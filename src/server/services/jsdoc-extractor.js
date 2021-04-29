@@ -15,13 +15,17 @@ let parseSync = (filePath, searchScope = 5) => {
 };
 
 const RTD_ROLE_REGEX = /:(\w+:)?\w+:`([^`]+)`/g;
+const RTD_BOLD_REGEX = /\*\*([^*]+)\*\*/g;
 const RTD_CODE_REGEX = /``([^`]+)``/g;
 const RTD_LINK_REGEX = /`([^`]+)`_/g;
+const RTD_EMPH_REGEX = /`([^`]+)`/g;
 function cleanMarkup(str) {
     if (!str) return str;
     str = str.replace(RTD_ROLE_REGEX, '$2');
+    str = str.replace(RTD_BOLD_REGEX, '$1');
     str = str.replace(RTD_CODE_REGEX, '$1');
     str = str.replace(RTD_LINK_REGEX, '$1');
+    str = str.replace(RTD_EMPH_REGEX, '$1');
     return str;
 }
 
@@ -191,6 +195,7 @@ function findFn(line){
     const regexList = [
         [/function (\w+)\(/, 1],
         [/\w+\.(\w+)[\w\s]*=.*(function|=>)/, 1],
+        [/\w+\[['"`]([^'"`]+)['"`]\] *=.*(function|=>)/, 1],
         [/(let|var|const) (\w+) *= *(\w|\().*=>/, 2],
         [/ *(\w+) *: *(async)? +function *\(.*\)/, 1],
     ];
