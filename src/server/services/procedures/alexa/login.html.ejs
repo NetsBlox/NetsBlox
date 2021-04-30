@@ -41,9 +41,9 @@
             await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
                 method: "PUT",
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/plain',
                 },
-                body: response
+                body: response.code
             });
         }
     }
