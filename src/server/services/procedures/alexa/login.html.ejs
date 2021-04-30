@@ -26,15 +26,16 @@
             popup: 'false',
             redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
-        amazon.Login.authorize(options, function(response) {
+        amazon.Login.authorize(options, async function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
                 return;
             }
-            fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
+            const res = await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
                 method: "POST",
                 body: response.code
             });
+            alert(res.json());
         });
     };
 </script>
