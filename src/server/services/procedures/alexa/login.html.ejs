@@ -28,14 +28,20 @@
         const response = amazon.Login.authorize(options, async function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
-                return;
+                return;const res = await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
+                    method: "POST",
+                    'Content-Type': 'text/plain',
+                    body: response.code
+                    });
             }
             return response;
         });
 
         await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
             method: "POST",
-            'Content-Type': 'text/plain',
+            headers: {
+                'Content-Type': 'text/plain',
+            },
             body: response.code
         });
     };
