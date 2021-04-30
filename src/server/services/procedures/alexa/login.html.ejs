@@ -19,23 +19,25 @@
          width="156" height="32" />
 </a>
 <script type="text/javascript">
-    document.getElementById('LoginWithAmazon').onclick = function() {
+    document.getElementById('LoginWithAmazon').onclick = async function() {
         options = {
             scope: 'profile',
             response_type: 'code',
             popup: 'false',
             redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
-        amazon.Login.authorize(options, async function(response) {
+        const response = amazon.Login.authorize(options, async function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
                 return;
             }
-            const res = await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
-                method: "POST",
-                body: response.code
-            });
-            alert(res.json());
+            return response;
+        });
+
+        await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
+            method: "POST",
+            'Content-Type': 'text/plain',
+            body: response.code
         });
     };
 </script>
