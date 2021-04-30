@@ -25,7 +25,7 @@
             response_type: 'code',
             redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
-        const response = amazon.Login.authorize(options, async function(response) {
+        const response = amazon.Login.authorize(options, function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
                 return;
@@ -33,15 +33,17 @@
             return response;
         });
 
-        await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
-            method: "POST",
-            headers: {
-                'Content-Type': 'text/plain',
-            },
-            body: response.code
-        });
+        if (response) {
+            await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: response.code
+            });
 
-        alert(response.code);
+            alert(response.code);
+        }
     };
 </script>
 </body>
