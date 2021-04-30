@@ -30,6 +30,7 @@
                 alert('oauth error ' + response.error);
                 return;
             }
+            console.log(response);
             return response;
         });
         sendResponse(response);
@@ -44,8 +45,6 @@
                 },
                 body: response.code
             });
-
-            alert(response.code);
         }
     }
 
