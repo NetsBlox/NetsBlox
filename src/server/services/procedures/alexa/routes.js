@@ -257,13 +257,14 @@ if (require.main === module) {
         devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.get('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
+    router.post('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
             throw new LoginRequired();
         }
 
+        devLogger.log("Retrieving token");
         const amazonResponse = req.body;
         devLogger.log(amazonResponse);
         if (amazonResponse) {
