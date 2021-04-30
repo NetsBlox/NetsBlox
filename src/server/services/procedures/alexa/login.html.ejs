@@ -13,7 +13,7 @@
         d.getElementById('amazon-root').appendChild(a);
     })(document);
 </script>
-<a href id="LoginWithAmazon">
+<a id="LoginWithAmazon">
     <img border="0" alt="Login with Amazon"
          src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_156x32.png"
          width="156" height="32" />
@@ -23,7 +23,6 @@
         options = {
             scope: 'profile',
             response_type: 'code',
-            popup: 'false',
             redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
         const response = amazon.Login.authorize(options, async function(response) {
