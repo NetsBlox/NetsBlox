@@ -1,0 +1,36 @@
+.. list-table::
+    :header-rows: 1
+ 
+    * - Service Type
+      - Language
+      - Available to all users?
+      - Automated Tests?
+      - Can users use own API key? (if accessing a web API)
+      - Can send messages to users?
+    * - Native
+      - Javascript
+      - .. image:: /icons/check.png
+          :width: 20
+      - .. image:: /icons/check.png
+          :width: 20
+      - .. image:: /icons/check.png
+          :width: 20
+      - .. image:: /icons/check.png
+          :width: 20
+    * - User-Defined Services
+      - NetsBlox
+      - .. image:: /icons/check.png
+          :width: 20
+      - Maybe as a custom project?
+      - .. image:: /icons/x.png
+          :width: 20
+      - .. image:: /icons/x.png
+          :width: 20
+    * - Auxiliary Services
+      - Any
+      - No. Must be enabled for each user/group.
+      - As supported by the language.
+      - .. image:: /icons/x.png
+          :width: 20
+      - .. image:: /icons/x.png
+          :width: 20
