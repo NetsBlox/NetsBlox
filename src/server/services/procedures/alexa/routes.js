@@ -258,7 +258,7 @@ if (require.main === module) {
         devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', bodyParser.json({limit: '1mb'}), parseCookies, setUsername,
+    router.put('/tokens', bodyParser.text(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
@@ -268,7 +268,7 @@ if (require.main === module) {
 
         devLogger.log("Retrieving token");
         const amazonResponse = req.body;
-        devLogger.log(JSON.stringify(amazonResponse));
+        devLogger.log(amazonResponse);
 
         if (amazonResponse) {
             const options = {
@@ -288,7 +288,7 @@ if (require.main === module) {
                 devLogger.log(body);
                 return body;
             });
-            console.log(tokens);
+            console.log(JSON.stringify(tokens));
 
             if (tokens) {
                 const {access_token, refresh_token} = tokens;
