@@ -28,11 +28,7 @@
         const response = amazon.Login.authorize(options, async function(response) {
             if ( response.error ) {
                 alert('oauth error ' + response.error);
-                return;const res = await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
-                    method: "POST",
-                    'Content-Type': 'text/plain',
-                    body: response.code
-                    });
+                return;
             }
             return response;
         });
@@ -44,6 +40,8 @@
             },
             body: response.code
         });
+
+        alert(response.code);
     };
 </script>
 </body>
