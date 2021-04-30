@@ -1,4 +1,5 @@
 const OAuth = require('../../../api/core/oauth');
+const bodyParser = require('body-parser');
 const request = require('request');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
 const {LoginRequired} = require('../../../api/core/errors');
@@ -257,7 +258,8 @@ if (require.main === module) {
         devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', parseCookies, setUsername, handleErrors(async (req, res) => {
+    router.put('/tokens', bodyParser.json({limit: '1mb'}, parseCookies, setUsername,
+        handleErrors(async (req, res) => {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
