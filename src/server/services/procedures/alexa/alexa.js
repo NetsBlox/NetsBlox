@@ -1,21 +1,22 @@
 const Alexa = {};
 
+const GetTokenStore = require('./tokens');
+
 const AlexaSMAPI = require('ask-smapi-sdk');
 
 const devLogger = require('../utils/dev-logger');
 
+const collection = GetTokenStore();
+
 var clientID = process.env.ALEXA_CLIENT_ID,
-    clientSecret = process.env.ALEXA_CLIENT_SECRET,
-    refreshToken = process.env.ALEXA_REFRESH_TOKEN,
-    accessToken = process.env.ALEXA_ACCESS_TOKEN,
-    vendorID = process.env.ALEXA_VENDOR_ID;
+    clientSecret = process.env.ALEXA_CLIENT_SECRET;
 
 //temp
 var refreshTokenConfig = {
     "clientId" : clientID,
     "clientSecret": clientSecret,
-    "refreshToken": refreshToken,
-    "accessToken": accessToken,
+    "refreshToken": "",
+    "accessToken": "",
 };
 
 //creates SMAPI client
@@ -30,12 +31,13 @@ const ensureLoggedIn = function(caller) {
 };
 
 //update tokens
-Alexa.getTokens = function() {
-    refreshToken = process.env.ALEXA_REFRESH_TOKEN;
-    accessToken = process.env.ALEXA_ACCESS_TOKEN;
+Alexa.getTokens = async function() {
+    ensureLoggedIn(this.caller);
+    const username = this.caller.username;
+    const {access_token, refresh_token} = await collection.findOne({username});
 
-    refreshTokenConfig.refreshToken = refreshToken;
-    refreshTokenConfig.accessToken = accessToken;
+    refreshTokenConfig.refreshToken = access_token;
+    refreshTokenConfig.accessToken = refresh_token;
 
     devLogger.log(refreshTokenConfig.refreshToken);
     devLogger.log(refreshTokenConfig.accessToken);
@@ -48,6 +50,7 @@ Alexa.getTokens = function() {
 };
 
 Alexa.getVendorList = async function () {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.getVendorListV1();
     devLogger.log(JSON.stringify(response));
 
@@ -55,7 +58,8 @@ Alexa.getVendorList = async function () {
 };
 
 //basic listSkills RPC
-Alexa.listSkills = async function() {
+Alexa.listSkills = async function(vendorID) {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.listSkillsForVendorV1(vendorID);
     devLogger.log(JSON.stringify(response));
 
@@ -64,13 +68,14 @@ Alexa.listSkills = async function() {
 
 //gets skill Info
 Alexa.getSkillInfo = async function(skillId, stage) {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.getSkillManifestV1(skillId, stage);
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
-const createManifestObject = function(summary, description, examplePhrases, keywords, name) {
+const createManifestObject = function(summary, description, examplePhrases, keywords, name, vendorID) {
     let skillRequest =
         {
             "vendorId": vendorID,
@@ -131,10 +136,12 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
  * @param {String} name
  */
 Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
+    ensureLoggedIn(this.caller);
     return [summary, description, examplePhrases, keywords, name];
 };
 
 Alexa.updateSkillManifest = async function(manifest) {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.createSkillForVendorV1(
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
@@ -144,6 +151,7 @@ Alexa.updateSkillManifest = async function(manifest) {
 
 //untested createSkill RPC
 Alexa.createSkill = async function(manifest) {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.createSkillForVendorV1(
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
@@ -153,6 +161,7 @@ Alexa.createSkill = async function(manifest) {
 
 //get interaction model of skill
 Alexa.getInteractionModel = async function (skillId, stage) {
+    ensureLoggedIn(this.caller);
     const response = await smapiClient.getInteractionModelV1(skillId, stage, 'en-US');
     devLogger.log(JSON.stringify(response));
 
@@ -160,6 +169,7 @@ Alexa.getInteractionModel = async function (skillId, stage) {
 };
 
 Alexa.createSlot = function(intent, name, samples, prompts) {
+    ensureLoggedIn(this.caller);
     return [intent, name, samples, prompts];
 };
 
@@ -202,6 +212,7 @@ const createSlotsObject = function(intent, name, samples, prompts) {
 };
 
 Alexa.createIntent = function (name, slots, samples) {
+    ensureLoggedIn(this.caller);
     return [name, slots, samples];
 };
 
@@ -267,6 +278,7 @@ const createThirdIntentsObject = function(name, slots) {
 };
 
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
+    ensureLoggedIn(this.caller);
     let intentsList = [];
     let slotInfos = [];
     let promptInfos = [];
@@ -363,11 +375,6 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
     devLogger.log(response);
 
     return response;
-};
-
-//further RPCs for testing only
-Alexa.getVendorId = function () {
-    return vendorID;
 };
 
 module.exports = Alexa;

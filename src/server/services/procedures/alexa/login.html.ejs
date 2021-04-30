@@ -30,20 +30,20 @@
                 alert('oauth error ' + response.error);
                 return;
             }
-            console.log(response);
             sendResponse(response);
             return;
         });
     };
 
     async function sendResponse(response) {
+        console.log(response);
         if (response) {
             await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
                 method: "PUT",
                 headers: {
-                    'Content-Type': 'text/plain',
+                    'Content-Type': 'application/json',
                 },
-                body: response.code
+                body: response
             });
         }
     }

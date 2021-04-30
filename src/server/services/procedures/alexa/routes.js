@@ -258,7 +258,7 @@ if (require.main === module) {
         devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', bodyParser.json({limit: '1mb'}), parseCookies, setUsername,
+    router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
@@ -267,14 +267,14 @@ if (require.main === module) {
         }
 
         devLogger.log("Retrieving token");
-        const amazonResponse = req.body;
-        devLogger.log(JSON.stringify(amazonResponse));
+        const amazonResponse = req.body.code;
+        devLogger.log(amazonResponse);
 
         if (amazonResponse) {
             const options = {
                 grant_type: 'Authorization_code',
                 url: "https://api.amazon.com/auth/o2/token",
-                code: amazonResponse.code,
+                code: amazonResponse,
                 client_id: process.env.ALEXA_CLIENT_ID,
                 client_secret: process.env.ALEXA_CLIENT_SECRET,
                 redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
