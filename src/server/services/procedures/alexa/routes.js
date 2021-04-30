@@ -268,7 +268,7 @@ if (require.main === module) {
 
         devLogger.log("Retrieving token");
         const amazonResponse = req.body;
-        devLogger.log(amazonResponse);
+        devLogger.log(JSON.stringify(amazonResponse));
 
         if (amazonResponse) {
             const options = {
@@ -288,12 +288,12 @@ if (require.main === module) {
                 devLogger.log(body);
                 return body;
             });
+            console.log(tokens);
 
             if (tokens) {
-                const accessToken = tokens.access_token;
-                const refreshToken = tokens.refresh_token;
+                const {access_token, refresh_token} = tokens;
                 const collection = GetTokenStore();
-                await collection.updateOne({username, accessToken, refreshToken}, {upsert: true});
+                await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
             }
         }
         const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');

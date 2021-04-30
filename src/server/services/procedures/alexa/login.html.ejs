@@ -39,7 +39,7 @@
     async function sendResponse(response) {
         if (response) {
             await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
-                method: "POST",
+                method: "PUT",
                 headers: {
                     'Content-Type': 'text/plain',
                 },
