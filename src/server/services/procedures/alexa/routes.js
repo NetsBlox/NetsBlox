@@ -258,7 +258,7 @@ if (require.main === module) {
         devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
-    router.put('/tokens', bodyParser.json({limit: '1mb'}, parseCookies, setUsername,
+    router.put('/tokens', bodyParser.json({limit: '1mb'}), parseCookies, setUsername,
         handleErrors(async (req, res) => {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
