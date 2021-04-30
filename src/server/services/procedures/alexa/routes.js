@@ -272,23 +272,28 @@ if (require.main === module) {
 
         if (amazonResponse) {
             const options = {
-                grant_type: 'Authorization_code',
                 url: "https://api.amazon.com/auth/o2/token",
-                code: amazonResponse,
-                client_id: process.env.ALEXA_CLIENT_ID,
-                client_secret: process.env.ALEXA_CLIENT_SECRET,
-                redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
+                json : true,
+                body : {
+                    "grant_type": "Authorization_code",
+                    "code": amazonResponse,
+                    "client_id": process.env.ALEXA_CLIENT_ID,
+                    "client_secret": process.env.ALEXA_CLIENT_SECRET,
+                    "redirect_uri": "https://alexa.netsblox.org/services/routes/alexa/tokens"
+                }
             };
+            devLogger.log("Options: ");
+            devLogger.log(JSON.stringify(options));
 
             const tokens = request.post(options, (err, res, body) => {
                 if (err) {
                     devLogger.log(err);
                     return;
                 }
-                devLogger.log(body);
+                devLogger.log(JSON.stringify(body));
                 return body;
             });
-            console.log(JSON.stringify(tokens));
+            devLogger.log(tokens);
 
             if (tokens) {
                 const {access_token, refresh_token} = tokens;
