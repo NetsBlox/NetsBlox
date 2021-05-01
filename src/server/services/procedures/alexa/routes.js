@@ -289,7 +289,7 @@ if (require.main === module) {
                     devLogger.log(err);
                     return;
                 }
-                return body;
+                return JSON.stringify(body);
             });
             devLogger.log(tokens);
 
