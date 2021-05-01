@@ -1,6 +1,7 @@
 const OAuth = require('../../../api/core/oauth');
 const bodyParser = require('body-parser');
-const request = require('request-promise');
+const axios = require('axios');
+const qs = require('qs');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
 const {LoginRequired} = require('../../../api/core/errors');
 const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
@@ -272,32 +273,34 @@ if (require.main === module) {
 
         if (amazonResponse) {
             const options = {
+                method: "post",
                 url: "https://api.amazon.com/auth/o2/token",
-                form: {
+                data: qs.stringify({
                     grant_type: "authorization_code",
                     code: amazonResponse,
                     client_id: process.env.ALEXA_CLIENT_ID,
                     client_secret: process.env.ALEXA_CLIENT_SECRET,
                     redirect_uri: "https://alexa.netsblox.org/services/routes/alexa/tokens"
+                }),
+                headers: {
+                    "content-type": "application/x-www-form-urlencoded;charset=utf-8"
                 }
             };
             devLogger.log("Options: ");
             devLogger.log(JSON.stringify(options));
+            try {
+                const tokens = await axios(options);
 
-            const tokens = await request.post(options, (err, res, body) => {
-                if (err) {
-                    devLogger.log(err);
-                    return;
+                devLogger.log(tokens);
+
+                if (tokens) {
+                    const {access_token, refresh_token} = tokens;
+                    devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
+                    const collection = GetTokenStore();
+                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
                 }
-                return JSON.parse(body);
-            });
-            devLogger.log(tokens);
-
-            if (tokens) {
-                const {access_token, refresh_token} = tokens;
-                devLogger.log("Tokens: " + access_token + " " + refresh_token);
-                const collection = GetTokenStore();
-                await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+            } catch (err) {
+                return res.status(err.statusCode).send(err.message);
             }
         }
         const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
