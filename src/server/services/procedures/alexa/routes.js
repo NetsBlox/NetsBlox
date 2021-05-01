@@ -289,13 +289,13 @@ if (require.main === module) {
                     devLogger.log(err);
                     return;
                 }
-                return body;
+                return JSON.parse(body);
             });
             devLogger.log(tokens);
 
             if (tokens) {
                 const {access_token, refresh_token} = tokens;
-                devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
+                devLogger.log("Tokens: " + access_token + " " + refresh_token);
                 const collection = GetTokenStore();
                 await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
             }
