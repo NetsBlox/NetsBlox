@@ -1,5 +1,4 @@
-Display
-=======
+>>>NAME<<<
 
 This section covers all of the RPCs that relate to manipulation of the customizable interactive display on the mobile device.
 The device display is a large rectangular region called the `canvas`.

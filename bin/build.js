@@ -169,6 +169,7 @@ function getMeta(serviceFilter) {
     return { description: undefined, categories, services };
 }
 
+const NAME_REGEX = />>>NAME<<</g;
 const DESC_REGEX = />>>DESC<<</g;
 const RPCS_REGEX = />>>RPCS<<</g;
 const CATS_REGEX = />>>CATS<<</g;
@@ -178,23 +179,28 @@ async function loadCategoryContent(rootPath, categoryName) {
     if ((await fsp.readdir(rootPath)).includes(`${categoryName}.rst`)) {
         return await fsp.readFile(path.join(rootPath, `${categoryName}.rst`), { encoding: 'utf8' });
     }
-    const content = `${categoryName}\n${'='.repeat(categoryName.length)}\n\n>>>DESC<<<\n>>>SERV<<<\n`;
+    const content = `>>>NAME<<<\n\n>>>DESC<<<\n>>>SERV<<<\n`;
     await fsp.writeFile(path.join(rootPath, `${categoryName}.rst`), content);
     return content;
 }
 
 async function copyServiceDocs(serviceName, service) {
+    const indexContent = `>>>NAME<<<\n\n>>>DESC<<<\n\n>>>CATS<<<\n\n>>>RPCS<<<\n`;
+    const dest = path.join(SERVICES_PATH, serviceName);
+
+    let needsDir = true;
     if (service.path) {
         const serviceDir = service.path.match(SERVICE_DIR_REGEX)[1];
         if (await hasDirectory(serviceDir, 'docs')) {
-            await fse.copy(path.join(serviceDir, 'docs'), path.join(SERVICES_PATH, serviceName));
-            return;
+            const src = path.join(serviceDir, 'docs');
+            const [files,] = await Promise.all([fsp.readdir(src), fse.copy(src, dest)]);
+            needsDir = false;
+            if (files.includes('index.rst')) return;
         }
     }
-
-    const content = `${serviceName}\n${'='.repeat(serviceName.length)}\n\n>>>DESC<<<\n\n>>>CATS<<<\n\n>>>RPCS<<<\n`;
-    await fsp.mkdir(path.join(SERVICES_PATH, serviceName));
-    await fsp.writeFile(path.join(SERVICES_PATH, serviceName, 'index.rst'), content);
+    
+    if (needsDir) await fsp.mkdir(dest);
+    await fsp.writeFile(path.join(dest, 'index.rst'), indexContent);
 }
 
 function buildRPCString(serviceName, rpcName, rpc) {
@@ -263,8 +269,10 @@ async function compileDocs() {
         for (const categoryName of categories) {
             const category = service.rpcs.categories[categoryName];
             const rpcsString = 'RPCS\n----\n\n' + category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s])).join('\n');
+            const name = categoryName === 'index' ? serviceName : categoryName;
 
             let content = await loadCategoryContent(path.join(SERVICES_PATH, serviceName), categoryName);
+            content = content.replace(NAME_REGEX, `${name}\n${'='.repeat(name.length)}\n\n`);
             content = content.replace(DESC_REGEX, (categoryName === 'index' ? service : category).description || '');
             content = content.replace(CATS_REGEX, catsString);
             content = content.replace(RPCS_REGEX, rpcsString);
@@ -276,10 +284,12 @@ async function compileDocs() {
         const category = meta.categories[categoryName];
         const servicePrefix = categoryName !== 'index' ? '' : 'services/';
         const itemRoot = categoryName !== 'index' ? SERVICES_PATH : GENERATED_PATH;
+        const name = categoryName !== 'index' ? categoryName : 'NetsBlox';
         const servString = categoryName === 'index' ? servicesString : '.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n'
             + category.items.map(s => `    ${servicePrefix}${s}/index.rst\n`).join('');
 
         let content = await loadCategoryContent(itemRoot, categoryName);
+        content = content.replace(NAME_REGEX, `${name}\n${'='.repeat(name.length)}\n\n`);
         content = content.replace(DESC_REGEX, (categoryName === 'index' ? meta : category).description || '');
         content = content.replace(SERV_REGEX, servString);
         await fsp.writeFile(path.join(itemRoot, `${categoryName}.rst`), content);

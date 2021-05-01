@@ -1,8 +1,6 @@
 NetsBlox Documentation
 ======================
 
->>>DESC<<<
-
 .. toctree::
     :maxdepth: 2
     :caption: Getting Started
@@ -15,6 +13,17 @@ NetsBlox Documentation
     fundamentals/howto.rst
     fundamentals/handling-errors.rst
 
+>>>SERV<<<
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Advanced
+
+    adv/installation.rst
+    adv/deploy.rst
+    adv/cli.rst
+    adv/rpc-support.rst
+
 .. toctree::
     :maxdepth: 2
     :caption: Development
@@ -25,13 +34,5 @@ NetsBlox Documentation
     dev/best-practices.rst
     dev/using-extern-apis.rst
     dev/utilities.rst
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Advanced
-
->>>SERV<<<
-
-.. toctree::
-    :maxdepth: 2
-    :caption: Development
+    dev/adding-example-proj.rst
+    
