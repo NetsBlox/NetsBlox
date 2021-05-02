@@ -50,7 +50,7 @@ const SendMessageIntentHandler = {
     canHandle(handlerInput) {
         devLogger.log('Checking if we can handle SendMessageIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
-        && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SendMessageIntent';
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SendMessageIntent';
     },
     async handle(handlerInput) {
         const accessToken = handlerInput.requestEnvelope.context.System.user.accessToken;
@@ -114,7 +114,7 @@ const HelpIntentHandler = {
     canHandle(handlerInput) {
         devLogger.log('Checking if we can handle HelpIntent');
         return Alexa.getRequestType(handlerInput.requestEnvelope)  === 'IntentRequest'
-        && Alexa.getRequestType(handlerInput.requestEnvelope)  === 'AMAZON.HelpIntent';
+            && Alexa.getRequestType(handlerInput.requestEnvelope)  === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
         devLogger.log('handling HelpIntent...');
@@ -262,62 +262,61 @@ if (require.main === module) {
     }));
     router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
-        const {username} = 'tabithalee';
-        const isLoggedIn = !!username;
-        if (!isLoggedIn) {
-            //throw new LoginRequired();
-        }
-
-        devLogger.log("Retrieving token");
-        const amazonResponse = req.body.code;
-        devLogger.log(amazonResponse);
-
-        if (amazonResponse) {
-            const options = {
-                /*method: "post",
-                url: "https://api.amazon.com/auth/o2/token",
-                data: qs.stringify({
-                    grant_type: "authorization_code",
-                    code: amazonResponse,
-                    client_id: process.env.ALEXA_CLIENT_ID,
-                    client_secret: process.env.ALEXA_CLIENT_SECRET,
-                    redirect_uri: "https://alexa.netsblox.org/services/routes/alexa/tokens"
-                }),
-                headers: {
-                    "content-type": "application/x-www-form-urlencoded;charset=utf-8"
-                }*/
-            };
-            devLogger.log("Options: ");
-            devLogger.log(JSON.stringify(options));
-
-            const getTokens = async () => {
-                try {
-                    return await axios(options);
-                } catch (err) {
-                    return res.status(err.statusCode).send(err.message);
-                }
-            };
-
-            const response = await getTokens();
-            const tokens = response.data;
-            devLogger.log(JSON.stringify(tokens));
-
-            if (tokens) {
-                const {access_token, refresh_token} = tokens;
-                devLogger.log("Tokens: " + access_token + " " + refresh_token);
-                const collection = GetTokenStore();
-                await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+            const {username} = 'tabithalee';
+            const isLoggedIn = !!username;
+            if (!isLoggedIn) {
+                //throw new LoginRequired();
             }
 
-        }
-        const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-        res.redirect(baseUrl);
-        return res.sendStatus(200);
-    }));
+            devLogger.log("Retrieving token");
+            const amazonResponse = req.body.code;
+            devLogger.log(amazonResponse);
+
+            if (amazonResponse) {
+                const options = {
+                    method: "post",
+                    url: "https://api.amazon.com/auth/o2/token",
+                    data: qs.stringify({
+                        grant_type: "authorization_code",
+                        code: amazonResponse,
+                        client_id: process.env.ALEXA_CLIENT_ID,
+                        client_secret: process.env.ALEXA_CLIENT_SECRET,
+                        redirect_uri: "https://alexa.netsblox.org/services/routes/alexa/tokens"
+                    }),
+                    headers: {
+                        "content-type": "application/x-www-form-urlencoded;charset=utf-8"
+                    }
+                };
+                devLogger.log("Options: ");
+                devLogger.log(JSON.stringify(options));
+
+                const getTokens = async () => {
+                    try {
+                        return await axios(options);
+                    } catch (err) {
+                        return res.status(err.statusCode).send(err.message);
+                    }
+                };
+
+                const response = await getTokens();
+                const tokens = response.data;
+                devLogger.log(JSON.stringify(tokens));
+
+                if (tokens) {
+                    const {access_token, refresh_token} = tokens;
+                    devLogger.log("Tokens: " + access_token + " " + refresh_token);
+                    const collection = GetTokenStore();
+                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+                }
+
+            }
+            //const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+            //res.redirect(baseUrl);
+            return res.sendStatus(200);
+        }));
     router.post('/', adapter.getRequestHandlers());
     router.get('/whoami', (req, res) => res.send(req.token.username));
     devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
 }
-
 
