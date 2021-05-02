@@ -305,8 +305,8 @@ if (require.main === module) {
                 if (tokens) {
                     const {access_token, refresh_token} = tokens;
                     devLogger.log("Tokens: " + access_token + " " + refresh_token);
-                    const collection = GetTokenStore();
-                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+                    //const collection = GetTokenStore();
+                    //await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
                 }
 
             }
