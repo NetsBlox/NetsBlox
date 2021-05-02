@@ -1,6 +1,5 @@
 const OAuth = require('../../../api/core/oauth');
 const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
 const axios = require('axios');
 const qs = require('qs');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
@@ -265,7 +264,7 @@ if (require.main === module) {
         const {username} = 'tabithalee';
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
-            //throw new LoginRequired();
+            throw new LoginRequired();
         }
 
         devLogger.log("Retrieving token");
@@ -274,7 +273,7 @@ if (require.main === module) {
 
         if (amazonResponse) {
             const options = {
-                /*method: "post",
+                method: "post",
                 url: "https://api.amazon.com/auth/o2/token",
                 data: qs.stringify({
                     grant_type: "authorization_code",
@@ -285,7 +284,7 @@ if (require.main === module) {
                 }),
                 headers: {
                     "content-type": "application/x-www-form-urlencoded;charset=utf-8"
-                }*/
+                }
             };
             devLogger.log("Options: ");
             devLogger.log(JSON.stringify(options));
@@ -310,8 +309,8 @@ if (require.main === module) {
             }
 
         }
-        const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-        res.redirect(baseUrl);
+        //const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+        //res.redirect(baseUrl);
         return res.sendStatus(200);
     }));
     router.post('/', adapter.getRequestHandlers());
