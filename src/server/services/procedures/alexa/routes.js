@@ -1,5 +1,6 @@
 const OAuth = require('../../../api/core/oauth');
 const bodyParser = require('body-parser');
+const fetch = require('node-fetch');
 const axios = require('axios');
 const qs = require('qs');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
@@ -288,20 +289,27 @@ if (require.main === module) {
             };
             devLogger.log("Options: ");
             devLogger.log(JSON.stringify(options));
-            try {
-                const tokens = await axios(options);
 
-                devLogger.log(tokens);
-
-                if (tokens) {
-                    const {access_token, refresh_token} = tokens;
-                    devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
-                    const collection = GetTokenStore();
-                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+            const getTokens = async () => {
+                try {
+                    return await axios(options);
+                } catch (err) {
+                    return res.status(err.statusCode).send(err.message);
                 }
-            } catch (err) {
-                return res.status(err.statusCode).send(err.message);
+            };
+
+            const response = await getTokens();
+            const tokens = response.data;
+
+            devLogger.log(tokens);
+
+            if (tokens) {
+                const {access_token, refresh_token} = tokens;
+                devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
+                const collection = GetTokenStore();
+                await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
             }
+
         }
         const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
         res.redirect(baseUrl);
