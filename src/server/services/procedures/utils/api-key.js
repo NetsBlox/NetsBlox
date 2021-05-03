@@ -57,7 +57,7 @@ module.exports.TheMovieDBKey = new ApiKey(
 );
 module.exports.OpenWeatherMapKey = new ApiKey(
     'Open Weather Map',
-    'https://developers.themoviedb.org/3/getting-started/introduction',
+    'https://openweathermap.org/api',
 );
 module.exports.AzureTranslationKey = new ApiKey(
     'Azure Translation',
