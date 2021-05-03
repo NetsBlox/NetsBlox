@@ -1,5 +1,5 @@
-How to
-======
+Walkthroughs
+============
 
 Signing up/in
 -------------
