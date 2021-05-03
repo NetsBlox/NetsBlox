@@ -10,7 +10,6 @@ Annotations use the google closure compiler syntax to
 - validate RPC inputs 
 
     - cast to correct type
-    - cast to correct type
     - uniform error reporting for invalid inputs (to the end user)
 
 - populate the help messages for the end user
