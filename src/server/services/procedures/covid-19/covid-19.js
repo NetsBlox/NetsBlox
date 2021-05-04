@@ -13,7 +13,7 @@ const schema = {
     date: Date,
     country: String,
     state: String,
-    city: String,
+    county: String,
     latitude: Number,
     longitude: Number,
     confirmed: Number,
@@ -37,10 +37,10 @@ COVID19._data.importMissingData();
  *
  * @param{String} country Country or region
  * @param{String=} state State or province
- * @param{String=} city City
+ * @param{String=} county County (administrative level 2)
  */
-COVID19.getConfirmedCounts = async function(country, state='', city='') {
-    return await this._data.getData(CONFIRMED, country, state, city);
+COVID19.getConfirmedCounts = async function(country, state='', county='') {
+    return await this._data.getData(CONFIRMED, country, state, county);
 };
 
 /**
@@ -50,10 +50,10 @@ COVID19.getConfirmedCounts = async function(country, state='', city='') {
  *
  * @param{String} country Country or region
  * @param{String=} state State or province
- * @param{String=} city City
+ * @param{String=} county County (administrative level 2)
  */
-COVID19.getDeathCounts = async function(country, state='', city='') {
-    return await this._data.getData(DEATH, country, state, city);
+COVID19.getDeathCounts = async function(country, state='', county='') {
+    return await this._data.getData(DEATH, country, state, county);
 };
 
 /**
@@ -63,10 +63,10 @@ COVID19.getDeathCounts = async function(country, state='', city='') {
  *
  * @param{String} country Country or region
  * @param{String=} state State or province
- * @param{String=} city City
+ * @param{String=} county County (administrative level 2)
  */
-COVID19.getRecoveredCounts = async function(country, state='', city='') {
-    return await this._data.getData(RECOVERED, country, state, city);
+COVID19.getRecoveredCounts = async function(country, state='', county='') {
+    return await this._data.getData(RECOVERED, country, state, county);
 };
 
 /**
@@ -75,8 +75,8 @@ COVID19.getRecoveredCounts = async function(country, state='', city='') {
 COVID19.getLocationsWithData = async function() {
     const locations = await this._data.getAllLocations();
     return locations.map(loc => {
-        const {state, country, city} = loc;
-        return [country, state, city];
+        const {state, country, county} = loc;
+        return [country, state, county];
     });
 };
 
@@ -85,10 +85,10 @@ COVID19.getLocationsWithData = async function() {
  *
  * @param{String} country
  * @param{String=} state
- * @param{String=} city City
+ * @param{String=} county County (administrative level 2)
  */
-COVID19.getLocationCoordinates = async function(country, state='', city='') {
-    const data = await this._data.getLocation(country, state, city);
+COVID19.getLocationCoordinates = async function(country, state='', county='') {
+    const data = await this._data.getLocation(country, state, county);
     return _.pick(data, ['latitude', 'longitude']);
 };
 
