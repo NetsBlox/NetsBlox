@@ -49,6 +49,7 @@ const _ = require('lodash');
 
 // these types are used for communication with PhoneIoT
 const myTypes = {};
+myTypes.TouchpadStyle = input => types.parse.Enum(input, { rectangle: 0, square: 1 }, undefined, 'Touchpad Style');
 myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
 myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
 myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
@@ -371,6 +372,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Adds a joystick control to the canvas at the given position and size.
      * No height parameter is given because joysticks are always circular (similar to passing ``style = circle`` to :func:`PhoneIoT.addButton`).
      * 
+     * The position of the joystick is given by a vector ``[x, y]``, which is normalized to a length of 1.
+     * If you would prefer to not have this normalization and want rectangular coordinates instead of circular, consider using :func:`PhoneIoT.addTouchpad` instead.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the joystick (percentage).
@@ -392,8 +396,42 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('addJoystick', arguments);
     };
     /**
+     * Adds a touchpad control to the canvas at the given position and size.
+     * This control is similar to the joystick control, except that it is rectangular,
+     * the vector is not normalized to a distance of 1,
+     * the "stick" does not move back to ``(0, 0)`` upon letting go,
+     * and there is an additional "tag" value denoting if each event was a touch ``down``, ``move``, or ``up``.
+     * 
+     * Although the vector value is not normalized to a length of 1,
+     * each component (``x`` and ``y`` individually) is in ``[-1, 1]``.
+     * 
+     * @category Display
+     * @param {Device} device id of the device
+     * @param {Position} x X position of the top left corner of the touchpad (percentage).
+     * @param {Position} y Y position of the top left corner of the touchpad (percentage).
+     * @param {Size} width Width of the touchpad (percentage).
+     * @param {Size} height Height of the touchpad (percentage).
+     * @param {Object=} options Additional options: id, event, color, landscape
+     * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {Color=} options.color The color of the touchpad.
+     * @param {TouchpadStyle=} options.style Controls the appearance of the touchpad. These are the same as for :func:`PhoneIoT.addButton` except that only ``rectangle`` and ``square`` are allowed.
+     * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
+     * @returns {String} id of the created control
+     */
+     PhoneIoT.prototype.addTouchpad = function (device, x, y, width, height, options) {
+        const DEFAULTS = {
+            color: this.getColor(66, 135, 245),
+            landscape: false,
+            style: 0,
+        };
+        arguments[5] = _.merge({}, DEFAULTS, options);
+        return this._passToDevice('addTouchpad', arguments);
+    };
+    /**
      * Adds a toggle control to the canvas at the given location.
-     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty), but this can be changed later with :func:`PhoneIoT.setText`.
+     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty),
+     * but this can be changed later with :func:`PhoneIoT.setText`.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -428,7 +466,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Adds a radio button to the canvas.
-     * Radio buttons are like toggles (checkboxes), except that they are organized into groups and the user can check at most one radion button from any given group.
+     * Radio buttons are like toggles (checkboxes), except that they are organized into groups
+     * and the user can check at most one radion button from any given group.
      * These can be used to accept multiple-choice input from the user.
      * 
      * @category Display

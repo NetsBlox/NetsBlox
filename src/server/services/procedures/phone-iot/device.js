@@ -25,6 +25,8 @@ const common = require('./common');
 // l - light level
 // M - magnetic field
 // m - microphone level
+// N - add touchpad
+// n - touchpad event
 // O - orientation calculator
 // P - proximity
 // p - set sensor update periods
@@ -106,7 +108,7 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
 
     this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, (Socket, lastUpdate, period)>>
 
-    this.joystickUpdateTimestamps = {}; // Map<GUI ID, time index>
+    this.controlUpdateTimestamps = {}; // Map<GUI ID, time index>
     this.sensorPacketTimestamp = -1; // timestamp of last sensor packet
 
     this.controlCount = 0; // counter used to generate unique custom control ids
@@ -321,7 +323,7 @@ Device.prototype.clearControls = async function (device, args, clientId) {
     throwIfErr(await response);
 
     this.controlCount = 0; // we can safely reset this to zero and reuse old ids
-    this.joystickUpdateTimestamps = {}; // discard all the old joystick data
+    this.controlUpdateTimestamps = {}; // discard all the old control timestamp data
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('removecontrol', clientId);
@@ -334,7 +336,7 @@ Device.prototype.removeControl = async function (device, args, clientId) {
 
     throwIfErr(await response);
 
-    delete this.joystickUpdateTimestamps[args[0]]; // discard any joystick data relating to this id
+    delete this.controlUpdateTimestamps[args[0]]; // discard any timestamp data relating to this id
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addlabel', clientId);
@@ -454,6 +456,30 @@ Device.prototype.addJoystick = async function (device, args, clientId) {
     message.writeFloatBE(args[2], 17);
     message.writeInt32BE(opts.color, 21);
     message[25] = opts.landscape ? 1 : 0;
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addTouchpad = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtouchpad', clientId);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(31);
+    message.write('N', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    message.writeInt32BE(opts.color, 25);
+    message[29] = opts.style;
+    message[30] = opts.landscape ? 1 : 0;
 
     this.sendToDevice(Buffer.concat([message, idbuf]));
     
@@ -997,6 +1023,7 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'B') this._sendControlResult('addbutton', message);
     else if (command === 'Z') this._sendControlResult('addtoggle', message);
     else if (command === 'j') this._sendControlResult('addjoystick', message);
+    else if (command === 'N') this._sendControlResult('addtouchpad', message);
     else if (command === 'T') this._sendControlResult('addtextfield', message);
     else if (command === 'w') this._sendControlResult('setToggleState', message);
     else if (command === 'y') this._sendControlResult('addradiobutton', message);
@@ -1009,9 +1036,26 @@ Device.prototype.onMessage = function (message) {
         if (message.length >= 23) {
             const id = message.toString('utf8', 23);
             const time = message.readInt32BE(11); // check the time index so we don't send events out of order
-            if (!(time < this.joystickUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it
-                this.joystickUpdateTimestamps[id] = time;
+            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
+                this.controlUpdateTimestamps[id] = time;
                 this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
+            }
+        }
+    }
+    else if (command === 'n') {
+        if (message.length >= 24) {
+            const id = message.toString('utf8', 24);
+            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
+                this.controlUpdateTimestamps[id] = time;
+
+                let tag = undefined;
+                switch (message[23]) {
+                    case 0: tag = 'down'; break;
+                    case 1: tag = 'move'; break;
+                    case 2: tag = 'up'; break;
+                }
+                if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19), tag });
             }
         }
     }
