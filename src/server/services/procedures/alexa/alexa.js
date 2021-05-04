@@ -6,23 +6,8 @@ const AlexaSMAPI = require('ask-smapi-sdk');
 
 const devLogger = require('../utils/dev-logger');
 
-const collection = GetTokenStore();
-
 var clientID = process.env.ALEXA_CLIENT_ID,
     clientSecret = process.env.ALEXA_CLIENT_SECRET;
-
-//temp
-var refreshTokenConfig = {
-    "clientId" : clientID,
-    "clientSecret": clientSecret,
-    "refreshToken": "",
-    "accessToken": "",
-};
-
-//creates SMAPI client
-var smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
-    .withRefreshTokenConfig(refreshTokenConfig)
-    .client();
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -30,49 +15,90 @@ const ensureLoggedIn = function(caller) {
     }
 };
 
-//update tokens
-Alexa.getTokens = async function() {
-    ensureLoggedIn(this.caller);
-    const username = this.caller.username;
-    const {access_token, refresh_token} = await collection.findOne({username});
+const getAPIClient = async function(caller) {
+    ensureLoggedIn(caller);
+    const collection = GetTokenStore();
 
-    refreshTokenConfig.refreshToken = access_token;
-    refreshTokenConfig.accessToken = refresh_token;
+    const tokens = await collection.findOne({username: caller.username});
+    if (!tokens) {
+        throw new Error('Amazon Login required. Please login.');
+    }
+    const {access_token, refresh_token} = tokens;
 
-    devLogger.log(refreshTokenConfig.refreshToken);
-    devLogger.log(refreshTokenConfig.accessToken);
+    const refreshTokenConfig = {
+        "clientId" : clientID,
+        "clientSecret": clientSecret,
+        "refreshToken": refresh_token,
+        "accessToken": access_token,
+    };
 
-    smapiClient = new AlexaSMAPI.StandardSmapiClientBuilder()
+    return new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
         .client();
-
-    return refreshTokenConfig;
 };
 
+/**
+ * Gets a list of the user's vendor IDs
+ *
+ * @return {Array<Object>} list of the vendor IDs
+ */
 Alexa.getVendorList = async function () {
-    ensureLoggedIn(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
+
     const response = await smapiClient.getVendorListV1();
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
-//basic listSkills RPC
-Alexa.listSkills = async function(vendorID) {
-    ensureLoggedIn(this.caller);
-    const response = await smapiClient.listSkillsForVendorV1(vendorID);
+/**
+ * Gets the list of the user's skills
+ *
+ * @param {String} vendorId The vendor ID of the user
+ *
+ * @return {Array<Object>} list of the skills
+ */
+Alexa.listSkills = async function(vendorId) {
+    const smapiClient = await getAPIClient(this.caller);
+
+    const response = await smapiClient.listSkillsForVendorV1(vendorId);
     devLogger.log(JSON.stringify(response));
 
     return response.skills;
 };
 
-//gets skill Info
+/**
+ * Gets the info of a skill.
+ *
+ * @param {String} skillId the skill ID of the skill
+ * @param {String} stage the stage of the skill, for most users will be "development"
+ *
+ * @return {Object} the skill information
+ */
 Alexa.getSkillInfo = async function(skillId, stage) {
-    ensureLoggedIn(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
+
     const response = await smapiClient.getSkillManifestV1(skillId, stage);
     devLogger.log(JSON.stringify(response));
 
     return response;
+};
+
+/**
+ * A simple helper method available to the user to create an object containing the required manifest
+ * information in the correct order.
+ *
+ * @param {String} summary Summary of the skill request
+ * @param {String} description Description of the skill
+ * @param {Array<String>} examplePhrases
+ * @param {Array<String>} keywords
+ * @param {String} name
+ *
+ * @return {Object} the required manifest information
+ */
+Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
+    ensureLoggedIn(this.caller);
+    return [summary, description, examplePhrases, keywords, name];
 };
 
 const createManifestObject = function(summary, description, examplePhrases, keywords, name, vendorID) {
@@ -127,31 +153,36 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
 };
 
 /**
- * TODO: add some description of the RPC
+ * Allows the user to call the Alexa SMAPI and update the skill manifest of a skill
+ * given the manifest object created by createManifest.
  *
- * @param {String} summary Summary of the skill request
- * @param {String} description Description of the skill
- * @param {Array<String>} examplePhrases
- * @param {Array<String>} keywords
- * @param {String} name
+ * @param {String} skillId the skill ID of the skill whose manifest we want to update
+ * @param {String} stage the stage of the skill, for most users will be "development"
+ * @param {Object} manifest the object returned by createManifest
+ *
+ * @return {Array} The response of the API call
  */
-Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
-    ensureLoggedIn(this.caller);
-    return [summary, description, examplePhrases, keywords, name];
-};
+Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
+    const smapiClient = await getAPIClient(this.caller);
 
-Alexa.updateSkillManifest = async function(manifest) {
-    ensureLoggedIn(this.caller);
-    const response = await smapiClient.createSkillForVendorV1(
+    const response = await smapiClient.updateSkillManifestV1(skillId, stage,
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
-//untested createSkill RPC
+/**
+ * Allows the user to call the Alexa SMAPI and create the skill manifest of a skill
+ * given the manifest object created by createManifest.
+ *
+ * @param {Object} manifest the object returned by createManifest
+ *
+ * @return {Array} The response of the API call, containing the newly created skillId
+ */
 Alexa.createSkill = async function(manifest) {
-    ensureLoggedIn(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
+
     const response = await smapiClient.createSkillForVendorV1(
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
@@ -159,20 +190,49 @@ Alexa.createSkill = async function(manifest) {
     return response;
 };
 
-//get interaction model of skill
+/**
+ * Obtains the interaction model of a skill.
+ *
+ * @param {String} skillId the skill ID of the skill
+ * @param {String} stage the stage of the skill, for most users will be "development"
+ *
+ * @return {Object} The response of the API call containing the interaction model
+ */
 Alexa.getInteractionModel = async function (skillId, stage) {
-    ensureLoggedIn(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
+
     const response = await smapiClient.getInteractionModelV1(skillId, stage, 'en-US');
     devLogger.log(JSON.stringify(response));
 
     return response;
 };
 
+/**
+ * A simple helper method available to the user to create an object containing the required slot
+ * information in the correct order.
+ *
+ * @param {String} intent Summary of the skill request
+ * @param {String} name Description of the skill
+ * @param {Array<String>} samples Samples of responses containing the slot
+ * @param {Array<String>} prompts Alexa prompts to ask the user for the slot
+ *
+ * @return {Object} the required slot information
+ */
 Alexa.createSlot = function(intent, name, samples, prompts) {
     ensureLoggedIn(this.caller);
     return [intent, name, samples, prompts];
 };
 
+/**
+ * A helper method used to create the slots JSON object.
+ *
+ * @param {String} intent The intent the slot belongs to
+ * @param {String} name The name of the slot
+ * @param {Array<String>} samples Samples of responses containing the slot
+ * @param {Array<String>} prompts Alexa prompts to ask the user for the slot
+ *
+ * @return {Object} JSON object for the slot
+ */
 const createSlotsObject = function(intent, name, samples, prompts) {
     let variations = [];
     for (let i of prompts) {
@@ -211,11 +271,30 @@ const createSlotsObject = function(intent, name, samples, prompts) {
     return slotInfo;
 };
 
+/**
+ * A simple helper method available to the user to create an object containing the required intent information
+ * n the correct order.
+ *
+ * @param {String} name The name of the intent
+ * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<String>} samples Samples of what the user will say to trigger the intent
+ *
+ * @return {Object} the required intent information
+ */
 Alexa.createIntent = function (name, slots, samples) {
     ensureLoggedIn(this.caller);
     return [name, slots, samples];
 };
 
+/**
+ * A helper method used to create the intents JSON object.
+ *
+ * @param {String} name The name of the intent
+ * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<String>} samples Samples of what the user will say to trigger the intent
+ *
+ * @return {Object} a JSON object needed to build the intent for the interaction model
+ */
 const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
     devLogger.log("Slots: ");
@@ -241,6 +320,14 @@ const createIntentsObject = function(name, slots, samples) {
     return intent;
 };
 
+/**
+ * A helper method used to create the intents JSON object.
+ *
+ * @param {String} name The name of the intent
+ * @param {Array<Object>} slots Samples of responses containing the slot
+ *
+ * @return {Object}  a JSON object needed to build the intent for the interaction model
+ */
 const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
@@ -259,6 +346,14 @@ const createSecondIntentsObject = function(name, slots) {
     return slotObjectsReturn;
 };
 
+/**
+ * A helper method used to create the intents JSON object.
+ *
+ * @param {String} name The name of the intent
+ * @param {Array<Object>} slots Samples of responses containing the slot
+ *
+ * @return {Object} a JSON object needed to build the intent for the interaction model
+ */
 const createThirdIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
@@ -277,8 +372,20 @@ const createThirdIntentsObject = function(name, slots) {
     return slotObjectsReturn;
 };
 
+/**
+ * Allows the student to create and update the interaction model for a skill.
+ *
+ * @param {String} skillId The skillId of the skill to be updated
+ * @param {String} stage The stage of the skill, for most users will be "development"
+ * @param {Array<Object>} intents Samples of responses containing the slot
+ * @param {String} invocationName The invocation name of the skill. This is what the user will say to Alexa to
+ * trigger the skill. Must be at least 2 words long. More information provided in the tutorial
+ *
+ * @return {Object} a JSON object needed to build the intent for the interaction model
+ */
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
-    ensureLoggedIn(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
+
     let intentsList = [];
     let slotInfos = [];
     let promptInfos = [];

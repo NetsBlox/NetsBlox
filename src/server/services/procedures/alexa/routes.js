@@ -20,15 +20,6 @@ const RemoteClient = require('../../remote-client');
 const cookieParser = require('cookie-parser');
 const skillBuilder = Alexa.SkillBuilders.custom();
 
-/**
- * Throws if user is not logged in.
- */
-const ensureLoggedIn = function(caller) {
-    if (!caller.username) {
-        throw new Error('Login required.');
-    }
-};
-
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         devLogger.log('Checking if we can handle LaunchRequest');
@@ -73,10 +64,12 @@ const SendMessageIntentHandler = {
             let address = projectName + "@" + username;
 
             //don't worry about roles for now
-            /*const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
+            /*
+            const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
             if (role.localeCompare('all') !== 0) {
                 address = role + "@" + address;
-            }*/
+            }
+            */
 
             devLogger.log(address);
 
@@ -262,10 +255,11 @@ if (require.main === module) {
     }));
     router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
-            const {username} = 'tabithalee';
+            //const {username} = req.session;
+            const username = 'tabithalee';
             const isLoggedIn = !!username;
             if (!isLoggedIn) {
-                //throw new LoginRequired();
+                throw new LoginRequired();
             }
 
             devLogger.log("Retrieving token");
@@ -290,28 +284,31 @@ if (require.main === module) {
                 devLogger.log("Options: ");
                 devLogger.log(JSON.stringify(options));
 
-                const getTokens = async () => {
-                    try {
-                        return await axios(options);
-                    } catch (err) {
-                        return res.status(err.statusCode).send(err.message);
-                    }
-                };
+                let tokens;
 
-                const response = await getTokens();
-                const tokens = response.data;
-                devLogger.log(JSON.stringify(tokens));
+                try {
+                    const response = await axios(options);
+
+                    tokens = response.data;
+                    devLogger.log(JSON.stringify(tokens));
+                } catch (err) {
+                    return res.status(err.statusCode).send(err.message);
+                }
 
                 if (tokens) {
                     const {access_token, refresh_token} = tokens;
                     devLogger.log("Tokens: " + access_token + " " + refresh_token);
-                    //const collection = GetTokenStore();
-                    //await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+                    const collection = GetTokenStore();
+                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+                } else {
+                    throw new RequestError();
                 }
-
+            } else {
+                throw new RequestError();
             }
-            //const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-            //res.redirect(baseUrl);
+
+            const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+            res.redirect(baseUrl);
             return res.sendStatus(200);
         }));
     router.post('/', adapter.getRequestHandlers());
