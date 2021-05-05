@@ -1,15 +1,15 @@
 /**
- * PhoneIoT is a service in `NetsBlox <https://netsblox.org/>`_ that's meant to teach Internet of Things (IoT) topics as early as K-12 education.
+ * PhoneIoT is a service in `NetsBlox <https://netsblox.org/>`__ that's meant to teach Internet of Things (IoT) topics as early as K-12 education.
  * It allows you to programmatically access your smartphone's sensors and display.
  * This includes accessing hardware sensors such as the accelerometer, gyroscope, microphone, camera, and many others depending on the device.
  * PhoneIoT also allows you to control a customizable interactive display, enabling you to use your device as a custom remote control, or even create and run distributed (multiplayer) applications.
  * The limits are up to your imagination!
  * 
- * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`_ and iOS (`coming soon`), and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`_.
+ * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`__ and iOS (*coming soon*), and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`__.
  * In the top left of the editor, you should see a grid of several colored tabs.
  * Under the ``Network`` tab, grab a ``call`` block and place it in the center script area.
  * Click the first dropdown on the ``call`` block and select the ``PhoneIoT`` service.
- * The second dropdown selects the specific `Remote Procedure Call` (RPC) to execute - see the table of contents  for information about the various RPCs.
+ * The second dropdown selects the specific *Remote Procedure Call* (RPC) to execute - see the table of contents  for information about the various RPCs.
  * 
  * Inside the PhoneIoT app on your mobile device, click the button at the top left to open the menu, and then click ``connect``.
  * If you successfully connected, you should get a small popup message at the bottom of the screen.
@@ -195,7 +195,7 @@ PhoneIoT.prototype.getColor = function (red, green, blue, alpha = 255) {
  * This can be used to get the total acceleration from the accelerometer (which gives a vector).
  * 
  * @category Utility
- * @param {List} vec the vector value
+ * @param {Array<Number>} vec the vector value
  * @returns {Number} magnitude of the vector (a non-negative number)
  */
 PhoneIoT.prototype.magnitude = function(vec) { return common.magnitude(vec); };
@@ -204,8 +204,8 @@ PhoneIoT.prototype.magnitude = function(vec) { return common.magnitude(vec); };
  * This is identical to dividing each component by the magnitude.
  * 
  * @category Utility
- * @param {List} vec the vector value
- * @returns {List} the normalized vector
+ * @param {Array<Number>} vec the vector value
+ * @returns {Array<Number>} the normalized vector
  */
 PhoneIoT.prototype.normalize = function(vec) { return common.normalize(vec); };
 
@@ -510,7 +510,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('authenticate', arguments);
     };
     /**
-     * This RPC requests that you receive any events from the `Graphical User Interface` (GUI) on the phone's display.
+     * This RPC requests that you receive any events from the *Graphical User Interface* (GUI) on the phone's display.
      * This is needed to receive any type of GUI event, including button clicks, joystick movements, and textbox update events.
      * You only need to call this RPC once, which you can do at the start of your program (but after calling :func:`PhoneIoT.setCredentials`).
      * 
@@ -600,7 +600,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return Object.keys(common.SENSOR_PACKERS);
     };
     /**
-     * This is the first RPC you should `always` call when working with PhoneIoT.
+     * This is the first RPC you should *always* call when working with PhoneIoT.
      * It sets the login credentials (password) to use for all future interactions with the device.
      * 
      * @param {Device} device id of the device

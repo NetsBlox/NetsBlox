@@ -169,6 +169,7 @@ class ServicesWorker {
         serviceDoc.rawDescription = service._docs.rawDescription;
         serviceDoc.categories = service._docs.categories;
         serviceDoc.servicePath = service._docs.servicePath;
+        serviceDoc.tags = service._docs.tags;
         return serviceDoc;
     }
 

@@ -6,7 +6,7 @@ Signing up/in
 
 In order to save your projects to the cloud or play multiplayer games, you need to have a NetsBlox account.
 
-Open the `editor <https://editor.netsblox.org>`_ and click on the cloud icon, there you will find the signup button.
+Open the `editor <https://editor.netsblox.org>`__ and click on the cloud icon, there you will find the signup button.
 When you are filling the form make sure to use an up to date and working email address.
 After you sign up a password will be emailed to you.
 Go to your email copy the password and come back to the editor.
@@ -176,11 +176,11 @@ Playing multiplayer games
 -------------------------
 
 #. Sign in: First things first, for multiplayer games to work all the players need to be signed up and logged in. `Signing up/in`_.
-#. Find & open a game you like: you can go through the list of our examples and user created apps on `NetsBlox front page <https://netsblox.org/>`_, or have a friend share his own creation with you.
+#. Find & open a game you like: you can go through the list of our examples and user created apps on `NetsBlox front page <https://netsblox.org/>`__, or have a friend share his own creation with you.
 #. Get the participants in the game/room: 
 
     - If you are the first one opening the game (owner), to invite your opponents/teammates, go to the room tab you will see a circular view of the room and available roles. Each player occupies one role. To invite players click on a role choose invite users and search for your friend's username and hit ok to ask them to join your game.
-    - If you are being invited to a game, make sure you have the `editor <https://editor.netsblox.org>`_ open in your browser and that you are signed in. After you are invited, you will get a dialog asking you if you want to join the game.
+    - If you are being invited to a game, make sure you have the `editor <https://editor.netsblox.org>`__ open in your browser and that you are signed in. After you are invited, you will get a dialog asking you if you want to join the game.
 
 #. Start the game: make sure all the players are in by looking at the room view, if there is someone missing go back to third step. Now that you are all set, the main role can start the game by clicking on the green flag at the top right corner. You can maximize the stage (playground) by clicking on the icon.
 

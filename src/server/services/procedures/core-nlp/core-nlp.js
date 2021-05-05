@@ -51,6 +51,7 @@ CoreNLP.getAnnotators = function() {
  *
  * @param {String} text the text to annotate
  * @param {Array<String>=} annotators a list of the annotators to use
+ * @returns {Object} structured data containing the annotation results
  */
 CoreNLP.annotate = async function(text, annotators=['tokenize', 'ssplit', 'pos']) {
     const qsData = JSON.stringify({

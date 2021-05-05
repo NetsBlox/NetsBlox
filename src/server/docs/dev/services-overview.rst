@@ -18,7 +18,7 @@ At the time of this writing, there are three different types of services in Nets
 
 - Native NetsBlox Services. These services are defined in JavaScript in NetsBlox itself. Most of the documentation describes the creation of this type of service.
 - User-Defined Services. These services are created using the :doc:`/services/ServiceCreation/index` service from within NetsBlox.
-- Auxiliary (Private) Services. These services are hosted by other servers and enable users or classes to have their own private services. An example can be found `here <https://github.com/NetsBlox/Custom-Python-Services>`_.
+- Auxiliary (Private) Services. These services are hosted by other servers and enable users or classes to have their own private services. An example can be found `here <https://github.com/NetsBlox/Custom-Python-Services>`__.
 
 A comparison of the different types of services is given below:
 
@@ -27,7 +27,7 @@ A comparison of the different types of services is given below:
 How can I contribute a native service?
 --------------------------------------
 
-If you are interested in contributing a (native) custom service back to NetsBlox (or in your own fork), I would recommend starting with the `simple example <https://raw.githubusercontent.com/wiki/NetsBlox/NetsBlox/Hello-Custom-Services.md>`_ and then checking out the :doc:`best-practices`.
+If you are interested in contributing a (native) custom service back to NetsBlox (or in your own fork), I would recommend starting with the `simple example <https://raw.githubusercontent.com/wiki/NetsBlox/NetsBlox/Hello-Custom-Services.md>`__ and then checking out the :doc:`best-practices`.
 
 For examples of existing services, check out the featured projects on https://netsblox.org or the `source code <https://github.com/NetsBlox/NetsBlox/tree/master/src/server/services/procedures>`__.
 Examples include:

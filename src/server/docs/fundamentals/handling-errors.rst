@@ -13,7 +13,7 @@ These types of errors can be fixed by making sure the input is valid before usin
 Other, more difficult errors can happen during networking.
 For instance, a data packet might get lost on its way through the internet.
 If this happens, your computer will wait a few seconds and eventually give up, returning an error message.
-This is called a `dropped packet`.
+This is called a *dropped packet*.
 An easy way to fix a dropped packet error is to simply repeat the operation over and over until success.
 
 Errors in NetsBlox
