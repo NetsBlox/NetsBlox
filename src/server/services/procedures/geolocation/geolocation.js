@@ -127,7 +127,7 @@ GeoLocationRPC['county*'] = function (latitude, longitude) {
  * @param {Longitude} longitude longitude of the target location
  * @returns {String} state name
  */
- GeoLocationRPC['state*'] = function (latitude, longitude) {
+GeoLocationRPC['state*'] = function (latitude, longitude) {
     reverseGeocode(latitude, longitude, this.response, '.administrativeLevels.level1long');
     return null;
 };

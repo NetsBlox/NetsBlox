@@ -180,7 +180,7 @@ const mortality = {};
  *
  * @returns {Array} all available data
  */
-mortality.getAllData = async () => await getData();
+mortality.getAllData = getData;
 
 /**
  * Get a list of all the countries represented in the data.
