@@ -36,9 +36,10 @@ function getParamString(param) {
 
 const SERVICE_FILTERS = {
     all: () => true,
+    nodeprecated: service => !service.tags.includes('deprecated'),
     fsonly: service => service.servicePath,
 };
-function getServiceFilter(filterString = 'fsonly') {
+function getServiceFilter(filterString = 'fsonly,nodeprecated') {
     const filters = filterString.split(',').map(s => s.trim()).filter(s => s.length).map(s => SERVICE_FILTERS[s]);
     return s => filters.every(f => f(s));
 }
@@ -122,11 +123,11 @@ const RPCS_REGEX = />>>RPCS<<</g;
 const CATS_REGEX = />>>CATS<<</g;
 const SERV_REGEX = />>>SERV<<</g;
 
-async function loadCategoryContent(rootPath, categoryName) {
+async function loadCategoryContent(rootPath, categoryName, isServiceCategory) {
     if ((await fsp.readdir(rootPath)).includes(`${categoryName}.rst`)) {
         return await fsp.readFile(path.join(rootPath, `${categoryName}.rst`), { encoding: 'utf8' });
     }
-    const content = `>>>NAME<<<\n\n>>>DESC<<<\n>>>SERV<<<\n`;
+    const content = `>>>NAME<<<\n\n>>>DESC<<<\n>>>${isServiceCategory ? 'SERV' : 'RPCS'}<<<\n`;
     await fsp.writeFile(path.join(rootPath, `${categoryName}.rst`), content);
     return content;
 }
@@ -218,7 +219,7 @@ async function compileDocs() {
             const rpcsString = 'RPCS\n----\n\n' + category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s])).join('\n');
             const name = categoryName === 'index' ? serviceName : categoryName;
 
-            let content = await loadCategoryContent(path.join(SERVICES_PATH, serviceName), categoryName);
+            let content = await loadCategoryContent(path.join(SERVICES_PATH, serviceName), categoryName, false);
             content = content.replace(NAME_REGEX, `${name}\n${'='.repeat(name.length)}\n\n`);
             content = content.replace(DESC_REGEX, (categoryName === 'index' ? service : category).description || '');
             content = content.replace(CATS_REGEX, catsString);
@@ -235,7 +236,7 @@ async function compileDocs() {
         const servString = categoryName === 'index' ? servicesString : '.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n'
             + category.items.map(s => `    ${servicePrefix}${s}/index.rst\n`).join('');
 
-        let content = await loadCategoryContent(itemRoot, categoryName);
+        let content = await loadCategoryContent(itemRoot, categoryName, true);
         content = content.replace(NAME_REGEX, `${name}\n${'='.repeat(name.length)}\n\n`);
         content = content.replace(DESC_REGEX, (categoryName === 'index' ? meta : category).description || '');
         content = content.replace(SERV_REGEX, servString);

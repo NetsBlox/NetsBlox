@@ -128,7 +128,7 @@ StockConsumer.dailyPercentChange = function(companySymbol) {
  * Get historical closing price information about the specified company
  * @param {String} companySymbol Company stock ticker symbol
  * @param {String} range Time period (e.g. 1m, 3m, 1y, etc) to retrieve prices for
- * @returns {Array} Historical price information
+ * @returns {Array} A list of pairs of ``[date, closingPrice]`` representing historical price information
  */
 StockConsumer.historicalClosingPrices = function(companySymbol, range) {
     companySymbol = companySymbol.toUpperCase();

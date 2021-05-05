@@ -12,6 +12,8 @@ const PublicRoles = {};
 
 /**
  * Get the public role ID for the current role.
+ * 
+ * @returns {String} the public role id
  */
 PublicRoles.getPublicRoleId = function() {
     const {projectId, roleId, clientId} = this.caller;

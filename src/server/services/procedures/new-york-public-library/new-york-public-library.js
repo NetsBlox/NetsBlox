@@ -17,12 +17,22 @@ function listify(item) {
 
 /**
  * Search the New York Public Library collection and return matching items.
- * Search results are arranged in pages - only one page is returned each call.
+ * Because there may be many matching items, search results are arranged in pages.
+ * You can specify the number of items in each page and the page number to retrieve.
+ * 
+ * This returns a list of up to ``perPage`` matches.
+ * Each item in the list is structured data containing details about the object.
+ * This includes:
+ * 
+ * - ``uuid`` - a general identifier for the object, needed for :func:`NewYorkPublicLibrary.getDetails`
+ * - ``itemID`` - another identifier, needed for :func:`NewYorkPublicLibrary.getImage`
+ * - ``title`` - the title of the object
+ * - ``dateDigitized`` - a timestamp of when the object was added to the database
  * 
  * @param {String} term Search term
  * @param {BoundedNumber<1,1000>=} perPage Maximum number of items in a page of results (default 50)
  * @param {BoundedNumber<1>=} page Page number of results to get (default 1)
- * @returns {Array} Up to perPage matching objects
+ * @returns {Array<Object>} An list of up to ``perPage`` matching objects
  */
 NYPL.search = async function(term, perPage = 50, page = 1) {
     if (page <= 0) page = 1;
@@ -62,6 +72,7 @@ NYPL._getPath = function(obj, path, default_val) {
 
 /**
  * Get details about the item.
+ * This requires the ``uuid`` for the object, which can be retrieved from :func:`NewYorkPublicLibrary.search`.
  * 
  * @param {String} uuid uuid of the object
  * @returns {Array} Item details
@@ -123,8 +134,10 @@ NYPL._pickImageURL = function(urls) {
 
 /**
  * Get an image of the object.
+ * This requires the ``itemID`` for the object, which can be retrieved from :func:`NewYorkPublicLibrary.search`.
  * 
  * @param {String} itemID itemID of the object
+ * @returns {Image} An image of the object, if one is available
  */
 NYPL.getImage = function(itemID) {
     return this._getImageURLs(itemID).then(urls => urls.length == 0 ? '' : this._sendImage({url:this._pickImageURL(urls)})).catch(() => '');

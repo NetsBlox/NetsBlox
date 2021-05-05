@@ -35,7 +35,7 @@ const datasetsMetadata = corgiDatasets.parseDatasetsInfo();
 
 
 /**
- * Search CORGIS' datasets as provided by https://think.cs.vt.edu/corgis/
+ * Search CORGIS' datasets as provided by https://think.cs.vt.edu/corgis/.
  * Example queries:
  * cancer dataset: ``[*Year<2000 && Area=Arizona]``
  * @param {String} name dataset name

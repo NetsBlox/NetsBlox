@@ -32,6 +32,8 @@ TXDNE._getX = async function(rsp, url) {
 
 /**
  * Gets an image of a person that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getPerson = function() {
     return TXDNE._getX(this.response, 'http://www.thispersondoesnotexist.com/image');
@@ -39,6 +41,8 @@ TXDNE.getPerson = function() {
 
 /**
  * Gets an image of a cat that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getCat = function() {
     return TXDNE._getX(this.response, 'http://www.thiscatdoesnotexist.com');
@@ -46,6 +50,8 @@ TXDNE.getCat = function() {
 
 /**
  * Gets an image of a horse that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getHorse = function() {
     return TXDNE._getX(this.response, 'http://www.thishorsedoesnotexist.com');
@@ -53,6 +59,8 @@ TXDNE.getHorse = function() {
 
 /**
  * Gets an image of an artwork that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getArtwork = function() {
     return TXDNE._getX(this.response, 'https://thisartworkdoesnotexist.com');
@@ -60,6 +68,8 @@ TXDNE.getArtwork = function() {
 
 /**
  * Gets an image of a waifu that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getWaifu = function() {
     const r = Math.floor(Math.random() * 100000);
@@ -68,6 +78,8 @@ TXDNE.getWaifu = function() {
 
 /**
  * Gets an image of a fursona that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getFursona = function() {
     const r = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
@@ -76,6 +88,8 @@ TXDNE.getFursona = function() {
 
 /**
  * Gets an image of a pony that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getPony = function() {
     const r = String(Math.floor(Math.random() * 100000)).padStart(5, '0');
@@ -84,6 +98,8 @@ TXDNE.getPony = function() {
 
 /**
  * Gets an image of a home interior that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getHomeInterior = function() {
     const options = ['hero', 'img1', 'img2', 'img3', 'img4'];
@@ -93,6 +109,8 @@ TXDNE.getHomeInterior = function() {
 
 /**
  * Gets an image of a congress person that does not exist
+ * 
+ * @returns {Image} a random image of the given type
  */
 TXDNE.getCongressPerson = function() {
     const r = String(Math.floor(Math.random() * 651)).padStart(5, '0');

@@ -1,12 +1,12 @@
 /**
  * This service accesses data from the human mortality database which tabulates
  * death rates broken down by age group and gender for various countries.
- *
- * Note: for countries that don't report separate male and female death counts,
- * the gender breakdowns are just the total multiplied by a rough estimate
- * of the percent of people in that country who are male/female.
- *
+ * 
  * For more information, see https://www.mortality.org/.
+ * 
+ * `Note: for countries that don't report separate male and female death counts,
+ * the gender breakdowns are just the total multiplied by a rough estimate
+ * of the percent of people in that country who are male/female.`
  * 
  * @service
  * @category Science
@@ -173,15 +173,12 @@ async function getData() {
 const mortality = {};
 
 /**
- * Get all the mortality data - potentially a lot of data.
- * Only use this if you truly need access to all data.
- * This is an object organized by country, then by date (mm/dd/yyyy), then by gender, then by category.
+ * Get all the mortality data. This is potentially a lot of data.
+ * **Only use this if you truly need access to all data.**
+ * 
+ * This is returned as structured data organized by country, then by date (mm/dd/yyyy), then by gender, then by category.
  *
- * Note: for countries that don't report separate male and female death counts,
- * the gender breakdowns are just the total multiplied by a rough estimate
- * of the percent of people in that country who are male/female.
- *
- * @returns {Array}
+ * @returns {Array} all available data
  */
 mortality.getAllData = getData;
 
@@ -189,7 +186,7 @@ mortality.getAllData = getData;
  * Get a list of all the countries represented in the data.
  * These are not the country names, but a unique identifier for them.
  *
- * @returns {Array}
+ * @returns {Array} the requested data
  */
 mortality.getCountries = async function() {
     return Object.keys(await getData());
@@ -198,27 +195,23 @@ mortality.getCountries = async function() {
  * Get a list of all the valid genders represented in the data.
  * These can be used in a query.
  *
- * @returns {Array}
+ * @returns {Array} the requested data
  */
 mortality.getGenders = () => GENDERS;
 /**
  * Get a list of all the categories represented in the data.
  * These can be used in a query.
  *
- * @returns {Array}
+ * @returns {Array} the requested data
  */
 mortality.getCategories = () => CATEGORIES;
 
 /**
  * Get all the data associated with the given country.
  * This is an object organized by year, then by week, then broken down by gender.
- *
- * Note: for countries that don't report separate male and female death counts,
- * the gender breakdowns are just the total multiplied by a rough estimate
- * of the percent of people in that country who are male/female.
  * 
  * @param {String} country Name of the country to look up
- * @returns {Array}
+ * @returns {Array} the requested data
  */
 mortality.getAllDataForCountry = async function(country) {
     const res = (await getData())[country];
@@ -230,14 +223,10 @@ mortality.getAllDataForCountry = async function(country) {
  * Get the time series data for the given country, filtered to the specified gender and category
  * in month/day/year format.
  *
- * Note: for countries that don't report separate male and female death counts,
- * the gender breakdowns are just the total multiplied by a rough estimate
- * of the percent of people in that country who are male/female.
- *
- * @param {String} country Name of the country to look up
- * @param {Enum<male,female,both>=} gender Gender group for filtering. Defaults to 'both'.
- * @param {MortalityCategory=} category Category for filtering. Defaults to 'deaths total'.
- * @returns {Array}
+ * @param {String} country name of the country to look up
+ * @param {Enum<male,female,both>=} gender gender group for filtering. Defaults to ``both``.
+ * @param {MortalityCategory=} category category for filtering. Defaults to ``deaths total``.
+ * @returns {Array} the requested data
  */
 mortality.getTimeSeries = async function(country, gender='both', category='deaths total') {
     const countryData = await this.getAllDataForCountry(country);
