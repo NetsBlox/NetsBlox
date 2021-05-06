@@ -18,7 +18,7 @@ const common = require('./common');
 // h - get text
 // I - heartbeat
 // i - set image
-// J - get joystick vector
+// J - get pos vector
 // j - add joystick
 // K - joystick event
 // L - linear acceleration
@@ -597,8 +597,8 @@ Device.prototype.getText = async function (device, args, clientId) {
     
     return throwIfErr(await response).text;
 };
-Device.prototype.getJoystickVector = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('getjoystickvec', clientId);
+Device.prototype.getPosition = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getpos', clientId);
     const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
@@ -606,7 +606,7 @@ Device.prototype.getJoystickVector = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
     
-    return throwIfErr(await response).vals;
+    return throwIfErr(await response).res;
 };
 
 Device.prototype.isPressed = async function (device, args, clientId) {
@@ -1014,8 +1014,9 @@ Device.prototype.onMessage = function (message) {
         this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
     }
     else if (command === 'J') {
-        if (message.length === 11) this.sendToClient('getjoystickvec', { err: 'no joystick with matching id' });
-        else if (message.length === 19) this.sendToClient('getjoystickvec', { vals: [message.readFloatBE(11), message.readFloatBE(15)] });
+        if (message.length === 11) this.sendToClient('getpos', { err: 'no positional control with matching id' });
+        else if (message.length === 12) this.sendToClient('getpos', { res: 'control does not have a current position' }); // not an error, just no location
+        else if (message.length === 20) this.sendToClient('getpos', { res: [message.readFloatBE(12), message.readFloatBE(16)] });
     }
     else if (command === 'H') this._sendControlResult('settext', message);
     else if (command === 'i') this._sendControlResult('setimage', message);
@@ -1050,12 +1051,12 @@ Device.prototype.onMessage = function (message) {
                 this.controlUpdateTimestamps[id] = time;
 
                 let tag = undefined;
-                switch (message[23]) {
+                switch (message[15]) {
                     case 0: tag = 'down'; break;
                     case 1: tag = 'move'; break;
                     case 2: tag = 'up'; break;
                 }
-                if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19), tag });
+                if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(16), y: message.readFloatBE(20), tag });
             }
         }
     }

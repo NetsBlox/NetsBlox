@@ -527,18 +527,37 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getText', arguments);
     };
     /**
-     * Gets the current ``x`` and ``y`` values for the stick position of a joystick control.
-     * This vector is normalized to a length of ``1.0``.
-     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of :func:`PhoneIoT.addJoystick`.
+     * Gets the current ``x`` and ``y`` values for the current position of a positional control.
+     * This does *not* give the location of the control on the screen.
+     * Positional controls are controls whose primary interaction is through position.
+     * For instance, this is used for both joystick and touchpad controls.
+     * 
+     * For a joystick, this always returns a vector normalized to a length of ``1.0``.
+     * If the user is not touching the joystick, it will automatically go back to the center, ``[0, 0]``.
+     * 
+     * For a touchpad, this will either give you the current location of the touch (a list of ``[x, y]``)
+     * or a string explaining that there is no current position.
+     * Note that this is not an error, so you cannot check for this with the ``error`` block.
+     * Instead, you could use the ``is _ a _`` block (from the ``Operators`` tab) to check if the result is a ``list``.
+     * 
+     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of
+     * :func:`PhoneIoT.addJoystick` or :func:`PhoneIoT.addTouchpad`.
      * 
      * @category Display
      * @param {Device} device id of the device
-     * @param {String} id id of the joystick control to read
-     * @returns {Array} a list of the ``x`` and ``y`` components of the current position
+     * @param {String} id id of the control to read
+     * @returns {Array<BoundedNumber<-1,1>>} a list of ``[x, y]`` for the current position, or a ``string`` explaining that there is no current position
      */
-    PhoneIoT.prototype.getJoystickVector = function (device, id) {
-        return this._passToDevice('getJoystickVector', arguments);
+    PhoneIoT.prototype.getPosition = function (device, id) {
+        return this._passToDevice('getPosition', arguments);
     };
+    /**
+     * @deprecated
+     * @param {Device} device
+     * @param {String} id
+     * @returns {Array}
+     */
+    PhoneIoT.prototype.getJoystickVector = PhoneIoT.prototype.getPosition;
     /**
      * This RPC simply checks that the connection to the device is still good.
      * In particular, you can use this to check if the password is still valid.
@@ -651,7 +670,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Checks if the pressable control with the given ID is currently pressed.
-     * This can be used on any pressable control, which currently only includes buttons.
+     * This can be used on any pressable control, which currently includes buttons, joysticks, and touchpads.
      * 
      * By calling this RPC in a loop, you could perform some action every second while a button is held down.
      * If you would instead like to receive click events, see the ``event`` optional parameter of :func:`PhoneIoT.addButton`.

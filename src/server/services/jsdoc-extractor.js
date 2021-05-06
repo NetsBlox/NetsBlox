@@ -194,8 +194,8 @@ function findFn(line){
     // regexlist to find the fn name in format of [regex string, matchgroup]
     const regexList = [
         [/function (\w+)\(/, 1],
-        [/\w+\.(\w+)[\w\s]*= *(.*function|.*=>|\w+(\.\w+)?;)/, 1],
-        [/\w+\[['"`]([^'"`]+)['"`]\] *= *(.*function|.*=>|\w+(\.\w+)?;)/, 1],
+        [/\w+\.(\w+)[\w\s]*= *(.*function|.*=>|\w+(\.\w+)*;)/, 1],
+        [/\w+\[['"`]([^'"`]+)['"`]\] *= *(.*function|.*=>|\w+(\.\w+)*;)/, 1],
         [/(let|var|const) (\w+) *= *(\w|\().*=>/, 2],
         [/ *(\w+) *: *(async)? +function *\(.*\)/, 1],
     ];
