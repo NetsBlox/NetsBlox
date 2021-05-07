@@ -41,7 +41,7 @@ const getAPIClient = async function(caller) {
 /**
  * Gets a list of the user's vendor IDs
  *
- * @return {Array<Object>} list of the vendor IDs
+ * @return {Array} list of the vendor IDs
  */
 Alexa.getVendorList = async function () {
     const smapiClient = await getAPIClient(this.caller);
@@ -49,7 +49,7 @@ Alexa.getVendorList = async function () {
     const response = await smapiClient.getVendorListV1();
     devLogger.log(JSON.stringify(response));
 
-    return response;
+    return response.vendors[0].id;
 };
 
 /**
@@ -57,7 +57,7 @@ Alexa.getVendorList = async function () {
  *
  * @param {String} vendorId The vendor ID of the user
  *
- * @return {Array<Object>} list of the skills
+ * @return {Array} list of the skills
  */
 Alexa.listSkills = async function(vendorId) {
     const smapiClient = await getAPIClient(this.caller);
@@ -74,7 +74,7 @@ Alexa.listSkills = async function(vendorId) {
  * @param {String} skillId the skill ID of the skill
  * @param {String} stage the stage of the skill, for most users will be "development"
  *
- * @return {Object} the skill information
+ * @return {Array} the skill information
  */
 Alexa.getSkillInfo = async function(skillId, stage) {
     const smapiClient = await getAPIClient(this.caller);
@@ -82,7 +82,7 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     const response = await smapiClient.getSkillManifestV1(skillId, stage);
     devLogger.log(JSON.stringify(response));
 
-    return response;
+    return response.skillId;
 };
 
 /**
@@ -95,7 +95,7 @@ Alexa.getSkillInfo = async function(skillId, stage) {
  * @param {Array<String>} keywords
  * @param {String} name
  *
- * @return {Object} the required manifest information
+ * @return {Array} the required manifest information
  */
 Alexa.createManifest = async function(summary, description, examplePhrases, keywords, name) {
     ensureLoggedIn(this.caller);
@@ -159,7 +159,7 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
  *
  * @param {String} skillId the skill ID of the skill whose manifest we want to update
  * @param {String} stage the stage of the skill, for most users will be "development"
- * @param {Object} manifest the object returned by createManifest
+ * @param {Array} manifest the object returned by createManifest
  *
  * @return {Array} The response of the API call
  */
@@ -177,9 +177,9 @@ Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
  * Allows the user to call the Alexa SMAPI and create the skill manifest of a skill
  * given the manifest object created by createManifest.
  *
- * @param {Object} manifest the object returned by createManifest
+ * @param {Array} manifest the object returned by createManifest
  *
- * @return {Array} The response of the API call, containing the newly created skillId
+ * @return {String} The response of the API call, containing the newly created skillId
  */
 Alexa.createSkill = async function(manifest) {
     const smapiClient = await getAPIClient(this.caller);
@@ -188,7 +188,7 @@ Alexa.createSkill = async function(manifest) {
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
     devLogger.log(JSON.stringify(response));
 
-    return response;
+    return response.skillId;
 };
 
 /**
@@ -197,7 +197,7 @@ Alexa.createSkill = async function(manifest) {
  * @param {String} skillId the skill ID of the skill
  * @param {String} stage the stage of the skill, for most users will be "development"
  *
- * @return {Object} The response of the API call containing the interaction model
+ * @return {Array} The response of the API call containing the interaction model
  */
 Alexa.getInteractionModel = async function (skillId, stage) {
     const smapiClient = await getAPIClient(this.caller);
@@ -217,7 +217,7 @@ Alexa.getInteractionModel = async function (skillId, stage) {
  * @param {Array<String>} samples Samples of responses containing the slot
  * @param {Array<String>} prompts Alexa prompts to ask the user for the slot
  *
- * @return {Object} the required slot information
+ * @return {Array} the required slot information
  */
 Alexa.createSlot = function(intent, name, samples, prompts) {
     ensureLoggedIn(this.caller);
@@ -232,7 +232,7 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
  * @param {Array<String>} samples Samples of responses containing the slot
  * @param {Array<String>} prompts Alexa prompts to ask the user for the slot
  *
- * @return {Object} JSON object for the slot
+ * @return {Array} JSON object for the slot
  */
 const createSlotsObject = function(intent, name, samples, prompts) {
     let variations = [];
@@ -277,10 +277,10 @@ const createSlotsObject = function(intent, name, samples, prompts) {
  * n the correct order.
  *
  * @param {String} name The name of the intent
- * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<Array>} slots Samples of responses containing the slot
  * @param {Array<String>} samples Samples of what the user will say to trigger the intent
  *
- * @return {Object} the required intent information
+ * @return {Array} the required intent information
  */
 Alexa.createIntent = function (name, slots, samples) {
     ensureLoggedIn(this.caller);
@@ -291,10 +291,10 @@ Alexa.createIntent = function (name, slots, samples) {
  * A helper method used to create the intents JSON object.
  *
  * @param {String} name The name of the intent
- * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<Array>} slots Samples of responses containing the slot
  * @param {Array<String>} samples Samples of what the user will say to trigger the intent
  *
- * @return {Object} a JSON object needed to build the intent for the interaction model
+ * @return {Array} a JSON object needed to build the intent for the interaction model
  */
 const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
@@ -325,9 +325,9 @@ const createIntentsObject = function(name, slots, samples) {
  * A helper method used to create the intents JSON object.
  *
  * @param {String} name The name of the intent
- * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<Array>} slots Samples of responses containing the slot
  *
- * @return {Object}  a JSON object needed to build the intent for the interaction model
+ * @return {Array}  a JSON object needed to build the intent for the interaction model
  */
 const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
@@ -351,9 +351,9 @@ const createSecondIntentsObject = function(name, slots) {
  * A helper method used to create the intents JSON object.
  *
  * @param {String} name The name of the intent
- * @param {Array<Object>} slots Samples of responses containing the slot
+ * @param {Array<Array>} slots Samples of responses containing the slot
  *
- * @return {Object} a JSON object needed to build the intent for the interaction model
+ * @return {Array} a JSON object needed to build the intent for the interaction model
  */
 const createThirdIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
@@ -378,11 +378,11 @@ const createThirdIntentsObject = function(name, slots) {
  *
  * @param {String} skillId The skillId of the skill to be updated
  * @param {String} stage The stage of the skill, for most users will be "development"
- * @param {Array<Object>} intents Samples of responses containing the slot
+ * @param {Array<Array>} intents Samples of responses containing the slot
  * @param {String} invocationName The invocation name of the skill. This is what the user will say to Alexa to
  * trigger the skill. Must be at least 2 words long. More information provided in the tutorial
  *
- * @return {Object} a JSON object needed to build the intent for the interaction model
+ * @return {Array} a JSON object needed to build the intent for the interaction model
  */
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
     const smapiClient = await getAPIClient(this.caller);
