@@ -258,7 +258,6 @@ const createSlotsObject = function(intent, name, samples, prompts) {
             }
         };
 
-
     devLogger.log(JSON.stringify(slotInfo));
 
     return slotInfo;
@@ -298,8 +297,6 @@ const createIntentsObject = function(name, slots, samples) {
     for (let i of slotsObjectsList) {
         intent.slots.push(i.intentSlotInfo);
     }
-    devLogger.log("First intents Object: ");
-    devLogger.log(JSON.stringify(intent));
 
     return intent;
 };
@@ -316,9 +313,6 @@ const createSecondIntentsObject = function(name, slots) {
         slotObjectsReturn.push(i.slotInfo);
     }
 
-    devLogger.log("Second intents Object: ");
-    devLogger.log(JSON.stringify(slotObjectsReturn));
-
     return slotObjectsReturn;
 };
 
@@ -334,9 +328,6 @@ const createThirdIntentsObject = function(name, slots) {
         slotObjectsReturn.push(i.promptInfo);
     }
 
-    devLogger.log("Second intents Object: ");
-    devLogger.log(JSON.stringify(slotObjectsReturn));
-
     return slotObjectsReturn;
 };
 
@@ -351,7 +342,7 @@ const createThirdIntentsObject = function(name, slots) {
  *
  * @return {Array} API response
  */
-Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
+Alexa.setInteractionModel = async function (skillId, stage, intents, invocationName) {
     const smapiClient = await getAPIClient(this.caller);
 
     let intentsList = [];
@@ -383,7 +374,11 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
             "samples": []
         },
         {
-            "name": "AMAZON.FallBackIntent",
+            "name": "AMAZON.StartOverIntent",
+            "samples": []
+        },
+        {
+            "name": "AMAZON.FallbackIntent",
             "samples": []
         }
     ];
@@ -400,7 +395,7 @@ Alexa.createInteractionModel = async function (skillId, stage, intents, invocati
         );
     }
 
-    let j = 5;
+    let j = intentsArray.length;
 
     for (let i of slotInfos) {
         intentsSlots.push(
