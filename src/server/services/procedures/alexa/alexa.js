@@ -395,7 +395,7 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
         );
     }
 
-    let j = intentsArray.length;
+    let j = 6;
 
     for (let i of slotInfos) {
         intentsSlots.push(
