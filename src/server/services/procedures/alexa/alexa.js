@@ -226,16 +226,6 @@ Alexa.createSlot = function(intent, name, samples, prompts) {
     return [intent, name, samples, prompts];
 };
 
-/**
- * A helper method used to create the slots JSON object.
- *
- * @param {String} intent The intent the slot belongs to
- * @param {String} name The name of the slot
- * @param {Array<String>} samples Samples of responses containing the slot
- * @param {Array<String>} prompts Alexa prompts to ask the user for the slot
- *
- * @return {Array} JSON object for the slot
- */
 const createSlotsObject = function(intent, name, samples, prompts) {
     let variations = [];
     for (let i of prompts) {
@@ -279,8 +269,8 @@ const createSlotsObject = function(intent, name, samples, prompts) {
  * n the correct order.
  *
  * @param {String} name The name of the intent
- * @param {Array<Array>} slots Samples of responses containing the slot
- * @param {Array<String>} samples Samples of what the user will say to trigger the intent
+ * @param {Array} slots Samples of responses containing the slot
+ * @param {Array} samples Samples of what the user will say to trigger the intent
  *
  * @return {Array} the required intent information
  */
@@ -289,15 +279,6 @@ Alexa.createIntent = function (name, slots, samples) {
     return [name, slots, samples];
 };
 
-/**
- * A helper method used to create the intents JSON object.
- *
- * @param {String} name The name of the intent
- * @param {Array<Array>} slots Samples of responses containing the slot
- * @param {Array<String>} samples Samples of what the user will say to trigger the intent
- *
- * @return {Array} a JSON object needed to build the intent for the interaction model
- */
 const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
     devLogger.log("Slots: ");
@@ -323,14 +304,6 @@ const createIntentsObject = function(name, slots, samples) {
     return intent;
 };
 
-/**
- * A helper method used to create the intents JSON object.
- *
- * @param {String} name The name of the intent
- * @param {Array<Array>} slots Samples of responses containing the slot
- *
- * @return {Array}  a JSON object needed to build the intent for the interaction model
- */
 const createSecondIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
@@ -349,14 +322,6 @@ const createSecondIntentsObject = function(name, slots) {
     return slotObjectsReturn;
 };
 
-/**
- * A helper method used to create the intents JSON object.
- *
- * @param {String} name The name of the intent
- * @param {Array<Array>} slots Samples of responses containing the slot
- *
- * @return {Array} a JSON object needed to build the intent for the interaction model
- */
 const createThirdIntentsObject = function(name, slots) {
     let slotsObjectsList = [];
     let slotObjectsReturn = [];
@@ -380,11 +345,11 @@ const createThirdIntentsObject = function(name, slots) {
  *
  * @param {String} skillId The skillId of the skill to be updated
  * @param {String} stage The stage of the skill, for most users will be "development"
- * @param {Array<Array>} intents Samples of responses containing the slot
+ * @param {Array} intents Samples of responses containing the slot
  * @param {String} invocationName The invocation name of the skill. This is what the user will say to Alexa to
  * trigger the skill. Must be at least 2 words long. More information provided in the tutorial
  *
- * @return {Array} a JSON object needed to build the intent for the interaction model
+ * @return {Array} API response
  */
 Alexa.createInteractionModel = async function (skillId, stage, intents, invocationName) {
     const smapiClient = await getAPIClient(this.caller);
