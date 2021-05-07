@@ -255,8 +255,9 @@ if (require.main === module) {
     }));
     router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
-            //const {sessionUser} = req.session;
-            const sessionUser = 'tabithalee';
+            devLogger.log("Cookie " + req.cookies['netsblox-cookie']);
+            const sessionUser = req.session.username;
+
             const isLoggedIn = !!sessionUser;
             if (!isLoggedIn) {
                 throw new LoginRequired();
@@ -311,9 +312,6 @@ if (require.main === module) {
             } else {
                 throw new RequestError();
             }
-
-            //const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-            //res.redirect(baseUrl);
             return res.sendStatus(200);
         }));
     router.post('/', adapter.getRequestHandlers());
