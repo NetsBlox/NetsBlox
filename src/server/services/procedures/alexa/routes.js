@@ -255,14 +255,14 @@ if (require.main === module) {
     }));
     router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
-            //const {username} = req.session;
-            const username = 'tabithalee';
-            const isLoggedIn = !!username;
+            //const {sessionUser} = req.session;
+            const sessionUser = 'tabithalee';
+            const isLoggedIn = !!sessionUser;
             if (!isLoggedIn) {
                 throw new LoginRequired();
             }
 
-            devLogger.log("Retrieving token for user " + username);
+            devLogger.log("Retrieving token for user " + sessionUser);
             const amazonResponse = req.body.code;
             devLogger.log(amazonResponse);
 
@@ -292,13 +292,19 @@ if (require.main === module) {
                 }
 
                 if (tokens) {
-                    const {access_token, refresh_token} = tokens;
-                    devLogger.log("Tokens: " + access_token + " " + refresh_token);
+                    devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
                     const collection = GetTokenStore();
                     if (!collection) {
                         return res.sendStatus(404);
                     }
-                    await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
+                    const query = {
+                        $set: {
+                            username: sessionUser,
+                            access_token: tokens.access_token,
+                            refresh_token: tokens.refresh_token
+                        }
+                    };
+                    await collection.updateOne({username: sessionUser}, query, {upsert: true});
                 } else {
                     throw new RequestError();
                 }
