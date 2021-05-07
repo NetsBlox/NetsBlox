@@ -102,10 +102,10 @@ Alexa.createManifest = async function(summary, description, examplePhrases, keyw
     return [summary, description, examplePhrases, keywords, name];
 };
 
-const createManifestObject = function(summary, description, examplePhrases, keywords, name, vendorID) {
+const createManifestObject = function(summary, description, examplePhrases, keywords, name, vendorId) {
     let skillRequest =
         {
-            "vendorId": vendorID,
+            "vendorId": vendorId,
             "manifest": {
                 "publishingInformation": {
                     "locales": {
@@ -160,14 +160,15 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
  * @param {String} skillId the skill ID of the skill whose manifest we want to update
  * @param {String} stage the stage of the skill, for most users will be "development"
  * @param {Array} manifest the object returned by createManifest
+ * @param {String} vendorId vendor ID of the user
  *
  * @return {Array} The response of the API call
  */
-Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
+Alexa.updateSkillManifest = async function(skillId, stage, manifest, vendorId) {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.updateSkillManifestV1(skillId, stage,
-        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
+        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4], vendorId));
     devLogger.log(JSON.stringify(response));
 
     return response;
@@ -178,14 +179,15 @@ Alexa.updateSkillManifest = async function(skillId, stage, manifest) {
  * given the manifest object created by createManifest.
  *
  * @param {Array} manifest the object returned by createManifest
+ * @param {String} vendorId vendor ID of the user
  *
  * @return {String} The response of the API call, containing the newly created skillId
  */
-Alexa.createSkill = async function(manifest) {
+Alexa.createSkill = async function(manifest, vendorId) {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.createSkillForVendorV1(
-        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4]));
+        createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4], vendorId));
     devLogger.log(JSON.stringify(response));
 
     return response.skillId;
