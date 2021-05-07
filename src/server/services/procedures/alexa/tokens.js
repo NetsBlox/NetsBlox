@@ -1,6 +1,6 @@
 const Storage = require('../../storage');
-let collection;
-const GetTokenStore = () => {
+let collection = null;
+const GetTokenStore = function() {
     if (!collection) {
         collection = Storage.create('alexa:tokens').collection;
     }

@@ -262,7 +262,7 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
 
-            devLogger.log("Retrieving token");
+            devLogger.log("Retrieving token for user " + username);
             const amazonResponse = req.body.code;
             devLogger.log(amazonResponse);
 
@@ -281,14 +281,10 @@ if (require.main === module) {
                         "content-type": "application/x-www-form-urlencoded;charset=utf-8"
                     }
                 };
-                devLogger.log("Options: ");
-                devLogger.log(JSON.stringify(options));
 
                 let tokens;
-
                 try {
                     const response = await axios(options);
-
                     tokens = response.data;
                     devLogger.log(JSON.stringify(tokens));
                 } catch (err) {
@@ -299,6 +295,9 @@ if (require.main === module) {
                     const {access_token, refresh_token} = tokens;
                     devLogger.log("Tokens: " + access_token + " " + refresh_token);
                     const collection = GetTokenStore();
+                    if (!collection) {
+                        return res.sendStatus(404);
+                    }
                     await collection.updateOne({username, access_token, refresh_token}, {upsert: true});
                 } else {
                     throw new RequestError();
