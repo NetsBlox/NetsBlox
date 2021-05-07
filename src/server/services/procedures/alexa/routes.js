@@ -292,9 +292,9 @@ if (require.main === module) {
                 }
 
                 if (tokens) {
-                    devLogger.log("Tokens: " + tokens.access_token + " " + tokens.refresh_token);
                     const collection = GetTokenStore();
                     if (!collection) {
+                        devLogger.log("Token store not found.");
                         return res.sendStatus(404);
                     }
                     const query = {
@@ -312,8 +312,8 @@ if (require.main === module) {
                 throw new RequestError();
             }
 
-            const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-            res.redirect(baseUrl);
+            //const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+            //res.redirect(baseUrl);
             return res.sendStatus(200);
         }));
     router.post('/', adapter.getRequestHandlers());

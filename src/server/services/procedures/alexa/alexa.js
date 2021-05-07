@@ -24,6 +24,7 @@ const getAPIClient = async function(caller) {
         throw new Error('Amazon Login required. Please login.');
     }
     const {access_token, refresh_token} = tokens;
+    devLogger.log("Tokens: " + access_token + " " + refresh_token);
 
     const refreshTokenConfig = {
         "clientId" : clientID,
