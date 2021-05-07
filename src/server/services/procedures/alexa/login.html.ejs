@@ -48,7 +48,7 @@
 <script type="text/javascript">
     document.getElementById('LoginWithAmazon').onclick = function() {
         options = {
-            scope: 'profile',
+            scope: 'alexa::ask:skills:readwrite alexa::ask:models:readwrite alexa::ask:skills:test',
             response_type: 'code',
             redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
         };
