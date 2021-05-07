@@ -12,6 +12,10 @@ const common = require('./common');
 // b - button press event
 // C - clear custom controls
 // c - remove custom control
+// D - add slider control
+// d - level (slider) event
+// E - get level (slider)
+// e - set level (slider)
 // G - gravity
 // g - add custom label control
 // H - set text
@@ -20,12 +24,11 @@ const common = require('./common');
 // i - set image
 // J - get pos vector
 // j - add joystick
-// K - joystick event
 // L - linear acceleration
 // l - light level
 // M - magnetic field
 // m - microphone level
-// N - add touchpad
+// N - add touchpad control
 // n - touchpad event
 // O - orientation calculator
 // P - proximity
@@ -488,6 +491,31 @@ Device.prototype.addTouchpad = async function (device, args, clientId) {
     device.guiIdToEvent[id] = opts.event;
     return id;
 };
+Device.prototype.addSlider = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addslider', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(32);
+    message.write('D', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeInt32BE(opts.color, 21);
+    message.writeFloatBE(opts.value, 25);
+    message[29] = opts.style;
+    message[30] = opts.landscape ? 1 : 0;
+    message[31] = opts.readonly ? 1 : 0;
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
 Device.prototype.addToggle = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addtoggle', clientId);
     const opts = args[3];
@@ -604,6 +632,29 @@ Device.prototype.getPosition = async function (device, args, clientId) {
     const message = Buffer.alloc(9);
     message.write('J', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).res;
+};
+Device.prototype.getLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getlevel', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('E', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).level;
+};
+Device.prototype.setLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('setlevel', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(13);
+    message.write('e', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[1], 9);
     this.sendToDevice(Buffer.concat([message, id]));
     
     return throwIfErr(await response).res;
@@ -967,6 +1018,15 @@ Device.prototype._sendBoolStateResult = function (name, meta, message) {
     this.sendToClient(name, state !== undefined ? { state } : { err: `no ${meta} with matching id` });
 };
 
+function parseClickTag(tag) {
+    switch (tag) {
+        case 0: return 'down';
+        case 1: return 'move';
+        case 2: return 'up';
+    }
+    return undefined;
+}
+
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
     if (message.length < 11) {
@@ -1013,15 +1073,21 @@ Device.prototype.onMessage = function (message) {
         const text = message.length >= 12 && message[11] === 0 ? message.toString('utf8', 12) : undefined;
         this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
     }
+    else if (command === 'E') {
+        const level = message.length === 15 ? message.readFloatBE(11) : undefined;
+        this.sendToClient('getlevel', level !== undefined ? {level} : { err: 'no level-like control with matching id' });
+    }
     else if (command === 'J') {
         if (message.length === 11) this.sendToClient('getpos', { err: 'no positional control with matching id' });
-        else if (message.length === 12) this.sendToClient('getpos', { res: 'control does not have a current position' }); // not an error, just no location
+        else if (message.length === 12) this.sendToClient('getpos', { err: 'control does not have a current position' });
         else if (message.length === 20) this.sendToClient('getpos', { res: [message.readFloatBE(12), message.readFloatBE(16)] });
     }
     else if (command === 'H') this._sendControlResult('settext', message);
+    else if (command === 'e') this._sendControlResult('setlevel', message); 
     else if (command === 'i') this._sendControlResult('setimage', message);
     else if (command === 'g') this._sendControlResult('addlabel', message);
     else if (command === 'B') this._sendControlResult('addbutton', message);
+    else if (command === 'D') this._sendControlResult('addslider', message);
     else if (command === 'Z') this._sendControlResult('addtoggle', message);
     else if (command === 'j') this._sendControlResult('addjoystick', message);
     else if (command === 'N') this._sendControlResult('addtouchpad', message);
@@ -1033,16 +1099,6 @@ Device.prototype.onMessage = function (message) {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
-    else if (command === 'K') {
-        if (message.length >= 23) {
-            const id = message.toString('utf8', 23);
-            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
-            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
-                this.controlUpdateTimestamps[id] = time;
-                this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
-            }
-        }
-    }
     else if (command === 'n') {
         if (message.length >= 24) {
             const id = message.toString('utf8', 24);
@@ -1050,13 +1106,20 @@ Device.prototype.onMessage = function (message) {
             if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
                 this.controlUpdateTimestamps[id] = time;
 
-                let tag = undefined;
-                switch (message[15]) {
-                    case 0: tag = 'down'; break;
-                    case 1: tag = 'move'; break;
-                    case 2: tag = 'up'; break;
-                }
+                const tag = parseClickTag(message[15]);
                 if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(16), y: message.readFloatBE(20), tag });
+            }
+        }
+    }
+    else if (command === 'd') {
+        if (message.length >= 20) {
+            const id = message.toString('utf8', 20);
+            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
+                this.controlUpdateTimestamps[id] = time;
+
+                const tag = parseClickTag(message[15]);
+                if (tag) this._fireRawCustomEvent(id, { id, level: message.readFloatBE(16), tag });
             }
         }
     }
