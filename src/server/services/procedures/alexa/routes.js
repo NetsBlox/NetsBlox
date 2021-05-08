@@ -235,9 +235,10 @@ if (require.main === module) {
     const router = express();
     const parseCookies = cookieParser();
     router.get('/ping', (req, res) => res.send('pong'));
-    router.get('/login.html', parseCookies, setUsername, handleErrors((req, res) => {
-        //const {username} = req.session;
-        const username = 'tabithalee';
+    router.get('/login.html', bodyParser.json(), parseCookies, setUsername, handleErrors((req, res) => {
+        devLogger.log("Cookie " + req.cookies['netsblox-cookie']);
+        const username = req.session.username;
+
         devLogger.log('login (to amazon) w/ (netsblox) username: ' + username);
         const isLoggedIn = !!username;
         if (!isLoggedIn) {
