@@ -4,8 +4,6 @@ const GetTokenStore = require('./tokens');
 
 const AlexaSMAPI = require('ask-smapi-sdk');
 
-const devLogger = require('../utils/dev-logger');
-
 var clientID = process.env.ALEXA_CLIENT_ID,
     clientSecret = process.env.ALEXA_CLIENT_SECRET;
 
@@ -24,7 +22,6 @@ const getAPIClient = async function(caller) {
         throw new Error('Amazon Login required. Please login.');
     }
     const {access_token, refresh_token} = tokens;
-    devLogger.log("Tokens: " + access_token + " " + refresh_token);
 
     const refreshTokenConfig = {
         "clientId" : clientID,
@@ -47,7 +44,6 @@ Alexa.getVendorList = async function () {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.getVendorListV1();
-    devLogger.log(JSON.stringify(response));
 
     return response.vendors[0].id;
 };
@@ -63,7 +59,6 @@ Alexa.listSkills = async function(vendorId) {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.listSkillsForVendorV1(vendorId);
-    devLogger.log(JSON.stringify(response));
 
     return response.skills;
 };
@@ -80,7 +75,6 @@ Alexa.getSkillInfo = async function(skillId, stage) {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.getSkillManifestV1(skillId, stage);
-    devLogger.log(JSON.stringify(response));
 
     return response.skillId;
 };
@@ -148,8 +142,6 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
             }
         };
 
-    devLogger.log(JSON.stringify(skillRequest));
-
     return skillRequest;
 };
 
@@ -169,7 +161,6 @@ Alexa.updateSkillManifest = async function(skillId, stage, manifest, vendorId) {
 
     const response = await smapiClient.updateSkillManifestV1(skillId, stage,
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4], vendorId));
-    devLogger.log(JSON.stringify(response));
 
     return response;
 };
@@ -188,7 +179,6 @@ Alexa.createSkill = async function(manifest, vendorId) {
 
     const response = await smapiClient.createSkillForVendorV1(
         createManifestObject(manifest[0], manifest[1], manifest[2], manifest[3], manifest[4], vendorId));
-    devLogger.log(JSON.stringify(response));
 
     return response.skillId;
 };
@@ -205,7 +195,6 @@ Alexa.getInteractionModel = async function (skillId, stage) {
     const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.getInteractionModelV1(skillId, stage, 'en-US');
-    devLogger.log(JSON.stringify(response));
 
     return response;
 };
@@ -258,8 +247,6 @@ const createSlotsObject = function(intent, name, samples, prompts) {
             }
         };
 
-    devLogger.log(JSON.stringify(slotInfo));
-
     return slotInfo;
 };
 
@@ -280,10 +267,7 @@ Alexa.createIntent = function (name, slots, samples) {
 
 const createIntentsObject = function(name, slots, samples) {
     let slotsObjectsList = [];
-    devLogger.log("Slots: ");
-    devLogger.log(JSON.stringify(slots));
     for (let i of slots) {
-        devLogger.log("Intent: " + i[0] + " Name: " + i[1] + " Samples: " + i[2] + " Prompts " + i[3]);
         slotsObjectsList.push(createSlotsObject(i[0], i[1], i[2], i[3]));
     }
 
@@ -343,14 +327,11 @@ const createThirdIntentsObject = function(name, slots) {
  * @return {Array} API response
  */
 Alexa.setInteractionModel = async function (skillId, stage, intents, invocationName) {
-    const smapiClient = await getAPIClient(this.caller);
-
     let intentsList = [];
     let slotInfos = [];
     let promptInfos = [];
 
     for (let i of intents) {
-        devLogger.log("Interaction model line: ");
         intentsList.push(createIntentsObject(i[0], i[1], i[2]));
         slotInfos.push(createSecondIntentsObject(i[0], i[1]));
         promptInfos.push(createThirdIntentsObject(i[0], i[1]));
@@ -438,11 +419,9 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
             }
         };
 
-    devLogger.log("Interaction Model: ");
-    devLogger.log(JSON.stringify(interactionModel));
+    const smapiClient = await getAPIClient(this.caller);
 
     const response = await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', interactionModel);
-    devLogger.log(response);
 
     return response;
 };

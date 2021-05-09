@@ -63,33 +63,20 @@ const SendMessageIntentHandler = {
 
             let address = projectName + "@" + username;
 
-            //don't worry about roles for now
-            /*
-            const role = Alexa.getSlotValue(handlerInput.requestEnvelope, "role");
-            if (role.localeCompare('all') !== 0) {
-                address = role + "@" + address;
-            }
-            */
-
-            devLogger.log(address);
-
             const messageType = "Alexa";
             const speechText = "Sent message '" + content.message + "' to " + projectName;
 
-            const resolvedAddr = await NetsBloxAddress.new(address);
-
-            if (resolvedAddr) {
+            try {
+                const resolvedAddr = await NetsBloxAddress.new(address);
                 const client = new RemoteClient(resolvedAddr.projectId);
                 await client.sendMessageToRoom(messageType, content);
-            } else {
+            } catch (e) {
                 return handlerInput.responseBuilder
                     .speak('This project does not exist. ')
                     .withSimpleCard('Message failed', speechText)
                     .withShouldEndSession(false)
                     .getResponse();
             }
-
-            devLogger.log(speechText);
 
             const reprompt = "What else would you like to do?";
 

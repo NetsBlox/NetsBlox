@@ -54,7 +54,7 @@
         };
         amazon.Login.authorize(options, function(response) {
             if ( response.error ) {
-                alert('oauth error ' + response.error);
+                alert("Error. Please log in again.");
                 return;
             }
             sendResponse(response);
