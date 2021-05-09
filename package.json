@@ -76,6 +76,7 @@
     "progress": "^2.0.3",
     "q": "^1.5.1",
     "qs": "^6.6.0",
+    "rdfxml-streaming-parser": "^1.4.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",
@@ -88,6 +89,7 @@
     "vantage": "^1.5.1",
     "vantage-repl": "^1.1.4",
     "ws": "^7.4.3",
+    "wu": "^2.1.0",
     "zeromq": "^6.0.0-beta.6"
   },
   "devDependencies": {
