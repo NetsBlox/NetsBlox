@@ -420,7 +420,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
      * @returns {String} id of the created control
      */
-     PhoneIoT.prototype.addTouchpad = function (device, x, y, width, height, options) {
+    PhoneIoT.prototype.addTouchpad = function (device, x, y, width, height, options) {
         const DEFAULTS = {
             color: this.getColor(66, 135, 245),
             landscape: false,
@@ -452,7 +452,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.readonly ``true`` to disable the user from controlling the slider. This is especially usefull for progress bars.
      * @returns {String} id of the created control
      */
-     PhoneIoT.prototype.addSlider = function (device, x, y, width, options) {
+    PhoneIoT.prototype.addSlider = function (device, x, y, width, options) {
         const DEFAULTS = {
             color: this.getColor(66, 135, 245),
             landscape: false,
@@ -599,7 +599,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {String} id id of the control to read
      * @returns {BoundedNumber<0,1>} current value
      */
-     PhoneIoT.prototype.getLevel = function (device, id) {
+    PhoneIoT.prototype.getLevel = function (device, id) {
         return this._passToDevice('getLevel', arguments);
     };
     /**
@@ -614,7 +614,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0,1>} value new value to set
      * @returns {Number} current value
      */
-     PhoneIoT.prototype.setLevel = function (device, id, value) {
+    PhoneIoT.prototype.setLevel = function (device, id, value) {
         return this._passToDevice('setLevel', arguments);
     };
     /**
