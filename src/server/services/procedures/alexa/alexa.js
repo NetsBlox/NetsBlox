@@ -76,7 +76,7 @@ Alexa.getSkillInfo = async function(skillId, stage) {
 
     const response = await smapiClient.getSkillManifestV1(skillId, stage);
 
-    return response.skillId;
+    return response.manifest;
 };
 
 /**
