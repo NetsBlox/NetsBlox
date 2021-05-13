@@ -1,6 +1,5 @@
->>>NAME<<<
-
->>>DESC<<<
+<%= name %>
+<%= description %>
 
 .. toctree::
     :maxdepth: 2
@@ -9,6 +8,5 @@
     overview.rst
     arch.rst
 
->>>CATS<<<
-
->>>RPCS<<<
+<%= categories %>
+<%= rpcs %>

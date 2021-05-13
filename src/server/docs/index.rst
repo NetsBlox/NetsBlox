@@ -13,7 +13,7 @@ NetsBlox Documentation
     fundamentals/howto.rst
     fundamentals/handling-errors.rst
 
->>>SERV<<<
+<%= services %>
 
 .. toctree::
     :maxdepth: 2
