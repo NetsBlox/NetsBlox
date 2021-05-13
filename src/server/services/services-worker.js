@@ -75,6 +75,7 @@ class ServicesWorker {
                 if (service.init) {
                     service.init(this._logger);
                 }
+                service._docs.apiKey = service.apiKey;
 
                 // Register the rpc actions, method signatures
                 if (service.serviceName) {
@@ -166,7 +167,11 @@ class ServicesWorker {
             });
 
         serviceDoc.description = service._docs.description;
+        serviceDoc.rawDescription = service._docs.rawDescription;
         serviceDoc.categories = service._docs.categories;
+        serviceDoc.servicePath = service._docs.servicePath;
+        serviceDoc.tags = service._docs.tags;
+        serviceDoc.apiKey = service._docs.apiKey;
         return serviceDoc;
     }
 

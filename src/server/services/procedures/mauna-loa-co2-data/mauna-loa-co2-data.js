@@ -27,11 +27,10 @@ MaunaLoaCO2Data.serviceName = 'MaunaLoaCO2Data';
  * Get the mole fraction of CO2 (in parts per million) by year. Missing measurements
  * are interpolated.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
  * @returns {Array}
  */
 MaunaLoaCO2Data.getRawCO2 = function(startyear=-Infinity, endyear=Infinity){
@@ -43,11 +42,10 @@ MaunaLoaCO2Data.getRawCO2 = function(startyear=-Infinity, endyear=Infinity){
  * Get the mole fraction of CO2 (in parts per million) by year with the seasonal
  * cycle removed.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
  * @returns {Array}
  */
 MaunaLoaCO2Data.getCO2Trend = function(startyear=-Infinity, endyear=Infinity){

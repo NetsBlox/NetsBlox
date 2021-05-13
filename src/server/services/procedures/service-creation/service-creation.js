@@ -257,7 +257,7 @@ const getBlockArgs = blockXml => {
  *
  * @param {String} name Service name
  * @param {Array} data 2D list of data
- * @param {Object=} options Options (for details, check out `getCreateFromTableOptions`)
+ * @param {Object=} options Options (for details, check out :func:`ServiceCreation.getCreateFromTableOptions`)
  */
 ServiceCreation.createServiceFromTable = async function(name, data, options) {
     ensureLoggedIn(this.caller);

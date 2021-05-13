@@ -13,6 +13,10 @@ process.chdir(srcPath);
 build().catch(err => console.error(err));
 
 async function build() {
+    await minifyJS();
+}
+
+async function minifyJS() {
     // Get the given js files
     var devHtml = await fsp.readFile('index.dev.html', 'utf8'),
         re = /text\/javascript" src="(.*)">/,

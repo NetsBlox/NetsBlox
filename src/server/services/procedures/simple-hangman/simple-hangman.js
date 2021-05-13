@@ -39,6 +39,7 @@ var SimpleHangman = function() {
 /**
  * Restart the current game.
  * @param {String=} word New word to guess
+ * @returns {Boolean} ``true`` on successful restart
  */
 SimpleHangman.prototype.restart = function(word) {
     this._reset(word);
@@ -47,6 +48,7 @@ SimpleHangman.prototype.restart = function(word) {
 
 /**
  * Get the current word with where unknown letters are replaced with "_".
+ * @returns {String} current word with blanks
  */
 SimpleHangman.prototype.getCurrentlyKnownWord = function() {
     var letters = this._state.word.split('').map(() => '_');
@@ -79,6 +81,7 @@ SimpleHangman.prototype.guess = function(letter) {
 
 /**
  * Check if the current word has been guessed correctly.
+ * @returns {Boolean} ``true`` if word was guessed correctly
  */
 SimpleHangman.prototype.isWordGuessed = function() {
     var isComplete = this._state.word.length === this._state.knownIndices.length;
@@ -87,6 +90,7 @@ SimpleHangman.prototype.isWordGuessed = function() {
 
 /**
  * Get the current number of incorrect guesses.
+ * @returns {Number} number of wrong guesses
  */
 SimpleHangman.prototype.getWrongCount = function() {
     logger.trace('wrong count is '+this._state.wrongGuesses);
@@ -94,9 +98,7 @@ SimpleHangman.prototype.getWrongCount = function() {
 };
 
 /**
- * Get a new random word
- *
- * @return {undefined}
+ * Get a new random word.
  */
 SimpleHangman.prototype._reset = function(word) {
     if (!word) {
