@@ -49,6 +49,8 @@ const _ = require('lodash');
 
 // these types are used for communication with PhoneIoT
 const myTypes = {};
+myTypes.SliderStyle = input => types.parse.Enum(input, { slider: 0, progress: 1 }, undefined, 'Slider Style');
+myTypes.TouchpadStyle = input => types.parse.Enum(input, { rectangle: 0, square: 1 }, undefined, 'Touchpad Style');
 myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
 myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
 myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
@@ -248,7 +250,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Position} x X position of the top left corner of the label (percentage).
      * @param {Position} y Y position of the top left corner of the label (percentage).
      * @param {String=} text The text to display on the label (defaults to empty)
-     * @param {Object=} options Additional options: id, textColor, align, fontSize, landscape
+     * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {Color=} options.textColor The text color of the label.
      * @param {Align=} options.align The text alignment to use. If set to ``left``, the text starts at the label position. If set to ``right``, the text ends at the label position. If set to ``center``, the text is centered on the label position.
@@ -312,7 +314,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Position} y Y position of the top left corner of the image display (percentage).
      * @param {Size} width Width of the image display (percentage).
      * @param {Size} height Height of the image display (percentage).
-     * @param {Object=} options Additional options: id, event, readonly, landscape, fit
+     * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
      * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
@@ -342,7 +344,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Position} y Y position of the top left corner of the text field (percentage).
      * @param {Size} width Width of the text field (percentage).
      * @param {Size} height Height of the text field (percentage).
-     * @param {Object=} options Additional options: id, event, text, color, textColor, readonly, fontSize, align, landscape
+     * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``text``.
      * @param {String=} options.text This can be used to set the initial text of the text field once created. Defaults to empty if not specified.
@@ -371,14 +373,17 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Adds a joystick control to the canvas at the given position and size.
      * No height parameter is given because joysticks are always circular (similar to passing ``style = circle`` to :func:`PhoneIoT.addButton`).
      * 
+     * The position of the joystick is given by a vector ``[x, y]``, which is normalized to a length of 1.
+     * If you would prefer to not have this normalization and want rectangular coordinates instead of circular, consider using :func:`PhoneIoT.addTouchpad` instead.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the joystick (percentage).
      * @param {Position} y Y position of the top left corner of the joystick (percentage).
      * @param {Size} width Width of the joystick (percentage).
-     * @param {Object=} options Additional options: id, event, color, landscape
+     * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``.
+     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
      * @param {Color=} options.color The color of the joystick.
      * @param {Boolean=} options.landscape If set to ``true``, the ``x`` and ``y`` values of the joystick are altered so that it acts correctly when in landscape mode. Unlike other controls, this option does not affect where the control is displayed on the screen (no rotation).
      * @returns {String} id of the created control
@@ -392,15 +397,83 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('addJoystick', arguments);
     };
     /**
+     * Adds a touchpad control to the canvas at the given position and size.
+     * This control is similar to the joystick control, except that it is rectangular,
+     * the vector is not normalized to a distance of 1,
+     * the "stick" does not move back to ``(0, 0)`` upon letting go,
+     * and there is an additional "tag" value denoting if each event was a touch ``down``, ``move``, or ``up``.
+     * 
+     * Although the vector value is not normalized to a length of 1,
+     * each component (``x`` and ``y`` individually) is in ``[-1, 1]``.
+     * 
+     * @category Display
+     * @param {Device} device id of the device
+     * @param {Position} x X position of the top left corner of the touchpad (percentage).
+     * @param {Position} y Y position of the top left corner of the touchpad (percentage).
+     * @param {Size} width Width of the touchpad (percentage).
+     * @param {Size} height Height of the touchpad (percentage).
+     * @param {Object=} options Additional options
+     * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {Color=} options.color The color of the touchpad.
+     * @param {TouchpadStyle=} options.style Controls the appearance of the touchpad. These are the same as for :func:`PhoneIoT.addButton` except that only ``rectangle`` and ``square`` are allowed.
+     * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
+     * @returns {String} id of the created control
+     */
+    PhoneIoT.prototype.addTouchpad = function (device, x, y, width, height, options) {
+        const DEFAULTS = {
+            color: this.getColor(66, 135, 245),
+            landscape: false,
+            style: 0,
+        };
+        arguments[5] = _.merge({}, DEFAULTS, options);
+        return this._passToDevice('addTouchpad', arguments);
+    };
+    /**
+     * Adds a slider control to the display.
+     * Sliders can be moved around to input or display any value in the range ``[0, 1]``.
+     * If you need values outside of this range, you can do a little math to map them to ``[0, 1]`` or vice versa.
+     * 
+     * You can read and write the value of a slider with :func:`PhoneIoT.getLevel` and :func:`PhoneIoT.setLevel`.
+     * Note that if the control is set to ``readonly``, the user cannot change the value, but you can still do so from code.
+     * 
+     * @category Display
+     * @param {Device} device id of the device
+     * @param {Position} x X position of the top left corner of the slider (percentage).
+     * @param {Position} y Y position of the top left corner of the slider (percentage).
+     * @param {Size} width Width (length) of the slider (percentage).
+     * @param {Object=} options Additional options
+     * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the slider. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``level``, ``tag``.
+     * @param {Color=} options.color The color of the slider.
+     * @param {BoundedNumber<0,1>=} options.value The initial value of the slider (default ``0.0``).
+     * @param {SliderStyle=} options.style Controls the appearance of the slider. Allowed values are ``slider`` (default) or ``progress``.
+     * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
+     * @param {Boolean=} options.readonly ``true`` to disable the user from controlling the slider. This is especially usefull for progress bars.
+     * @returns {String} id of the created control
+     */
+    PhoneIoT.prototype.addSlider = function (device, x, y, width, options) {
+        const DEFAULTS = {
+            color: this.getColor(66, 135, 245),
+            landscape: false,
+            readonly: false,
+            style: 0,
+            value: 0.0,
+        };
+        arguments[4] = _.merge({}, DEFAULTS, options);
+        return this._passToDevice('addSlider', arguments);
+    };
+    /**
      * Adds a toggle control to the canvas at the given location.
-     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty), but this can be changed later with :func:`PhoneIoT.setText`.
+     * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty),
+     * but this can be changed later with :func:`PhoneIoT.setText`.
      * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the toggle (percentage).
      * @param {Position} y Y position of the top left corner of the toggle (percentage).
      * @param {String=} text The text to display next to the toggle (defaults to empty)
-     * @param {Object=} options Additional options: style, id, event, checked, color, textColor, fontSize, landscape, readonly
+     * @param {Object=} options Additional options
      * @param {ToggleStyle=} options.style The visual style of the toggle control. This can be ``switch`` (default) for a mobile-style toggle, or ``checkbox`` for a desktop-style toggle.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {String=} options.event The name of a message to be sent every time the checkbox is toggled by the user. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. Message fields: ``id``, ``state``.
@@ -428,7 +501,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Adds a radio button to the canvas.
-     * Radio buttons are like toggles (checkboxes), except that they are organized into groups and the user can check at most one radion button from any given group.
+     * Radio buttons are like toggles (checkboxes), except that they are organized into groups
+     * and the user can check at most one radion button from any given group.
      * These can be used to accept multiple-choice input from the user.
      * 
      * @category Display
@@ -436,7 +510,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Position} x X position of the top left corner of the radio button (percentage).
      * @param {Position} y Y position of the top left corner of the radio button (percentage).
      * @param {String=} text The text to display next to the checkbox (defaults to empty)
-     * @param {Object=} options Additional options: group, id, event, checked, color, textColor, fontSize, landscape, readonly
+     * @param {Object=} options Additional options
      * @param {String=} options.group The name of the group to associate this radio button with. You do not need this value to access the control later. If not specified, defaults to ``main``.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``state``.
@@ -488,18 +562,68 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('getText', arguments);
     };
     /**
-     * Gets the current ``x`` and ``y`` values for the stick position of a joystick control.
-     * This vector is normalized to a length of ``1.0``.
-     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of :func:`PhoneIoT.addJoystick`.
+     * Gets the current ``x`` and ``y`` values for the current position of a positional control.
+     * This does *not* give the location of the control on the screen.
+     * Positional controls are controls whose primary interaction is through position.
+     * For instance, this is used for both joystick and touchpad controls.
+     * 
+     * For a joystick, this always returns a vector normalized to a length of ``1.0``.
+     * If the user is not touching the joystick, it will automatically go back to the center, ``[0, 0]``.
+     * 
+     * For a touchpad, this will either give you the current location of the touch (a list of ``[x, y]``)
+     * or an error if the user is not touching the screen.
+     * 
+     * If you want to get the value of a slider, use :func:`PhoneIoT.getLevel` instead.
+     * 
+     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of
+     * :func:`PhoneIoT.addJoystick` or :func:`PhoneIoT.addTouchpad`.
      * 
      * @category Display
      * @param {Device} device id of the device
-     * @param {String} id id of the joystick control to read
-     * @returns {Array} a list of the ``x`` and ``y`` components of the current position
+     * @param {String} id id of the control to read
+     * @returns {Array<BoundedNumber<-1,1>>} a list of ``[x, y]`` for the current position, or a ``string`` explaining that there is no current position
      */
-    PhoneIoT.prototype.getJoystickVector = function (device, id) {
-        return this._passToDevice('getJoystickVector', arguments);
+    PhoneIoT.prototype.getPosition = function (device, id) {
+        return this._passToDevice('getPosition', arguments);
     };
+    /**
+     * Get the current value (a single number) of a value-like control.
+     * Currently, the only supported control is a slider, which returns a value in ``[0, 1]``.
+     * 
+     * Instead of calling this in a loop, it is likely better to use the ``event`` optional parameter of :func:`PhoneIoT.addSlider`.
+     * 
+     * If you want to get the cursor position of a joystick or touchpad, use :func:`PhoneIoT.getPosition` instead.
+     * 
+     * @category Display
+     * @param {Device} device id of the device
+     * @param {String} id id of the control to read
+     * @returns {BoundedNumber<0,1>} current value
+     */
+    PhoneIoT.prototype.getLevel = function (device, id) {
+        return this._passToDevice('getLevel', arguments);
+    };
+    /**
+     * Set the current value (a single number) of a value-like control.
+     * Currently, the only supported control is a slider, which sets the displayed value.
+     * 
+     * Note that you can use this RPC even if the control is set to ``readonly`` mode (it's only readonly to the user).
+     * 
+     * @category Display
+     * @param {Device} device id of the device
+     * @param {String} id id of the control to read
+     * @param {BoundedNumber<0,1>} value new value to set
+     * @returns {Number} current value
+     */
+    PhoneIoT.prototype.setLevel = function (device, id, value) {
+        return this._passToDevice('setLevel', arguments);
+    };
+    /**
+     * @deprecated
+     * @param {Device} device
+     * @param {String} id
+     * @returns {Array}
+     */
+    PhoneIoT.prototype.getJoystickVector = PhoneIoT.prototype.getPosition;
     /**
      * This RPC simply checks that the connection to the device is still good.
      * In particular, you can use this to check if the password is still valid.
@@ -612,7 +736,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
 
     /**
      * Checks if the pressable control with the given ID is currently pressed.
-     * This can be used on any pressable control, which currently only includes buttons.
+     * This can be used on any pressable control, which currently includes buttons, joysticks, and touchpads.
      * 
      * By calling this RPC in a loop, you could perform some action every second while a button is held down.
      * If you would instead like to receive click events, see the ``event`` optional parameter of :func:`PhoneIoT.addButton`.
