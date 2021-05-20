@@ -9,6 +9,7 @@ const GetTokenStore = require('./tokens');
 const AlexaSMAPI = require('ask-smapi-sdk');
 const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;
+const SERVER_URL = 'https://alexa.netsblox.org/services/routes/alexa';  // FIXME: this shouldn't be hard-coded
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -19,7 +20,6 @@ const ensureLoggedIn = function(caller) {
 const getAPIClient = async function(caller) {
     ensureLoggedIn(caller);
     const collection = GetTokenStore();
-
     const tokens = await collection.findOne({username: caller.username});
     if (!tokens) {
         throw new Error('Amazon Login required. Please login.');
@@ -100,43 +100,43 @@ Alexa.createManifest = async function(summary, description, examplePhrases, keyw
 const createManifestObject = function(summary, description, examplePhrases, keywords, name, vendorId) {
     let skillRequest =
         {
-            "vendorId": vendorId,
-            "manifest": {
-                "publishingInformation": {
-                    "locales": {
-                        "en-US": {
-                            "summary": summary,
-                            "examplePhrases": examplePhrases,
-                            "keywords": keywords,
-                            "name": name,
-                            "description": description
+            'vendorId': vendorId,
+            'manifest': {
+                'publishingInformation': {
+                    'locales': {
+                        'en-US': {
+                            'summary': summary,
+                            'examplePhrases': examplePhrases,
+                            'keywords': keywords,
+                            'name': name,
+                            'description': description
                         }
                     },
-                    "isAvailableWorldwide": true,
-                    "testingInstructions": "CUSTOM",
-                    "category": "",
-                    "distributionCountries": [
-                        "US",
+                    'isAvailableWorldwide': true,
+                    'testingInstructions': 'CUSTOM',
+                    'category': '',
+                    'distributionCountries': [
+                        'US',
                     ]
                 },
-                "apis": {
-                    "custom": {
-                        "endpoint" : {
-                            "uri" : "https://alexa.netsblox.org/services/routes/alexa"
+                'apis': {
+                    'custom': {
+                        'endpoint' : {
+                            'uri' : SERVER_URL
                         }
                     }
                 },
-                "manifestVersion": "1.0",
-                "privacyAndCompliance": {
-                    "allowsPurchases": false,
-                    "usesPersonalInfo": false,
-                    "isChildDirected": false,
-                    "isExportCompliant": true,
-                    "containsAds": false,
-                    "locales": {
-                        "en-US": {
-                            "privacyPolicyUrl": "https://editor.netsblox.org/privacy.html",
-                            "termsOfUseUrl": "https://editor.netsblox.org/tos.html"
+                'manifestVersion': '1.0',
+                'privacyAndCompliance': {
+                    'allowsPurchases': false,
+                    'usesPersonalInfo': false,
+                    'isChildDirected': false,
+                    'isExportCompliant': true,
+                    'containsAds': false,
+                    'locales': {
+                        'en-US': {
+                            'privacyPolicyUrl': `${SERVER_URL}/privacy.html`,
+                            'termsOfUseUrl': `${SERVER_URL}/tos.html`
                         }
                     }
                 },
@@ -151,7 +151,7 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
  * given the manifest object created by createManifest.
  *
  * @param {String} skillId the skill ID of the skill whose manifest we want to update
- * @param {String} stage the stage of the skill, for most users will be "development"
+ * @param {String} stage the stage of the skill, for most users will be 'development'
  * @param {Array} manifest the object returned by createManifest
  * @param {String} vendorId vendor ID of the user
  *
@@ -221,30 +221,30 @@ const createSlotsObject = function(intent, name, samples, prompts) {
     for (let i of prompts) {
         variations.push(
             {
-                "type": "PlainText",
-                "value": i
+                'type': 'PlainText',
+                'value': i
             }
         );
     }
     let slotInfo =
         {
-            "intentSlotInfo" : {
-                "name": name,
-                "type": "AMAZON.SearchQuery",
-                "samples": samples,
+            'intentSlotInfo' : {
+                'name': name,
+                'type': 'AMAZON.SearchQuery',
+                'samples': samples,
             },
-            "slotInfo" : {
-                "name": name,
-                "type": "AMAZON.SearchQuery",
-                "confirmationRequired": false,
-                "elicitationRequired": true,
-                "prompts": {
-                    "elicitation": "Elicit.Intent-:" + intent + ".IntentSlot-" + name
+            'slotInfo' : {
+                'name': name,
+                'type': 'AMAZON.SearchQuery',
+                'confirmationRequired': false,
+                'elicitationRequired': true,
+                'prompts': {
+                    'elicitation': 'Elicit.Intent-:' + intent + '.IntentSlot-' + name
                 }
             },
-            "promptInfo" : {
-                "id": "Elicit.Intent-:" + intent + ".IntentSlot-" + name,
-                "variations": variations
+            'promptInfo' : {
+                'id': 'Elicit.Intent-:' + intent + '.IntentSlot-' + name,
+                'variations': variations
             }
         };
 
@@ -382,10 +382,10 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
     for (let i of slotInfos) {
         intentsSlots.push(
             {
-                "name": intentsArray[j].name,
-                "confirmationRequired": false,
-                "prompts": {},
-                "slots": i
+                'name': intentsArray[j].name,
+                'confirmationRequired': false,
+                'prompts': {},
+                'slots': i
             }
         );
         j++;
@@ -401,22 +401,22 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
 
     const interactionModel =
         {
-            "interactionModel": {
-                "languageModel": {
-                    "invocationName": invocationName,
-                    "modelConfiguration": {
-                        "fallbackIntentSensitivity": {
-                            "level": "LOW"
+            'interactionModel': {
+                'languageModel': {
+                    'invocationName': invocationName,
+                    'modelConfiguration': {
+                        'fallbackIntentSensitivity': {
+                            'level': 'LOW'
                         }
                     },
-                    "intents": intentsArray,
-                    "types": [],
+                    'intents': intentsArray,
+                    'types': [],
                 },
-                "dialog": {
-                    "intents": intentsSlots,
-                    "delegationStrategy": "ALWAYS"
+                'dialog': {
+                    'intents': intentsSlots,
+                    'delegationStrategy': 'ALWAYS'
                 },
-                "prompts": promptInfosFormatted
+                'prompts': promptInfosFormatted
             }
         };
 
