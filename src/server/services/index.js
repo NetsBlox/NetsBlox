@@ -29,7 +29,6 @@ async function listen(port) {
     middleware.init({_logger: logger});
     await ServicesAPI.initialize();
     app.use((req, res, next) => {
-        console.log('Received request to ', req.originalUrl);
         res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, PATCH, DELETE');
         next();
     });

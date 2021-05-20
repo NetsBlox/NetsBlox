@@ -1,11 +1,14 @@
+/**
+ * The Alexa service provides capabilities for building your own services on the Amazon Echo.
+ *
+ * @service
+ * @alpha
+ */
 const Alexa = {};
-
 const GetTokenStore = require('./tokens');
-
 const AlexaSMAPI = require('ask-smapi-sdk');
-
-var clientID = process.env.ALEXA_CLIENT_ID,
-    clientSecret = process.env.ALEXA_CLIENT_SECRET;
+const clientID = process.env.ALEXA_CLIENT_ID;
+const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -21,13 +24,13 @@ const getAPIClient = async function(caller) {
     if (!tokens) {
         throw new Error('Amazon Login required. Please login.');
     }
-    const {access_token, refresh_token} = tokens;
 
+    const {access_token, refresh_token} = tokens;
     const refreshTokenConfig = {
-        "clientId" : clientID,
-        "clientSecret": clientSecret,
-        "refreshToken": refresh_token,
-        "accessToken": access_token,
+        'clientId' : clientID,
+        'clientSecret': clientSecret,
+        'refreshToken': refresh_token,
+        'accessToken': access_token,
     };
 
     return new AlexaSMAPI.StandardSmapiClientBuilder()
@@ -42,7 +45,6 @@ const getAPIClient = async function(caller) {
  */
 Alexa.getVendorList = async function () {
     const smapiClient = await getAPIClient(this.caller);
-
     const response = await smapiClient.getVendorListV1();
 
     return response.vendors[0].id;
@@ -57,7 +59,6 @@ Alexa.getVendorList = async function () {
  */
 Alexa.listSkills = async function(vendorId) {
     const smapiClient = await getAPIClient(this.caller);
-
     const response = await smapiClient.listSkillsForVendorV1(vendorId);
 
     return response.skills;
@@ -424,6 +425,14 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
     const response = await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', interactionModel);
 
     return response;
+};
+
+Alexa.isSupported = () => {
+    const isSupported = !process.env.ALEXA_CLIENT_ID || !process.env.ALEXA_CLIENT_SECRET;
+    if (isSupported) {
+        console.log('ALEXA_CLIENT_ID and ALEXA_CLIENT_SECRET must be set for Alexa capabilities.');
+    }
+    return isSupported;
 };
 
 module.exports = Alexa;
