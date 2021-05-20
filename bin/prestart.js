@@ -86,10 +86,11 @@ function getRPCsMeta(service) {
             args: (rpc.args || []).map(arg => { return {
                 decl: getParamString(arg),
                 description: trimText(arg.rawDescription),
-                fields: !isObject(arg.type) || !(arg.type.params || []).length ? undefined : arg.type.params.map(field => { return {
-                    decl: getParamString(field),
-                    description: trimText(field.rawDescription),
-                }; }),
+                fields: !isObject(arg.type) || !(arg.type.params || []).length ? undefined : arg.type.params
+                    .filter(f => !f.tags.includes('deprecated')).map(field => { return {
+                        decl: getParamString(field),
+                        description: trimText(field.rawDescription),
+                    }; }),
             }; }),
             returns: rpc.returns ? { type: getTypeString(rpc.returns.type), description: trimText(rpc.returns.rawDescription) } : undefined,
         };

@@ -667,9 +667,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {SensorPeriod=} sensors.orientation ``orientation`` period
      * @param {SensorPeriod=} sensors.accelerometer ``accelerometer`` period
      * @param {SensorPeriod=} sensors.magneticField ``magneticField`` period
-     * @param {SensorPeriod=} sensors.rotation ``rotation`` period
+     * @param {SensorPeriod=} sensors.rotation @deprecated ``rotation`` period
      * @param {SensorPeriod=} sensors.linearAcceleration ``linearAcceleration`` period
-     * @param {SensorPeriod=} sensors.gameRotation ``gameRotation`` sensor period
+     * @param {SensorPeriod=} sensors.gameRotation @deprecated ``gameRotation`` sensor period
      * @param {SensorPeriod=} sensors.lightLevel ``lightLevel`` period
      * @param {SensorPeriod=} sensors.microphoneLevel ``microphoneLevel`` period
      * @param {SensorPeriod=} sensors.proximity ``proximity`` period
@@ -721,7 +721,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @returns {Array} A list of sensor names
      */
     PhoneIoT.prototype.getSensors = function () {
-        return Object.keys(common.SENSOR_PACKERS);
+        return Object.keys(common.SENSOR_PACKERS).filter(s => !common.DEPRECATED_SENSORS.has(s));
     };
     /**
      * This is the first RPC you should *always* call when working with PhoneIoT.
@@ -785,7 +785,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * - azimuth (effectively the compass heading) ``[-180, 180]``
      * - pitch (vertical tilt) ``[-90, 90]``
-     * - roll ``[-90, 90]``
+     * - roll ``[-180, 180]``
+     * 
+     * If you are getting inconsistent values for the first (azimuth) angle,
+     * try moving and rotating your device around in a figure-8 to recalibrate it.
      * 
      * Sensor name: ``orientation``
      * 
@@ -803,6 +806,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * The output of this RPC assumes the device is face-up.
      * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Number} the compass heading (in degrees)
@@ -815,6 +820,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * The output of this RPC assumes the device is face-up.
      * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {String} the current compass direction name
@@ -824,6 +831,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Equivalent to :func:`PhoneIoT.getCompassDirection`, except that it only returns ``N``, ``E``, ``S``, or ``W``.
+     * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -930,6 +939,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Message fields: ``x``, ``y``, ``z``, ``w``
      * 
+     * @deprecated
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Array} 4D rotational vector
@@ -944,6 +954,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Message fields: ``x``, ``y``, ``z``
      * 
+     * @deprecated
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Array} 3D rotational vector
