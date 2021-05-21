@@ -52,7 +52,7 @@
             return dict;
         }
 
-        async showResults(testResults) {
+        async showResults(testCases, testResults) {
             const world = this.ide.parentThatIsA(WorldMorph);
             const isAlreadyOpen = world.anyChild(child => child === this.resultsDialog);
             if (!isAlreadyOpen) {
@@ -126,15 +126,16 @@
             }
 
             const frame = this.resultsDialog.body;
-            frame.contents.children = testResults.map(result => {
-                const {testCase} = result;
-                const message = testCase.name;  // FIXME: append the results text
+            frame.contents.children = zip(testCases, testResults).map(pair => {
+                const [testCase, result] = pair;
+                const message = !result.status && result.getFailureReason() ?
+                    ` (${result.getFailureReason()})` : '';
                 /* TODO: Add details on click? */
                 const icon = new ToggleMorph(
                     'checkbox',
                     null,
                     nop,
-                    message,
+                    testCase.name + message,
                     () => result.status
                 );
                 const RED = new Color(250, 50, 50);
@@ -174,6 +175,7 @@
         }
 
         async blockifyTest(world, testCase) {
+            // TODO: move this to the test case "on click"
             const block = testCase.getCustomBlockInstance(...testCase.inputs.map(toSnap));
             const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
             let expectedValue;
@@ -221,10 +223,8 @@
         }
 
         async grade(assignment) {
-            console.log('about to grade assignment', assignment.name);
             const testResults = await assignment.grade();
-            console.log({testResults });
-            this.showResults(testResults);
+            this.showResults(assignment.tests, testResults);
         }
 
         async submit(assignment) {
@@ -420,7 +420,7 @@
             try {
                 return await this.test();
             } catch (err) {
-                return new ErroredTest(this, err);
+                return new ErroredTest(err);
             }
         }
 
@@ -433,7 +433,7 @@
         );
     };
 
-    CustomBlockHelpers.getCustomBlockInstance = function(blockSpec, inputs) {
+    CustomBlockHelpers.getCustomBlockInstance = function(blockSpec, inputs=[]) {
         const definition = CustomBlockHelpers.getCustomBlockDefinition(blockSpec);
         const block = definition.blockInstance();
         zip(block.inputs(), inputs).forEach(pair => {
@@ -506,9 +506,9 @@
                 const block = CustomBlockHelpers.getCustomBlockInstance(spec, args);
                 const actual = await CustomBlockHelpers.evalBlock(block, args);
                 if (snapEquals(actual, toSnap(expectedOutput))) {
-                    return new TestResult(this, true);
+                    return new TestResult(true);
                 } else {
-                    return new FailingTest(this, actual, expectedOutput);
+                    return new FailingTest(actual, expectedOutput);
                 }
             };
         }
@@ -525,22 +525,23 @@
             const testBlock = SpriteMorph.prototype.blockForSelector('evaluate', true);
             const variables = new VariableFrame();
             variables.addVar('test fn', fn);
-            testBlock.replaceInput(testBlock.inputs()[0], SpriteMorph.prototype.variableBlock('test fn'));
+            const [fnToCall, fnArgs] = testBlock.inputs();
+            testBlock.replaceInput(fnToCall, SpriteMorph.prototype.variableBlock('test fn'));
+            fnArgs.addInput();
 
             return async function() {
-                const args = [];
-                const customBlock = CustomBlockHelpers.getCustomBlockInstance(spec, args);
-                args.push(customBlock);
-                //testBlock.inputs()[1].setContents(args);
-                //const actual = await CustomBlockHelpers.evalBlock(testBlock, args);
-                //const timeoutMsg = 'Timeout Exceeded';
-                //const actual = invoke(fn, new List(args)/*, null, 1500, timeoutMsg*/);
-                const actual = await CustomBlockHelpers.evalBlock(testBlock, args, variables);
+                const customBlock = CustomBlockHelpers.getCustomBlockInstance(spec);
+                const ring = new RingMorph();
+                ring.embed(customBlock);
+                fnArgs.replaceInput(fnArgs.inputs()[0], ring);
+                const actual = await CustomBlockHelpers.evalBlock(testBlock, [], variables);
                 console.log({actual});
                 if (snapEquals(actual, toSnap(true))) {
-                    return new TestResult(this, true);
+                    return new TestResult(true);
+                } else if (typeof actual !== 'boolean') {
+                    return new TestResult(false, actual);
                 } else {
-                    return new TestResult(this, false);
+                    return new TestResult(false);
                 }
             };
         }
@@ -556,19 +557,19 @@
     }
 
     class TestResult {
-        constructor(testCase, status) {
-            this.testCase = testCase;
+        constructor(status, reason='') {
             this.status = status;
+            this.reason = reason;
         }
 
         getFailureReason() {
-            return '';
+            return this.reason;
         }
     }
 
     class FailingTest extends TestResult {
-        constructor(testCase, actual, expected) {
-            super(testCase, false);
+        constructor(actual, expected) {
+            super(false);
             this.actual = actual;
             this.expected = expected;
         }
@@ -583,8 +584,8 @@
     }
 
     class ErroredTest extends TestResult {
-        constructor(testCase, error) {
-            super(testCase, false);
+        constructor(error) {
+            super(false);
             this.error = error;
         }
 
