@@ -33,7 +33,7 @@ function parseInlineTags(desc) {
     if (!desc) return { tags: [], desc };
     const tags = [];
 
-    while (true) {
+    for (;;) {
         const parsed = doctrine.parse(desc, {unwrap: true});
         assert(!parsed.description.length || !parsed.tags.length, 'An inline tag may not have a description');
         if (parsed.description.length) {
