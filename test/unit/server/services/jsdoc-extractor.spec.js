@@ -69,6 +69,7 @@ describe(utils.suiteName(__filename), function() {
                 },
                 description,
                 rawDescription: description,
+                tags: [],
             });
             let simpleMetadata = jp._simplify(metadata.parsed);
 

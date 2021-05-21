@@ -95,5 +95,8 @@ common.SENSOR_PACKERS = {
     'stepCount': vals => { return { count: vals[0] }; },
     'location': vals => { return { latitude: vals[0], longitude: vals[1], bearing: vals[2], altitude: vals[3] }; },
 };
+common.DEPRECATED_SENSORS = new Set([
+    'rotation', 'gameRotation',
+]);
 
 module.exports = common;
