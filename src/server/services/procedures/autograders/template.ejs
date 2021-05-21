@@ -142,7 +142,7 @@
                 const GREEN = new Color(0, 200, 0);
                 icon.color = result.status ? GREEN : RED;
                 icon.trigger = nop;
-                icon.mouseClickLeft = () => this.onTestClicked(icon.world(), testCase);
+                icon.mouseClickLeft = () => testCase.onClick(icon.world());
                 icon.mouseDownLeft = nop;
                 icon.mouseEnter = nop;
                 icon.mouseLeave = nop;
@@ -167,33 +167,6 @@
             frame.contents.addChildFirst(testDesc);
             frame.contents.adjustBounds();
             this.resultsDialog.fixLayout();
-        }
-
-        onTestClicked(world, testCase) {
-            this.blockifyTest(world, testCase);
-            /* TODO */
-        }
-
-        async blockifyTest(world, testCase) {
-            // TODO: move this to the test case "on click"
-            const block = testCase.getCustomBlockInstance(...testCase.inputs.map(toSnap));
-            const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
-            let expectedValue;
-            /* FIXME: Get the report */
-            if (typeof testCase.output === 'boolean') {
-                expectedValue = testCase.output ?
-                    SpriteMorph.prototype.blockForSelector('reportBoolean', true) :
-                    SpriteMorph.prototype.blockForSelector('reportFalse', true);
-            } else {
-                expectedValue = toSnap(testCase.output);
-                if (expectedValue instanceof List) {
-                    expectedValue = expectedValue.blockify();
-                }
-            }
-            const [left, right] = equalsBlock.inputs();
-            equalsBlock.replaceInput(left, block);
-            equalsBlock.replaceInput(right, expectedValue);
-            equalsBlock.pickUp(world);
         }
 
         async loadAssignment(assignment) {
@@ -424,6 +397,8 @@
             }
         }
 
+        onClick(world) {
+        }
     }
 
     const CustomBlockHelpers = {};
@@ -472,13 +447,34 @@
     };
 
     class SimpleCustomBlockTestCase extends TestCase {
-        constructor(spec, inputs, outputs, data) {
-            const testFn = SimpleCustomBlockTestCase.getTest(spec, inputs, outputs);
-            const name = SimpleCustomBlockTestCase.getName(spec, inputs, outputs);
+        constructor(spec, inputs, output, data) {
+            const testFn = SimpleCustomBlockTestCase.getTest(spec, inputs, output);
+            const name = SimpleCustomBlockTestCase.getName(spec, inputs, output);
             super(name, testFn, data);
+            this.onClick = SimpleCustomBlockTestCase.onClick.bind(null, spec, inputs, output);
         }
 
-        static getName(spec, inputs, outputs) {
+        static onClick(spec, inputs, output, world) {
+            const block = CustomBlockHelpers.getCustomBlockInstance(spec, inputs.map(toSnap));
+            const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
+            let expectedValue;
+            if (typeof output === 'boolean') {
+                expectedValue = output ?
+                    SpriteMorph.prototype.blockForSelector('reportBoolean', true) :
+                    SpriteMorph.prototype.blockForSelector('reportFalse', true);
+            } else {
+                expectedValue = toSnap(output);
+                if (expectedValue instanceof List) {
+                    expectedValue = expectedValue.blockify();
+                }
+            }
+            const [left, right] = equalsBlock.inputs();
+            equalsBlock.replaceInput(left, block);
+            equalsBlock.replaceInput(right, expectedValue);
+            equalsBlock.pickUp(world);
+        }
+
+        static getName(spec, inputs, output) {
             let index = 0;
             const testCaseName = BlockMorph.prototype.parseSpec(spec)
                 .map(spec => {
@@ -490,14 +486,9 @@
                 })
                 .join(' ');
 
-            const description = `should report ${JSON.stringify(outputs)}`;
+            const description = `should report ${JSON.stringify(output)}`;
             let displayName = `"${testCaseName}" ${description}`;
             return displayName;
-            //if (!result.status && result.getFailureReason()) {
-                //displayText += ` (${result.getFailureReason()})`;
-            //}
-            //return displayText;
-            //return testCaseName;
         }
 
         static getTest(spec, inputs, expectedOutput) {
@@ -548,10 +539,12 @@
 
         static fromConfig(config) {
             const opts = omit(config, ['type', 'spec', 'inputs', 'output']);
-            if (config.inputs && config.outputs) {
+            if (config.hasOwnProperty('inputs') && config.hasOwnProperty('output')) {
                 return new SimpleCustomBlockTestCase(config.spec, config.inputs, config.output, opts);
             } else if (config.function) {
                 return new CustomBlockTestCase(config.name, config.spec, config.function, opts);
+            } else {
+                throw new Error(`Invalid configuration for CustomBlockTest: ${JSON.stringify(config, null, 2)}`);
             }
         }
     }
