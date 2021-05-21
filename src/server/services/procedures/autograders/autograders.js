@@ -11,6 +11,7 @@ const _ = require('lodash');
 const MONGODB_DOC_TOO_LARGE = 'Attempt to write outside buffer bounds';
 const getDatabase = require('./storage');
 const Integrations = require('./integrations');
+const TEST_TYPES = ['CustomBlockTest'];
 
 const validateName = name => {
     const validRegex = /^[a-zA-Z][a-zA-Z0-9_ :-]*$/;
@@ -38,7 +39,7 @@ const validateAssignment = assignment => {
     assert(assignment.name, 'Assignment name is required.');
     assert(assignment['starter template'] || assignment.tests, 'Assignment must have starter template and/or tests.');
     assignment.tests.forEach(test => {
-        assert(test.type, 'Unspecified type of test!');
+        validateTest(test);
     });
 
     const integrationNames = (assignment.integrations || []).map(name => name.toLowerCase());
@@ -48,9 +49,25 @@ const validateAssignment = assignment => {
 };
 
 const validateConfig = config => {
+    assert(config.name, 'Name is required.');
     validateName(config.name);
+    assert(config.assignments.length > 0, 'Assignments are required.');
     config.assignments.forEach(validateAssignment);
     assert(config.name);
+};
+
+const validateTest = testConfig => {
+    assert(testConfig.type, 'Unspecified type of test. Requires "type" field');
+    assert(TEST_TYPES.includes(testConfig.type), `Unsupported test type: ${testConfig.type}`);
+
+    if (testConfig.type === 'CustomBlockTest') {
+        assert(testConfig.spec, 'Custom block test is missing block spec. Requires "spec" field');
+        const isSimpleTest = testConfig.hasOwnProperty('inputs') && testConfig.hasOwnProperty('outputs');
+        assert(isSimpleTest || testConfig.function, 'Test must specify inputs and outputs or a function');
+        if (!isSimpleTest) {
+            assert(testConfig.name, 'Names are required when using a custom test function');
+        }
+    }
 };
 
 const ensureLoggedIn = function(caller) {
