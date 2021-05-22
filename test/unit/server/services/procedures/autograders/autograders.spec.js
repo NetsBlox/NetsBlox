@@ -135,8 +135,28 @@ describe(utils.suiteName(__filename), function() {
                         })
                     ]
                 }),
-                /must specify inputs and outputs or a function/i
+                /must specify inputs and output or a function/i
             );
+        });
+
+        it('should allow test w/ inputs, outputs', async function() {
+            service.socket.username = 'brian';
+            await service.createAutograder({
+                name: 'TestGrader2',
+                assignments: [
+                    Object.entries({
+                        name: 'SomeAssignment',
+                        tests: [
+                            Object.entries({
+                                type: 'CustomBlockTest',
+                                spec: 'someBlockSpec',
+                                inputs: [1,2,3],
+                                output: true
+                            })
+                        ]
+                    })
+                ]
+            });
         });
     });
 });
