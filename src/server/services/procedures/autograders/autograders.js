@@ -62,8 +62,8 @@ const validateTest = testConfig => {
 
     if (testConfig.type === 'CustomBlockTest') {
         assert(testConfig.spec, 'Custom block test is missing block spec. Requires "spec" field');
-        const isSimpleTest = testConfig.hasOwnProperty('inputs') && testConfig.hasOwnProperty('outputs');
-        assert(isSimpleTest || testConfig.function, 'Test must specify inputs and outputs or a function');
+        const isSimpleTest = testConfig.hasOwnProperty('inputs') && testConfig.hasOwnProperty('output');
+        assert(isSimpleTest || testConfig.function, 'Test must specify inputs and output or a function');
         if (!isSimpleTest) {
             assert(testConfig.name, 'Names are required when using a custom test function');
         }
