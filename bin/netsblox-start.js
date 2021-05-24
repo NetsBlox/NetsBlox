@@ -1,5 +1,6 @@
 'use strict';
 const path = require('path');
+const {spawn} = require('child_process');
 require('dotenv').load({
     path: path.join(__dirname, '..', '.env'),
     silent: true
@@ -35,7 +36,6 @@ const startAll = !program.core && !program.services;
 const port = +(process.env.PORT || 8080);
 process.env.NETSBLOX_API_PORT = process.env.NETSBLOX_API_PORT || 1357;
 if (startAll) {
-    const {spawn} = require('child_process');
     const servicesBin = path.join(__dirname, '..', 'src', 'server', 'services', 'index.js');
     const servicesPort = port + 1;
     process.env.PORT = servicesPort;
@@ -66,6 +66,10 @@ if (program.services) {
         useServiceProxy: isSetToTrue(process.env.PROXY_RPCS) || startAll
     };
 
+    const buildDocsBin = path.join(__dirname, 'build-docs.js');
+    const buildDocs = spawn('node', [buildDocsBin], {env: process.env});
+    buildDocs.stdout.pipe(process.stdout);
+    buildDocs.stderr.pipe(process.stderr);
     const server = new Server(opts);
 
     server.start();
