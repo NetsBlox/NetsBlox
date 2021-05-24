@@ -449,7 +449,7 @@
     class SimpleCustomBlockTestCase extends TestCase {
         constructor(spec, inputs, output, data) {
             const testFn = SimpleCustomBlockTestCase.getTest(spec, inputs, output);
-            const name = SimpleCustomBlockTestCase.getName(spec, inputs, output);
+            const name = data.name || SimpleCustomBlockTestCase.getName(spec, inputs, output);
             super(name, testFn, data);
             this.onClick = SimpleCustomBlockTestCase.onClick.bind(null, spec, inputs, output);
         }
