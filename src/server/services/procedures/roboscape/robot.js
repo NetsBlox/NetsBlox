@@ -222,6 +222,16 @@ Robot.prototype.setLed = function (led, cmd) {
     this.sendToRobot(message);
 };
 
+Robot.prototype.setNumericDisplay = function (number) {
+    if (number >= 0 && number <= 255) {
+        this._logger.log('show number ' + this.mac_addr + ' ' + number);
+        var message = Buffer.alloc(2);
+        message.write('n', 0, 1);
+        message.writeUInt8(number, 1);
+        this.sendToRobot(message);
+    }
+};
+
 Robot.prototype.beep = function (msec, tone) {
     msec = Math.min(Math.max(+msec, 0), 1000);
     tone = Math.min(Math.max(+tone, 0), 20000);
@@ -409,6 +419,10 @@ Robot.prototype.onMessage = function (message) {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
         });
+    } else if (command === 'n' && message.length === 12) {
+        this.sendToClient('show number', {
+            number: message.readUInt8(11),
+        });
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
         this.sendToClient('infra event', {
@@ -503,6 +517,12 @@ Robot.prototype.onCommand = function(command) {
             regex: /^set led (-?\d+)[, ](-?\d+)$/,
             handler: () => {
                 this.setLed(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
+            regex: /^show number (-?\d+)$/,
+            handler: () => {
+                this.setNumericDisplay(+RegExp.$1);
             }
         },
         {
@@ -622,6 +642,25 @@ Robot.prototype.playBlinks = function (states) {
     setTimeout(step, 0);
 };
 
+/**
+ * Send a list of numbers to a robot
+ * @param {Array<Number>} states 
+ * @param {Number} delay Time each number should be shown for 
+ */
+Robot.prototype.playNumbers = function (states, delay = 4000) {
+    var myself = this,
+        index = 0,
+        step = function () {            
+            if (index < states.length) {
+                myself.setNumericDisplay(states[index]);
+                index += 1;
+                setTimeout(step, delay);
+            }
+        };
+    
+    setTimeout(step, 0);
+};
+
 Robot.prototype.randomEncryption = function () {
     var keys = [],
         blinks = [];
@@ -638,6 +677,7 @@ Robot.prototype.randomEncryption = function () {
     this.resetRates();
     this.setEncryptionKey(keys);
     this.playBlinks(blinks);
+    this.playNumbers(keys);
 };
 
 // resets encryption, sequencing, and rate limits
