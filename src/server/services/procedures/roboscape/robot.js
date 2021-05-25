@@ -524,7 +524,7 @@ Robot.prototype.onCommand = function(command) {
         {
             regex: /^show number (\d+)(?:[, ](\d+))?$/,
             handler: () => {
-                this.setNumericDisplay(+RegExp.$1, (+RegExp.$2 == 0)? undefined : +RegExp.$2);
+                this.setNumericDisplay(+RegExp.$1, (RegExp.$2 == '')? undefined : +RegExp.$2);
             }
         },
         {
