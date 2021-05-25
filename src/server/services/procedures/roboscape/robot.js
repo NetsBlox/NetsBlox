@@ -222,12 +222,13 @@ Robot.prototype.setLed = function (led, cmd) {
     this.sendToRobot(message);
 };
 
-Robot.prototype.setNumericDisplay = function (number) {
+Robot.prototype.setNumericDisplay = function (number, msec = 3500) {
     if (number >= 0 && number <= 255) {
-        this._logger.log('show number ' + this.mac_addr + ' ' + number);
-        var message = Buffer.alloc(2);
+        this._logger.log('show number ' + this.mac_addr + ' ' + number + ' ' + msec);
+        var message = Buffer.alloc(4);
         message.write('n', 0, 1);
         message.writeUInt8(number, 1);
+        message.writeUInt16LE(msec, 2);
         this.sendToRobot(message);
     }
 };
@@ -419,9 +420,10 @@ Robot.prototype.onMessage = function (message) {
             led: message.readUInt8(11),
             command: message.readUInt8(12)
         });
-    } else if (command === 'n' && message.length === 12) {
+    } else if (command === 'n' && message.length === 14) {
         this.sendToClient('show number', {
             number: message.readUInt8(11),
+            duration: message.readUInt16LE(12),
         });
     } else if (command === 'F' && message.length === 12) {
         state = message.readUInt8(11);
@@ -520,9 +522,9 @@ Robot.prototype.onCommand = function(command) {
             }
         },
         {
-            regex: /^show number (-?\d+)$/,
+            regex: /^show number (\d+)(?:[, ](\d+))?$/,
             handler: () => {
-                this.setNumericDisplay(+RegExp.$1);
+                this.setNumericDisplay(+RegExp.$1, (+RegExp.$2 == 0)? undefined : +RegExp.$2);
             }
         },
         {
@@ -652,7 +654,7 @@ Robot.prototype.playNumbers = function (states, delay = 4000) {
         index = 0,
         step = function () {            
             if (index < states.length) {
-                myself.setNumericDisplay(states[index]);
+                myself.setNumericDisplay(states[index], delay - 500);
                 index += 1;
                 setTimeout(step, delay);
             }
