@@ -513,20 +513,19 @@
 
         static getTest(spec, functionXML) {
             const fn = ide.sockets.deserializeData([functionXML])[0];
-            const testBlock = SpriteMorph.prototype.blockForSelector('evaluate', true);
             const variables = new VariableFrame();
             variables.addVar('test fn', fn);
+
+            const testBlock = SpriteMorph.prototype.blockForSelector('evaluate', true);
             const [fnToCall, fnArgs] = testBlock.inputs();
             testBlock.replaceInput(fnToCall, SpriteMorph.prototype.variableBlock('test fn'));
             fnArgs.addInput();
 
             return async function() {
                 const customBlock = CustomBlockHelpers.getCustomBlockInstance(spec);
-                const ring = new RingMorph();
-                ring.embed(customBlock);
+                const ring = CustomBlockTestCase.ringify(customBlock);
                 fnArgs.replaceInput(fnArgs.inputs()[0], ring);
                 const actual = await CustomBlockHelpers.evalBlock(testBlock, [], variables);
-                console.log({actual});
                 if (snapEquals(actual, toSnap(true))) {
                     return new TestResult(true);
                 } else if (typeof actual !== 'boolean') {
@@ -535,6 +534,19 @@
                     return new TestResult(false);
                 }
             };
+        }
+
+        static ringify(customBlock) {
+            const ring = new RingMorph();
+            ring.embed(customBlock);
+            const ringArgs = ring.inputs()[1];
+            customBlock.inputs().forEach(input => {
+                const arg = ringArgs.addInput().template().fullCopy();
+                arg.isTemplate = false;
+                arg.isDraggable = true;
+                customBlock.replaceInput(input, arg);
+            });
+            return ring;
         }
 
         static fromConfig(config) {
