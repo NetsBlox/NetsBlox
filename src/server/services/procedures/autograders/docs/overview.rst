@@ -1,9 +1,6 @@
 Overview
 ========
 
-*Note: Autograders are currently experimental! Feel free to use them at your own risk :)
-As the following depends on unstable features, they are only available on https://dev.netsblox.org for now.*
-
 The ``Autograders`` service provides capabilities for creating custom autograders in NetsBlox.
 Autograders are created similarly to community services.
 That is, they expect a configuration dictionary (list of lists) that contains information like the course/grader name and assignments.
