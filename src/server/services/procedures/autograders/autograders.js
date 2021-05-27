@@ -2,7 +2,7 @@
  * The Autograders service enables users to create custom autograders for
  * use within NetsBlox.
  *
- * For more information, check out https://github.com/NetsBlox/NetsBlox/wiki/Autograders-Overview
+ * For more information, check out https://editor.netsblox.org/docs/services/Autograders/index.html
  *
  * @service
  */
