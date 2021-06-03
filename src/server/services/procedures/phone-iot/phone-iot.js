@@ -1197,12 +1197,12 @@ server.on('message', function (message, remote) {
 });
 
 /* eslint no-console: off */
-if (process.env.PHONE_IOT_PORT) {
+PhoneIoT.initialize = function () {
     console.log('PHONE_IOT_PORT is ' + process.env.PHONE_IOT_PORT);
     server.bind(process.env.PHONE_IOT_PORT || 1976);
 
     setTimeout(PhoneIoT.prototype._heartbeat, 1000);
-}
+};
 
 PhoneIoT.isSupported = function () {
     if (!process.env.PHONE_IOT_PORT) {

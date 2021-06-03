@@ -81,14 +81,6 @@ function importData() {
     IceCoreMetadata.insertMany(Object.values(metadata));
 }
 
-// Test for existing data
-IceCoreDataStorage.findOne({}).then(result => {
-    if (!result) {
-        IceCoreData._logger.info('No data found in database, importing from data files.');
-        importData();
-    }
-});
-
 function validateIceCore(core) {
     const validCores = IceCoreData.getIceCoreNames();
     if(!validCores.includes(core)) {
@@ -307,6 +299,15 @@ IceCoreData.getIceCoreMetadata = async function(core){
     const dataStatistics = await IceCoreMetadata.findOne({core}).lean();
     metadata.data = _.pick(dataStatistics, DATA_TYPES);
     return metadata;
+};
+
+IceCoreData.initialize = function() {
+    IceCoreDataStorage.findOne({}).then(result => {
+        if (!result) {
+            IceCoreData._logger.info('No data found in database, importing from data files.');
+            importData();
+        }
+    });
 };
 
 module.exports = IceCoreData;
