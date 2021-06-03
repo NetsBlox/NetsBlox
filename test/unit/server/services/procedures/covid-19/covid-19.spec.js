@@ -7,5 +7,9 @@ describe(utils.suiteName(__filename), function() {
         ['getRecoveredCounts', ['country', 'state', 'city']],
         ['getDeathCounts', ['country', 'state', 'city']],
         ['getConfirmedCounts', ['country', 'state', 'city']],
+        ['getVaccinationData',['country', 'state', 'option', 'startDate', 'endDate']],
+        ['getStates'],
+        ['getCountry'],
+        ['getVaccineCategories'],
     ]);
 });
