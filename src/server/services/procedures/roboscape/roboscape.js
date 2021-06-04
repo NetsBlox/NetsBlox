@@ -363,12 +363,12 @@ server.on('message', function (message, remote) {
 });
 
 /* eslint no-console: off */
-if (process.env.ROBOSCAPE_PORT) {
+RoboScape.initialize = function () {
     console.log('ROBOSCAPE_PORT is ' + process.env.ROBOSCAPE_PORT);
     server.bind(process.env.ROBOSCAPE_PORT || 1973);
 
     setTimeout(RoboScape.prototype._heartbeat, 1000);
-}
+};
 
 RoboScape.isSupported = function () {
     if (!process.env.ROBOSCAPE_PORT) {

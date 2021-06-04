@@ -16,6 +16,7 @@ class ServicesAPI {
     }
 
     async initialize() {
+        await this.services.load();
         await this.services.initialize();
     }
 

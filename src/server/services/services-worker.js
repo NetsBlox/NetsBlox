@@ -51,8 +51,15 @@ class ServicesWorker {
         return !!service;
     }
 
-    async initialize() {
+    async load() {
         await this.loadRPCs();
+    }
+
+    async initialize() {
+        this.getServices()
+            .filter(service => service.isSupported() && service.initialize)
+            .forEach(service => service.initialize());
+
         this.checkStaleServices();
     }
 
@@ -87,7 +94,11 @@ class ServicesWorker {
                     service.serviceName = this.getDefaultServiceName(name);
                 }
 
-                if(service.isSupported && !service.isSupported()){
+                if (!service.isSupported) {
+                    service.isSupported = () => true;
+                }
+
+                if(!service.isSupported()){
                     /* eslint-disable no-console*/
                     console.error(`${service.serviceName} is not supported in this deployment.`);
                     /* eslint-enable no-console*/

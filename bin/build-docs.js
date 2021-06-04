@@ -7,15 +7,17 @@ const fse = require('fs-extra');
 const path = require('path');
 const srcPath = path.join(__dirname, '..', 'src', 'browser');
 const {exec} = require('child_process');
-const ServicesAPI = require('./../src/server/services/api');
 const utils = require('./../src/server/api/cli/utils');
+const Logger = require('../src/server/logger');
+const ServicesWorker = require('./../src/server/services/services-worker');
 
 process.chdir(srcPath);
 utils.runWithStorage(build).catch(err => console.error(err));
 
 async function build() {
-    await ServicesAPI.initialize(); // needed for docs
-    await compileDocs();
+    const services = new ServicesWorker(new Logger('netsblox:build-docs'));
+    await services.load(); // needed for docs
+    await compileDocs(services);
 }
 
 async function hasDirectory(dir, subdir) {
@@ -99,17 +101,17 @@ function getRPCsMeta(service) {
 
     return { categories, rpcs };
 }
-function getMeta(serviceFilter) {
+function getMeta(services, serviceFilter) {
     const categories = { index: { description: undefined, items: [] } };
-    const services = {};
+    const servicesMeta = {};
     const apiKeys = {};
 
-    for (const serviceName in ServicesAPI.services.metadata) {
-        const service = ServicesAPI.services.metadata[serviceName];
+    for (const serviceName in services.metadata) {
+        const service = services.metadata[serviceName];
         if (!serviceFilter(service)) continue;
 
         updateCategories(categories, serviceName, service);
-        services[serviceName] = {
+        servicesMeta[serviceName] = {
             path: service.servicePath,
             description: trimText(service.rawDescription),
             rpcs: getRPCsMeta(service),
@@ -118,7 +120,7 @@ function getMeta(serviceFilter) {
     }
     sortCategories(categories);
 
-    return { description: undefined, categories, services, apiKeys };
+    return { description: undefined, categories, services: servicesMeta, apiKeys };
 }
 
 async function loadCategoryContent(rootPath, categoryName, isServiceCategory) {
@@ -209,11 +211,11 @@ async function cleanRoot() {
 
     return docsFiles;
 }
-async function compileDocs() {
+async function compileDocs(services) {
     const rootDocs = await cleanRoot();
 
     const serviceFilter = getServiceFilter(process.env.DOCS_SERVICE_FILTER);
-    const meta = getMeta(serviceFilter);
+    const meta = getMeta(services, serviceFilter);
     const servicesString = '\n\n.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n    '
         + (Object.keys(meta.categories).concat(meta.categories.index.items)).filter(s => s !== 'index').sort().map(item => {
             const isCategory = !!meta.categories[item];
