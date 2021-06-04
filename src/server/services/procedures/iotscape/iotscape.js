@@ -267,14 +267,13 @@ server.on('message', function (message, remote) {
 IoTScapeServices.start(server);
 
 /* eslint no-console: off */
-if (process.env.IOTSCAPE_PORT) {
+IoTScape.initialize = function () {
     console.log('IOTSCAPE_PORT is ' + process.env.IOTSCAPE_PORT);
-    
     // Clear old devices
     IoTScape._getDatabase().deleteMany({type: 'DeviceService'});
 
     server.bind(process.env.IOTSCAPE_PORT || 1975);
-}
+};
 
 IoTScape.isSupported = function () {
     if (!process.env.IOTSCAPE_PORT) {

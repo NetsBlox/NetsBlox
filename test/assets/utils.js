@@ -213,7 +213,7 @@ module.exports = {
         describe(`${serviceName} interfaces`, function() {
             before(async () => {
                 await connect();
-                await Services.initialize();
+                await Services.load();
             });
 
             interfaces.forEach(interface => {

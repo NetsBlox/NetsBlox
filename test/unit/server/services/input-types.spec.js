@@ -51,6 +51,28 @@ describe(utils.suiteName(__filename), function() {
         it('should support nested types', () => {
             typesParser.Array([1, 2], ['Number']);
         });
+        it('should support complex nested types', () => {
+            typesParser.Array([1, 2], [{ name: 'BoundedNumber', params: [1, 2] }]);
+        });
+
+        it('should enforce bounded lengths', () => {
+            assert.throws(() => typesParser.Array([], [undefined, 2]));
+            assert.throws(() => typesParser.Array([1], [undefined, 2]));
+            typesParser.Array([1, 2], [undefined, 2]);
+            typesParser.Array([1, 2, 3], [undefined, 2]);
+
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
+            typesParser.Array([1, 2, 3, 4], [undefined, undefined, 4]);
+            typesParser.Array([1, 2, 3], [undefined, undefined, 4]);
+
+            assert.throws(() => typesParser.Array([], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1, 2], [undefined, 3, 4]));
+            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
+            typesParser.Array([1, 2, 3, 4], [undefined, 3, 4]);
+            typesParser.Array([1, 2, 3], [undefined, 3, 4]);
+        });
     });
 
     describe('Object', function() {
@@ -103,6 +125,18 @@ describe(utils.suiteName(__filename), function() {
                 assert.deepEqual(parsedInput, {});
             });
 
+            it('should treat null values as unset', function() {
+                const input = [['name', null]];
+                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                assert.deepEqual(parsedInput, {});
+            });
+
+            it('should treat undefined values as unset', function() {
+                const input = [['name', undefined]];
+                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                assert.deepEqual(parsedInput, {});
+            });
+
             it('should parse fields', function() {
                 const input = [['age', '50']];
                 const parsedInput = typesParser.Object(input, [param('age', 'Number')]);
@@ -115,6 +149,11 @@ describe(utils.suiteName(__filename), function() {
                     () => typesParser.Object(input, [param('name', 'String'), param('age', 'Number')]),
                     /must contain/
                 );
+            });
+
+            it('should be optional if no params', function() {
+                const input = [['name', 'Donald Duck']];
+                typesParser.Object(input, []);
             });
         });
     });

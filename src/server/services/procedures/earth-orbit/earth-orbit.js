@@ -3,19 +3,22 @@
  * earth orbital parameters' data. This service only uses the 2004 data. 
  *
  * For more information, check out
- * http://vo.imcce.fr/insola/earth/online/earth/earth.html
+ * http://vo.imcce.fr/insola/earth/online/earth/earth.html.
  *
- * Original datasets are available at
- * http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.100.ASC
- * http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.250.ASC
- * http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.ASC
- * http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLP.LA2004.BTL.ASC
- * http://vo.imcce.fr/webservices/miriade/proxy.php?file=http://145.238.217.35//tmp/insola/insolaouto7Yk3u&format=text
- * http://vo.imcce.fr/webservices/miriade/proxy.php?file=http://145.238.217.38//tmp/insola/insolaouteXT96X&format=text
+ * Original datasets are available at:
+ * 
+ * - http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.100.ASC
+ * - http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.250.ASC
+ * - http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLN.LA2004.BTL.ASC
+ * - http://vo.imcce.fr/insola/earth/online/earth/La2004/INSOLP.LA2004.BTL.ASC
+ * - http://vo.imcce.fr/webservices/miriade/proxy.php?file=http://145.238.217.35//tmp/insola/insolaouto7Yk3u&format=text
+ * - http://vo.imcce.fr/webservices/miriade/proxy.php?file=http://145.238.217.38//tmp/insola/insolaouteXT96X&format=text
+ * 
  * @service
  * @category Science
  * @category Climate
  */
+
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -94,11 +97,10 @@ EarthOrbit._dataPrecession = fs.readFileSync(path.join(__dirname, 'precession.tx
  * Get longitude of perihelion from moving equinox by year. For more information about this, please visit:
  * https://www.physics.ncsu.edu/classes/astron/orbits.html
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
  * @returns {Array} longitude - longitude of perihelion from moving equinox
  */
 EarthOrbit.getLongitude = function(startyear = -Infinity, endyear = Infinity) {
@@ -111,12 +113,11 @@ EarthOrbit.getLongitude = function(startyear = -Infinity, endyear = Infinity) {
  * Get obliquity by year. For more information about obliquity, please visit:
  * https://climate.nasa.gov/news/2948/milankovitch-orbital-cycles-and-their-role-in-earths-climate/
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} obliquity
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * @returns {Array} list of historical obliquity values for each year
  */
 EarthOrbit.getObliquity = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataEccOblLongi
@@ -128,12 +129,11 @@ EarthOrbit.getObliquity = function(startyear = -Infinity, endyear = Infinity) {
  * Get eccentricity by year. For more information about eccentricity, please visit: 
  * https://climate.nasa.gov/news/2948/milankovitch-orbital-cycles-and-their-role-in-earths-climate/
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} eccentricity
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * @returns {Array} list of historical eccentricity values for each year
  */
 EarthOrbit.getEccentricity = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataEccOblLongi
@@ -144,12 +144,11 @@ EarthOrbit.getEccentricity = function(startyear = -Infinity, endyear = Infinity)
 /**
  * Get insolation by year. Insolation here is the amount of solar radiation received at 65 N in June on Earth.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} insolation
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * @returns {Array} list of historical insolation values for each year
  */
 EarthOrbit.getInsolation = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataInsolation
@@ -161,12 +160,11 @@ EarthOrbit.getInsolation = function(startyear = -Infinity, endyear = Infinity) {
  * Get precession by year. For more information about precession, please visit:
  * https://climate.nasa.gov/news/2948/milankovitch-orbital-cycles-and-their-role-in-earths-climate/
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} precession
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * @returns {Array} list of historical precession values for each year
  */
 EarthOrbit.getPrecession = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataPrecession

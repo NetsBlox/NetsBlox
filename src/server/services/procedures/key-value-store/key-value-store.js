@@ -76,9 +76,10 @@ const formatChildKeys = function(key, data) {
 const KeyValueStore = {};
 
 /**
- * Get the stored value
+ * Get the stored value for a key.
  * @param {String} key Fetch value for the given key
  * @param {String=} password Password (if password-protected)
+ * @returns {Any} the stored value
  */
 KeyValueStore.get = async function(key, password) {
     const keys = getKeys(key);
@@ -108,7 +109,7 @@ KeyValueStore.get = async function(key, password) {
 };
 
 /**
- * Set the stored value
+ * Set the stored value for a key.
  * @param {String} key Key to use for retrieving the variable
  * @param {Any} value Value to associated with key
  * @param {String=} password Password (if password-protected)
@@ -145,7 +146,7 @@ KeyValueStore.put = async function(key, value, password) {
 };
 
 /**
- * Delete the stored value
+ * Delete the stored value for a key.
  * @param {String} key Key to remove from store
  * @param {String=} password Password (if password-protected)
  */
@@ -175,7 +176,8 @@ KeyValueStore.delete = async function(key, password) {
 
 /**
  * Get the ID of the parent key.
- * @param {String} key
+ * @param {String} key key to get the parent of
+ * @returns {String} the parent key
  */
 KeyValueStore.parent = function(key) {
     var keys = getKeys(key);
@@ -191,6 +193,7 @@ KeyValueStore.parent = function(key) {
  * Get the IDs of the child keys.
  * @param {String} key
  * @param {String=} password Password (if password-protected)
+ * @returns {Array<String>} list of child key ids
  */
 KeyValueStore.child = async function(key, password) {
     let result = await getStore();

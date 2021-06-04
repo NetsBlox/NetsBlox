@@ -112,6 +112,7 @@ ConnectN.prototype.play = async function(row, column) {
 
 /**
  * Check if the current game is over.
+ * @returns {Boolean} ``true`` if game over, otherwise ``false``
  */
 ConnectN.prototype.isGameOver = function() {
     var isOver = false;
@@ -130,6 +131,7 @@ ConnectN.prototype.isGameOver = function() {
 
 /**
  * Check if every position on the current board is occupied.
+ * @returns {Boolean}``true`` if the board is full, otherwise ``false``
  */
 ConnectN.prototype.isFullBoard = function() {
     for (var i = this._state.board.length; i--;) {

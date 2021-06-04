@@ -28,16 +28,14 @@ const logger = require('../utils/logger')('covid-19');
 COVID19._data = new Data(logger, COVID19Storage);
 const {DEATH, CONFIRMED, RECOVERED} = COVID19._data.types;
 
-COVID19._data.importMissingData();
-
 /**
  * Get number of confirmed cases of COVID-19 by date for a specific country and state.
  *
  * Date is in month/day/year format.
  *
- * @param{String} country Country or region
- * @param{String=} state State or province
- * @param{String=} city City
+ * @param {String} country Country or region
+ * @param {String=} state State or province
+ * @param {String=} city City
  */
 COVID19.getConfirmedCounts = async function(country, state='', city='') {
     return await this._data.getData(CONFIRMED, country, state, city);
@@ -48,9 +46,9 @@ COVID19.getConfirmedCounts = async function(country, state='', city='') {
  *
  * Date is in month/day/year format.
  *
- * @param{String} country Country or region
- * @param{String=} state State or province
- * @param{String=} city City
+ * @param {String} country Country or region
+ * @param {String=} state State or province
+ * @param {String=} city City
  */
 COVID19.getDeathCounts = async function(country, state='', city='') {
     return await this._data.getData(DEATH, country, state, city);
@@ -61,9 +59,9 @@ COVID19.getDeathCounts = async function(country, state='', city='') {
  *
  * Date is in month/day/year format.
  *
- * @param{String} country Country or region
- * @param{String=} state State or province
- * @param{String=} city City
+ * @param {String} country Country or region
+ * @param {String=} state State or province
+ * @param {String=} city City
  */
 COVID19.getRecoveredCounts = async function(country, state='', city='') {
     return await this._data.getData(RECOVERED, country, state, city);
@@ -71,6 +69,7 @@ COVID19.getRecoveredCounts = async function(country, state='', city='') {
 
 /**
  * Get a list of all countries (and states, cities) with data available.
+ * @returns {Array<Array<String>>} an array of ``[country, state, city]`` for each location with data available
  */
 COVID19.getLocationsWithData = async function() {
     const locations = await this._data.getAllLocations();
@@ -83,13 +82,17 @@ COVID19.getLocationsWithData = async function() {
 /**
  * Get the latitude and longitude for a location with data available.
  *
- * @param{String} country
- * @param{String=} state
- * @param{String=} city City
+ * @param {String} country
+ * @param {String=} state
+ * @param {String=} city City
  */
 COVID19.getLocationCoordinates = async function(country, state='', city='') {
     const data = await this._data.getLocation(country, state, city);
     return _.pick(data, ['latitude', 'longitude']);
+};
+
+COVID19.initialize = function() {
+    this._data.importMissingData();
 };
 
 module.exports = COVID19;

@@ -40,6 +40,16 @@ function getNBType(jsType) {
 
 const types = {};
 
+function getTypeParser(type) {
+    if (!type) return undefined;
+
+    const t = types[type];
+    if (t) return t;
+
+    const t2 = types[type.name]; // alias so we don't repeat lookups on every call of closure
+    return input => t2(input, type.params);
+}
+
 types.Number = input => {
     input = parseFloat(input);
     if (isNaN(input)) {
@@ -114,12 +124,23 @@ types.Date = input => {
     return input;
 };
 
-types.Array = (input, params) => {
-    const [innerType] = params;
-    if (!Array.isArray(input)) throw GENERIC_ERROR;
+types.Array = (input, params=[]) => {
+    const [typeParam, min=0, max=Infinity] = params;
+    const innerType = getTypeParser(typeParam);
+
+    if (!Array.isArray(input)) throw new InputTypeError();
     if (innerType) {
-        input = input.map(value => types[innerType](value));
+        let i = 0;
+        try {
+            for (; i < input.length; ++i) input[i] = innerType(input[i]);
+        }
+        catch (e) {
+            throw new ParameterError(`Item ${i+1} ${e}`);
+        }
     }
+    if (min === max && input.length !== min) throw new ParameterError(`List must contain ${min} items`);
+    if (input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
+    if (input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
     return input;
 };
 
@@ -144,44 +165,38 @@ types.Longitude = input => {
 };
 
 // all Object types are going to be structured data (simplified json for snap environment)
-types.Object = (input, params, ctx) => {
+types.Object = (input, params=[], ctx) => {
     // check if it has the form of structured data
     let isArray = Array.isArray(input);
     if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
         throw new InputTypeError('It should be a list of (key, value) pairs.');
     }
     input = _.fromPairs(input);
-    if (params) {
-        const pairs = params
-            .map(param => {
-                const hasField = input.hasOwnProperty(param.name);
-                if (hasField) {
-                    const value = input[param.name];
-                    delete input[param.name];
-                    try {
-                        const parsedValue = types[param.type.name](value, param.type.params, ctx);
-                        return [
-                            param.name,
-                            parsedValue
-                        ];
-                    } catch(err) {
-                        const message = `Field ${getErrorMessage(param, err)}`;
-                        throw new ParameterError(message);
-                    }
-                } else if (!param.optional) {
-                    throw new ParameterError(`It must contain a(n) ${param.name} field`);
-                }
-            })
-            .filter(pair => pair);
+    if (!params.length) return input; // no params means we accept anything, so return raw input as obj
 
-        const extraFields = Object.keys(input);
-        if (extraFields.length) {
-            throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
+    const res = {};
+    for (const param of params) {
+        const value = input[param.name];
+        delete input[param.name];
+        const isMissingField = value === undefined || value === null;
+
+        if (isMissingField) {
+            if (param.optional) continue;
+            throw new ParameterError(`It must contain a(n) ${param.name} field`);
         }
-        return _.fromPairs(pairs);
-    } else {
-        return input;
+
+        try {
+            res[param.name] = types[param.type.name](value, param.type.params, ctx);
+        } catch(err) {
+            throw new ParameterError(`Field ${getErrorMessage(param, err)}`);
+        }
     }
+
+    const extraFields = Object.keys(input);
+    if (extraFields.length) {
+        throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
+    }
+    return res;
 };
 
 types.Function = async (blockXml, _params, ctx) => {
