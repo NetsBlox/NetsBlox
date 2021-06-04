@@ -1,10 +1,10 @@
+const InputTypes = require('../../input-types');
 const OAuth = require('../../../api/core/oauth');
 const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
 const axios = require('axios');
 const qs = require('qs');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
-const {LoginRequired} = require('../../../api/core/errors');
+const {LoginRequired, RequestError} = require('../../../api/core/errors');
 const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
 const GetTokenStore = require('./tokens');
 const _ = require('lodash');
@@ -20,12 +20,18 @@ const RemoteClient = require('../../remote-client');
 const cookieParser = require('cookie-parser');
 const skillBuilder = Alexa.SkillBuilders.custom();
 
+async function getSkillConfig(skillId) {
+    const {skills} = GetStorage();
+    return await skills.findOne({_id: skillId});
+}
+
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         devLogger.log('Checking if we can handle LaunchRequest');
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
+        // TODO: Look up the name from the database
         const speechText = 'Welcome to the Alexa NetsBlox Skill. What would you like to do?';
 
         return handlerInput.responseBuilder
@@ -188,17 +194,59 @@ const LogRequestInterceptor = {
 };
 
 
-skillBuilder.addRequestInterceptors(LogRequestInterceptor);
+//skillBuilder.addRequestInterceptors(LogRequestInterceptor);
+
+const NetsBloxSkillHandler = {
+    async canHandle(handlerInput) {
+        devLogger.log('checking if we can handle request w/ NetsBloxSkillHandler');
+        devLogger.log(JSON.stringify(handlerInput.requestEnvelope));
+        // TODO: Can this be async?
+        const {applicationId} = handlerInput.requestEnvelope.session.application;
+        const skillConfig = await getSkillConfig(applicationId);
+        if (!skillConfig) {
+            return false;
+        }
+
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const intentNames = skillConfig.intents.map(intent => intent.name);
+        return intentNames.includes(intentName);
+    },
+
+    async handle(handlerInput) {
+        const {applicationId} = handlerInput.requestEnvelope.session.application;
+        const intentName = Alexa.getIntentName(handlerInput.requestEnvelope);
+        const skillConfig = await getSkillConfig(applicationId);
+        const intent = skillConfig.intents.find(intent => intent.name === intentName);
+        const fn = await InputTypes.parse.Function(intent.handler);
+        const slotValues = intent.slots
+            .map(slot => handlerInput.requestEnvelope.request.intent.slots[slot.name].value);
+        let speechText;
+        try {
+            speechText = await fn(slotValues);
+        } catch (err) {
+            speechText = `An error occurred: ${err.message}`;
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .withSimpleCard(skillConfig.name, speechText)
+            .withShouldEndSession(true)
+            .getResponse();
+    },
+};
 
 skillBuilder.addRequestHandlers(
-    LaunchRequestHandler,
-    SendMessageIntentHandler,
-    HelpIntentHandler,
-    CancelAndStopIntentHandler,
-    SessionEndedRequestHandler,
-    ErrorHandler,
-    FallbackHandler,
+    NetsBloxSkillHandler,
 );
+//skillBuilder.addRequestHandlers(
+    //LaunchRequestHandler,
+    //SendMessageIntentHandler,
+    //HelpIntentHandler,
+    //CancelAndStopIntentHandler,
+    //SessionEndedRequestHandler,
+    //ErrorHandler,
+    //FallbackHandler,
+//);
 
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
@@ -216,14 +264,14 @@ if (require.main === module) {
     app.get('/whoami', (req, res) => res.send(req.token.username));
     app.use('/', adapter.getRequestHandlers());
     app.listen(port, function() {
-        devLogger.log("Alexa: dev endpoint listening on port " + port);
+        devLogger.log(`Alexa: dev endpoint listening on port ${port}`);
     });
 } else {
     const router = express();
     const parseCookies = cookieParser();
     router.get('/ping', (req, res) => res.send('pong'));
     router.get('/login.html', bodyParser.json(), parseCookies, setUsername, handleErrors((req, res) => {
-        devLogger.log("Cookie " + req.cookies['netsblox-cookie']);
+        devLogger.log('Cookie ' + req.cookies['netsblox-cookie']);
         const username = req.session.username;
 
         devLogger.log('login (to amazon) w/ (netsblox) username: ' + username);
@@ -238,73 +286,69 @@ if (require.main === module) {
                 throw new LoginRequired();
             }
         }
-        devLogger.log('>>> sending HTML:', AmazonLoginTemplate({username, env: process.env}));
         res.send(AmazonLoginTemplate({username, env: process.env}));
     }));
     router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
         handleErrors(async (req, res) => {
-            devLogger.log("Cookie " + req.cookies['netsblox-cookie']);
-            const sessionUser = req.session.username;
+            const {username} = req.session;
+            const isLoggedIn = !!username;
 
-            const isLoggedIn = !!sessionUser;
             if (!isLoggedIn) {
                 throw new LoginRequired();
             }
 
-            devLogger.log("Retrieving token for user " + sessionUser);
             const amazonResponse = req.body.code;
-            devLogger.log(amazonResponse);
-
-            if (amazonResponse) {
-                const options = {
-                    method: "post",
-                    url: "https://api.amazon.com/auth/o2/token",
-                    data: qs.stringify({
-                        grant_type: "authorization_code",
-                        code: amazonResponse,
-                        client_id: process.env.ALEXA_CLIENT_ID,
-                        client_secret: process.env.ALEXA_CLIENT_SECRET,
-                        redirect_uri: "https://alexa.netsblox.org/services/routes/alexa/tokens"
-                    }),
-                    headers: {
-                        "content-type": "application/x-www-form-urlencoded;charset=utf-8"
-                    }
-                };
-
-                let tokens;
-                try {
-                    const response = await axios(options);
-                    tokens = response.data;
-                    devLogger.log(JSON.stringify(tokens));
-                } catch (err) {
-                    return res.status(err.statusCode).send(err.message);
-                }
-
-                if (tokens) {
-                    const collection = GetTokenStore();
-                    if (!collection) {
-                        devLogger.log("Token store not found.");
-                        return res.sendStatus(404);
-                    }
-                    const query = {
-                        $set: {
-                            username: sessionUser,
-                            access_token: tokens.access_token,
-                            refresh_token: tokens.refresh_token
-                        }
-                    };
-                    await collection.updateOne({username: sessionUser}, query, {upsert: true});
-                } else {
-                    throw new RequestError();
-                }
-            } else {
-                throw new RequestError();
+                
+            if (!amazonResponse) {
+                throw new RequestError('Missing authorization code.');
             }
+
+            const options = {
+                method: 'post',
+                url: 'https://api.amazon.com/auth/o2/token',
+                data: qs.stringify({
+                    grant_type: 'authorization_code',
+                    code: amazonResponse,
+                    client_id: process.env.ALEXA_CLIENT_ID,
+                    client_secret: process.env.ALEXA_CLIENT_SECRET,
+                    redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'  // FIXME
+                }),
+                headers: {
+                    'content-type': 'application/x-www-form-urlencoded;charset=utf-8'
+                }
+            };
+
+            let tokens;
+            try {
+                const response = await axios(options);
+                tokens = response.data;
+            } catch (err) {
+                return res.status(err.statusCode).send(err.message);
+            }
+
+            if (!tokens) {
+                throw new RequestError('Access token not received from Amazon.');
+            }
+
+            const collection = GetTokenStore();
+            if (!collection) {
+                return res.sendStatus(500);
+            }
+
+            const query = {
+                $set: {
+                    username,
+                    access_token: tokens.access_token,
+                    refresh_token: tokens.refresh_token
+                }
+            };
+            await collection.updateOne({username}, query, {upsert: true});
+
             return res.sendStatus(200);
-        }));
+        })
+    );
     router.post('/', adapter.getRequestHandlers());
     router.get('/whoami', (req, res) => res.send(req.token.username));
-    devLogger.log('Mounting Alexa routes on NetsBlox');
     module.exports = router;
 }
 

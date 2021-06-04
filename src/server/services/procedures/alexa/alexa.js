@@ -6,10 +6,11 @@
  */
 const Alexa = {};
 const GetTokenStore = require('./tokens');
+const GetStorage = require('./storage');
 const AlexaSMAPI = require('ask-smapi-sdk');
 const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;
-const SERVER_URL = 'https://alexa.netsblox.org/services/routes/alexa';  // FIXME: this shouldn't be hard-coded
+const SERVER_URL = 'https://alexa.netsblox.org';  // FIXME: this shouldn't be hard-coded
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -122,7 +123,7 @@ const createManifestObject = function(summary, description, examplePhrases, keyw
                 'apis': {
                     'custom': {
                         'endpoint' : {
-                            'uri' : SERVER_URL
+                            'uri' : `${SERVER_URL}/services/routes/alexa`
                         }
                     }
                 },
@@ -340,8 +341,8 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
 
     let intentsArray = [
         {
-        "name": "AMAZON.CancelIntent",
-        "samples": []
+            "name": "AMAZON.CancelIntent",
+            "samples": []
         },
         {
             "name": "AMAZON.HelpIntent",
@@ -426,6 +427,101 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
 
     return response;
 };
+
+/**
+ * @param{Object} configuration
+ * @param{String} configuration.name
+ * @param{String} configuration.invocation
+ * @param{Array<Any>} configuration.intents FIXME: Add better type here
+ */
+Alexa.createSkillV2 = async function(configuration) {
+    const smapiClient = getAPIClient(this.caller);
+    const {vendors} = (await smapiClient.getVendorListV1());
+    const vendorId = vendors[0].id;
+
+    const manifest = createManifest(vendorId);
+    const {skillId} = await smapiClient.createSkillForVendorV1(manifest);
+
+    // TODO: save the skill in the database
+    const interactionModel = {
+        languageModel: {
+            invocationName: configuration.invocation,
+            modelConfiguration: {
+                fallbackIntentSensitivity: {
+                    level: 'LOW'
+                }
+            },
+            intents: configuration.intents.map(intent => ({
+                name: intent.name,
+                samples: intent.utterances,  // TODO: Should this match more closely?
+                slots: (intent.slots || []).map(slot => ({
+                    name: slot.name,
+                    type: slot.type,
+                    samples: slot.samples,
+                    multipleValues: {
+                        enabled: slot.multipleValues || false,
+                    }
+                })),
+            })),
+            types: [],
+        },
+    };
+
+    const stage = 'development';
+    await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
+
+    const {skills} = GetStorage();
+    await skills.updateOne({_id: skillId}, {
+        $set: {
+            config: configuration,
+        }
+    }, {upsert: true});
+    return skillId;
+};
+
+const createManifest = (vendorId, name) => ({
+    'vendorId': vendorId,
+    'manifest': {
+        'publishingInformation': {
+            'locales': {
+                'en-US': {
+                    'summary': 'An under-development Alexa Skill created in NetsBlox!',
+                    'examplePhrases': ['none yet!'],
+                    'keywords': [],
+                    'name': name,
+                    'description': 'An under-development Alexa Skill created in NetsBlox!'
+                }
+            },
+            'isAvailableWorldwide': true,
+            'testingInstructions': 'CUSTOM',
+            'category': '',
+            'distributionCountries': [
+                'US',
+            ]
+        },
+        'apis': {
+            'custom': {
+                'endpoint' : {
+                    'uri' : `${SERVER_URL}/services/routes/alexa`
+                }
+            }
+        },
+        'manifestVersion': '1.0',
+        'privacyAndCompliance': {
+            'allowsPurchases': false,
+            'usesPersonalInfo': false,
+            'isChildDirected': false,
+            'isExportCompliant': true,
+            'containsAds': false,
+            'locales': {
+                'en-US': {
+                    'privacyPolicyUrl': `${SERVER_URL}/privacy.html`,
+                    'termsOfUseUrl': `${SERVER_URL}/tos.html`
+                }
+            }
+        },
+    }
+});
 
 Alexa.isSupported = () => {
     const isSupported = !process.env.ALEXA_CLIENT_ID || !process.env.ALEXA_CLIENT_SECRET;
