@@ -107,6 +107,9 @@ function getMeta(services, serviceFilter) {
     const apiKeys = {};
 
     for (const serviceName in services.metadata) {
+        if (!services.isServiceLoaded(serviceName)) {
+            continue;
+        }
         const service = services.metadata[serviceName];
         if (!serviceFilter(service)) continue;
 
