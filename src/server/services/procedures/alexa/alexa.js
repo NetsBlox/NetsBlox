@@ -2,7 +2,6 @@
  * The Alexa service provides capabilities for building your own services on the Amazon Echo.
  *
  * @service
- * @alpha
  */
 const Alexa = {};
 const GetTokenStore = require('./tokens');
@@ -435,14 +434,15 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
  * @param{Array<Any>} configuration.intents FIXME: Add better type here
  */
 Alexa.createSkillV2 = async function(configuration) {
-    const smapiClient = getAPIClient(this.caller);
+    const smapiClient = await getAPIClient(this.caller);
     const {vendors} = (await smapiClient.getVendorListV1());
     const vendorId = vendors[0].id;
 
-    const manifest = createManifest(vendorId);
-    const {skillId} = await smapiClient.createSkillForVendorV1(manifest);
+    const manifest = createManifest(vendorId, configuration.name);
+    console.log(JSON.stringify(manifest, null, 2));
+    const {skillId} = await smapiClient.createSkillForVendorV1(manifest, vendorId);
+    await sleep(5000);
 
-    // TODO: save the skill in the database
     const interactionModel = {
         languageModel: {
             invocationName: configuration.invocation,
@@ -468,6 +468,7 @@ Alexa.createSkillV2 = async function(configuration) {
     };
 
     const stage = 'development';
+    console.log({skillId, stage, interactionModel: JSON.stringify(interactionModel, null, 2)});
     await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
 
     const {skills} = GetStorage();
@@ -478,6 +479,10 @@ Alexa.createSkillV2 = async function(configuration) {
     }, {upsert: true});
     return skillId;
 };
+
+function sleep(duration) {
+    return new Promise(resolve => setTimeout(resolve, duration));
+}
 
 const createManifest = (vendorId, name) => ({
     'vendorId': vendorId,
@@ -524,7 +529,11 @@ const createManifest = (vendorId, name) => ({
 });
 
 Alexa.isSupported = () => {
-    const isSupported = !process.env.ALEXA_CLIENT_ID || !process.env.ALEXA_CLIENT_SECRET;
+    const isSupported = process.env.ALEXA_CLIENT_ID && process.env.ALEXA_CLIENT_SECRET;
+    console.log('>>>>');
+    console.log({isSupported});
+    console.log(process.env.ALEXA_CLIENT_ID);
+    console.log(process.env.ALEXA_CLIENT_SECRET);
     if (isSupported) {
         console.log('ALEXA_CLIENT_ID and ALEXA_CLIENT_SECRET must be set for Alexa capabilities.');
     }
