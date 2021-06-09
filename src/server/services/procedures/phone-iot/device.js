@@ -55,33 +55,6 @@ const common = require('./common');
 const FORGET_TIME = 120; // forgetting a device in seconds
 const RESPONSE_TIMEOUT = 2000; // ms (well over worst case)
 
-const DIRECTIONS_3D = [
-    [[0, 0, 1], 'up'],
-    [[0, 0, -1], 'down'],
-    [[0, 1, 0], 'vertical'],
-    [[0, -1, 0], 'upside down'],
-    [[1, 0, 0], 'left'],
-    [[-1, 0, 0], 'right'],  
-];
-const COMPASS_DIRECTIONS_4 = [
-    [0, 'N'],
-    [90, 'E'],
-    [-90, 'W'],
-    [180, 'S'],
-    [-180, 'S'],
-];
-const COMPASS_DIRECTIONS_8 = [
-    [0, 'N'],
-    [45, 'NE'],
-    [-45, 'NW'],
-    [90, 'E'],
-    [-90, 'W'],
-    [135, 'SE'],
-    [-135, 'SW'],
-    [180, 'S'],
-    [-180, 'S'],
-];
-
 const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
     this.mac_addr = mac_addr;
@@ -713,10 +686,10 @@ Device.prototype.getCompassHeading = async function (device, args, clientId) {
     return (await this.getOrientation(device, args, clientId))[0];
 };
 Device.prototype.getCompassDirection = async function (device, args, clientId) {
-    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_8);
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), common.COMPASS_DIRECTIONS_8);
 };
 Device.prototype.getCompassCardinalDirection = async function (device, args, clientId) {
-    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_4);
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), common.COMPASS_DIRECTIONS_4);
 };
 
 Device.prototype.getAccelerometer = async function (device, args, clientId) {
@@ -730,7 +703,7 @@ Device.prototype.getAccelerometer = async function (device, args, clientId) {
     return throwIfErr(await response).vals;
 };
 Device.prototype.getFacingDirection = async function (device, args, clientId) {
-    return common.closestVector(await this.getAccelerometer(device, args, clientId), DIRECTIONS_3D);
+    return common.closestVector(await this.getAccelerometer(device, args, clientId), common.DIRECTIONS_3D);
 };
 
 Device.prototype.getGravity = async function (device, args, clientId) {

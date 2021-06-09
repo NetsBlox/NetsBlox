@@ -792,7 +792,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -808,6 +808,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
      * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Number} the compass heading (in degrees)
@@ -822,6 +826,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
      * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {String} the current compass direction name
@@ -833,6 +841,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Equivalent to :func:`PhoneIoT.getCompassDirection`, except that it only returns ``N``, ``E``, ``S``, or ``W``.
      * 
      * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -849,7 +861,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``accelerometer``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -869,6 +881,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * - ``upside down`` - the device is vertical, but upside down
      * - ``left`` - the device is horizontal, lying on its left side (when facing the screen)
      * - ``right`` - the device is horizontal, lying on its right side (when facing the screen)
+     * 
+     * Sensor name: ``accelerometer``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``
      * 
      * @category Sensors
      * @param {Device} device id of the device
