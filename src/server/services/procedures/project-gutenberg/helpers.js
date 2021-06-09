@@ -10,6 +10,14 @@ async function* dropUntil(stream, fn) {
     }
 }
 
+async function* filter(stream, fn) {
+    for await (const item of stream) {
+        if (await fn(item)) {
+            yield item;
+        }
+    }
+}
+
 async function* takeWhile(stream, fn, includeNext=false) {
     let lastItem;
     for await (const item of stream) {
@@ -69,4 +77,4 @@ async function collect(stream, fn) {
     return results;
 }
 
-module.exports = {takeWhile, dropUntil, collect, chunkWith, chunk};
+module.exports = {takeWhile, dropUntil, collect, chunkWith, chunk, filter};
