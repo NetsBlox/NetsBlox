@@ -654,7 +654,9 @@ Robot.prototype.playNumbers = function (states, delay = 4000) {
         index = 0,
         step = function () {            
             if (index < states.length) {
-                myself.setNumericDisplay(states[index], delay - 500);
+                for (let repeat = 0; repeat < 3; repeat++) {
+                    myself.setNumericDisplay(states[index], delay - 500);
+                }
                 index += 1;
                 setTimeout(step, delay);
             }
