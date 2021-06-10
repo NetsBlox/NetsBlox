@@ -6,37 +6,33 @@
  */
 
 const logger = require('../utils/logger')('project-gutenberg');
-const ProjectGutenberg = {};
 const metadata = require('./metadata');
-const h = require('./helpers');
 const Storage = require('../../storage');
-const axios = require('axios');
 const _ = require('lodash');
-const ProjectGutenbergStorage = Storage.createCollection(`netsblox:services:project-gutenberg`);
+const ProjectGutenbergStorage = Storage.createCollection('netsblox:services:project-gutenberg');
 const {BookNotFound} = require('./errors');
-// TODO: add initialize fn to services? add optional configurations for services?
+const axios = require('axios');
+const ProjectGutenberg = {};
 
-ProjectGutenbergStorage.findOne({}).then(async result => {
-    if (!result) {
-        logger.info('No data found in database, importing metadata.');
-        const docs = await metadata.getMetadataDocs();
-        await ProjectGutenbergStorage.insertMany(docs);
-    }
-});
+ProjectGutenberg.initialize = function() {
+    ProjectGutenbergStorage.findOne({}).then(async result => {
+        if (!result) {
+            logger.info('No data found in database, importing metadata.');
+            const docs = await metadata.getMetadataDocs();
+            await ProjectGutenbergStorage.insertMany(docs);
+        }
+    });
+};
 
 /**
- * Get the full text for a given book.
+ * Get the URL for the full text of a given book.
  *
  * @param {String} ID Book ID
  * @returns {String}
  */
 ProjectGutenberg.getText = async function(id) {
-    const url = 'TODO';  // TODO
-    const response = await axios.get(url);
-    // TODO: handle errors
-    if (response.status === 404) {
-        throw new BookNotFound(id);
-    }
+    const {url} = await this.getInfo(id);
+    const response = await axios({url, method: 'GET'});
     return response.data;
 };
 
@@ -51,7 +47,7 @@ ProjectGutenberg.getInfo = async function(id) {
     if (!info) {
         throw new BookNotFound(id);
     }
-    return _.pick(info, ['id', 'title', 'short title', 'author', 'contributor', 'language']);
+    return _.pick(info, ['id', 'title', 'short title', 'author', 'contributor', 'language', 'url']);
 };
 
 /**
@@ -73,7 +69,7 @@ function normalize(text) {
     return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
-async function getTitles(title) {
+async function getTitles() {
     if (titles) {
         return titles;
     }
