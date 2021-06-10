@@ -201,6 +201,10 @@ async function prepareRDF(filename) {
 module.exports = {getDocsFromRDF, schema, getMetadataDocs};
 
 if (require.main === module) {
+    if (!global.gc) {
+        console.error('Running with default GC behavior. If you run out of memory run again with the --expose-gc flag.');
+        console.error('You also may want to consider using --max-old-space-size=4096');
+    }
     process.argv.slice(2).forEach(async filename => {
         filename = await prepareRDF(filename);
         const docURLs = {};
@@ -208,9 +212,15 @@ if (require.main === module) {
             docURLs[docID] = url;
         }
 
+        let count = 0;
+        const total = Object.keys(docURLs).length;
         for await (const doc of getDocsFromRDF(filename)) {
             doc.url = docURLs[doc.id];
+            delete docURLs[doc.id];
+
             console.log(JSON.stringify(doc));
+            if (global.gc) global.gc();
+            console.error(`${++count}/${total}`);
         }
     });
 }
