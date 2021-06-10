@@ -1,4 +1,4 @@
-const {RdfXmlParser} = require("rdfxml-streaming-parser");
+const {RdfXmlParser} = require('rdfxml-streaming-parser');
 const fs = require('fs');
 const assert = require('assert');
 const h = require('./helpers');
@@ -10,12 +10,12 @@ const DEFAULT_CATALOG = path.join(__dirname, 'catalog.rdf');
 function getDocID(rdfObj) {
     if (rdfObj.subject.termType === 'NamedNode') {
         const subject = rdfObj.subject.value;
-        const subjectID = subject.split('#etext')[1]
+        const subjectID = subject.split('#etext')[1];
         return subjectID;
     }
 }
 
-function getPredicateField(rdfObj, currentDoc, values) {
+function getPredicateField(rdfObj) {
     const predicateToField = {
         title: 'title',
         friendlytitle: 'short title',
@@ -51,7 +51,6 @@ function getPredicateField(rdfObj, currentDoc, values) {
 
 function getDocEntry(rdfObj) {
     const field = getPredicateField(rdfObj);
-    // TODO: add support for arrays..
     const expectedObjectTypes = ['NamedNode', 'Literal', 'BlankNode'];
     assert(
         expectedObjectTypes.includes(rdfObj.object.termType),
@@ -68,7 +67,7 @@ function getReferenceEntry(rdfObj) {
     return [field, value];
 }
 
-function getObjectValue(rdfObj, values) {
+function getObjectValue(rdfObj) {
     return rdfObj.object.value;
 }
 
@@ -172,7 +171,6 @@ async function* getDocURLsFromRDF(file) {
     for await (const doc of rdfs) {
         const docID = doc.object.value.split('etext')[1];
         const url = doc.subject.value;
-        // TODO: look for the most recent?
         yield [docID, url];
     }
 }
@@ -209,6 +207,7 @@ function hasRequiredFields(doc) {
 module.exports = {getDocsFromRDF, schema, getMetadataDocs};
 
 if (require.main === module) {
+    /* eslint-disable no-console*/
     if (!global.gc) {
         console.error('Running with default GC behavior. If you run out of memory run again with the --expose-gc flag.');
         console.error('You also may want to consider using --max-old-space-size=4096');
@@ -235,4 +234,5 @@ if (require.main === module) {
             console.error(`${++count}/~${total}`);
         }
     });
+    /* eslint-enable no-console*/
 }

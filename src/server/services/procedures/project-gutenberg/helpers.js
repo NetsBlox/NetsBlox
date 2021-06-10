@@ -34,7 +34,7 @@ async function* takeWhile(stream, fn, includeNext=false) {
 }
 
 async function* chunkWith(stream, fn) {
-    const first = (await stream.next()).value
+    const first = (await stream.next()).value;
     let chunkID = fn(first);
     let chunk = [first];
     for await (const item of stream) {
@@ -69,7 +69,7 @@ async function* chunk(stream, size) {
     }
 }
 
-async function collect(stream, fn) {
+async function collect(stream) {
     const results = [];
     for await (const item of stream) {
         results.push(item);
