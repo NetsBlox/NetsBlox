@@ -53,11 +53,26 @@ ProjectGutenberg.getInfo = async function(id) {
 /**
  * Search for a book given title text and optional advanced options. Returns a list of book IDs.
  *
+ * @param {Enum<publisher,title,author,language,subject>} field
  * @param {String} text
  * @returns {Array<string>}
  */
-ProjectGutenberg.search = async function(text) {
-    const ids = await search(text);
+ProjectGutenberg.search = async function(field, text) {
+    let query = {};
+    query[field] = {$regex: text, $options: 'i'};
+    if (field === 'author') {
+        const nameChunks = text.split(' ');
+        nameChunks.unshift(nameChunks.pop() + ',');
+        query = {
+            $or: [
+                query,
+                {author: {$regex: nameChunks.join(' '), $options: 'i'}},
+            ]
+        };
+    }
+
+    const info = await ProjectGutenbergStorage.find(query,  {_id: 0}).toArray();
+    const ids = info.map(info => info.id);
     return ids;
 };
 
