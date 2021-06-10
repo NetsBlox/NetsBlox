@@ -3,6 +3,7 @@
  Color, SpriteMorph, localize, TextMorph, MorphicPreferences, WHITE*/
 (function() {
     const config = AUTOGRADER_CONFIG;
+    const [ide] = world.children;
 
     class CustomBlockAutograder extends Extension {
         constructor(ide) {  /* TODO: Use an API wrapper instead? */
@@ -19,8 +20,7 @@
                     assignmentConfig.description,
                     assignmentConfig.tests.map(testConfig => {
                         if (testConfig.type === 'CustomBlockTest') {
-                            const opts = omit(testConfig, ['type', 'spec', 'inputs', 'output']);
-                            return new ExactOutputTestCase(ide, testConfig.spec, testConfig.inputs, testConfig.output, opts);
+                            return CustomBlockTestCase.fromConfig(testConfig);
                         } else {
                             throw new Error(`Unknown test type: ${testConfig.type}`);
                         }
@@ -52,7 +52,7 @@
             return dict;
         }
 
-        async showResults(testResults) {
+        async showResults(testCases, testResults) {
             const world = this.ide.parentThatIsA(WorldMorph);
             const isAlreadyOpen = world.anyChild(child => child === this.resultsDialog);
             if (!isAlreadyOpen) {
@@ -126,22 +126,23 @@
             }
 
             const frame = this.resultsDialog.body;
-            frame.contents.children = testResults.map(result => {
-                const {testCase} = result;
-                let message = testCase.getName(result);
+            frame.contents.children = zip(testCases, testResults).map(pair => {
+                const [testCase, result] = pair;
+                const message = !result.status && result.getFailureReason() ?
+                    ` (${result.getFailureReason()})` : '';
                 /* TODO: Add details on click? */
                 const icon = new ToggleMorph(
                     'checkbox',
                     null,
                     nop,
-                    message,
+                    testCase.name + message,
                     () => result.status
                 );
                 const RED = new Color(250, 50, 50);
                 const GREEN = new Color(0, 200, 0);
                 icon.color = result.status ? GREEN : RED;
                 icon.trigger = nop;
-                icon.mouseClickLeft = () => this.onTestClicked(icon.world(), testCase);
+                icon.mouseClickLeft = () => testCase.onClick(icon.world());
                 icon.mouseDownLeft = nop;
                 icon.mouseEnter = nop;
                 icon.mouseLeave = nop;
@@ -166,32 +167,6 @@
             frame.contents.addChildFirst(testDesc);
             frame.contents.adjustBounds();
             this.resultsDialog.fixLayout();
-        }
-
-        onTestClicked(world, testCase) {
-            this.blockifyTest(world, testCase);
-            /* TODO */
-        }
-
-        async blockifyTest(world, testCase) {
-            const block = testCase.getCustomBlockInstance(...testCase.inputs.map(toSnap));
-            const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
-            let expectedValue;
-            /* FIXME: Get the report */
-            if (typeof testCase.output === 'boolean') {
-                expectedValue = testCase.output ?
-                    SpriteMorph.prototype.blockForSelector('reportBoolean', true) :
-                    SpriteMorph.prototype.blockForSelector('reportFalse', true);
-            } else {
-                expectedValue = toSnap(testCase.output);
-                if (expectedValue instanceof List) {
-                    expectedValue = expectedValue.blockify();
-                }
-            }
-            const [left, right] = equalsBlock.inputs();
-            equalsBlock.replaceInput(left, block);
-            equalsBlock.replaceInput(right, expectedValue);
-            equalsBlock.pickUp(world);
         }
 
         async loadAssignment(assignment) {
@@ -222,7 +197,7 @@
 
         async grade(assignment) {
             const testResults = await assignment.grade();
-            this.showResults(testResults);
+            this.showResults(assignment.tests, testResults);
         }
 
         async submit(assignment) {
@@ -407,114 +382,199 @@
         }
     }
 
-    class CustomBlockTestCase {
-        constructor(ide, spec, inputs, testFn, data) {
-            this.ide = ide;
-            this.blockSpec = spec;
-            this.inputs = inputs;
+    class TestCase {
+        constructor(name, testFn, data={}) {
+            this.name = name;
             this.test = testFn;
-            this.description = null;
             this.data = data;
         }
 
         async run() {
             try {
-                const result = await this.evalBlock(...this.inputs.map(toSnap));
-                if (await this.test(result)) {
-                    return new TestResult(this, true);
-                } else {
-                    return new FailingTest(this, result, this.output);
-                }
+                return await this.test();
             } catch (err) {
-                return new ErroredTest(this, err);
+                return new ErroredTest(err);
             }
         }
 
-        getName(result) {
-            const spec = this.blockSpec;
+        onClick(world) {
+        }
+    }
+
+    const CustomBlockHelpers = {};
+    CustomBlockHelpers.getCustomBlockDefinition = function(spec) {
+        return ide.stage.globalBlocks.find(
+            block => block.spec === spec
+        );
+    };
+
+    CustomBlockHelpers.getCustomBlockInstance = function(blockSpec, inputs=[]) {
+        const definition = CustomBlockHelpers.getCustomBlockDefinition(blockSpec);
+        const block = definition.blockInstance();
+        zip(block.inputs(), inputs).forEach(pair => {
+            const [input, value] = pair;
+            if (value instanceof List) {
+                const valueAsBlock = value.blockify();
+                block.replaceInput(input, valueAsBlock);
+            } else {
+                input.setContents(value);
+            }
+        });
+        return block;
+    };
+
+    CustomBlockHelpers.evalBlock = async (block, args, variables) => {
+        const {threads} = ide.stage;
+
+        return new Promise((resolve, reject) => {
+            const process = threads.startProcess(
+                block,
+                ide.stage,
+                true,
+                false,
+                resolve,
+                undefined,
+                undefined,
+                undefined,
+                variables
+            );
+            const handleError = process.handleError;
+            process.handleError = function(error) {
+                reject(error);
+                return handleError.call(this, ...args);
+            };
+        });
+    };
+
+    class SimpleCustomBlockTestCase extends TestCase {
+        constructor(spec, inputs, output, data) {
+            const testFn = SimpleCustomBlockTestCase.getTest(spec, inputs, output);
+            const name = data.name || SimpleCustomBlockTestCase.getName(spec, inputs, output);
+            super(name, testFn, data);
+            this.onClick = SimpleCustomBlockTestCase.onClick.bind(null, spec, inputs, output);
+        }
+
+        static onClick(spec, inputs, output, world) {
+            const block = CustomBlockHelpers.getCustomBlockInstance(spec, inputs.map(toSnap));
+            const equalsBlock = SpriteMorph.prototype.blockForSelector('reportEquals', true);
+            let expectedValue;
+            if (typeof output === 'boolean') {
+                expectedValue = output ?
+                    SpriteMorph.prototype.blockForSelector('reportBoolean', true) :
+                    SpriteMorph.prototype.blockForSelector('reportFalse', true);
+            } else {
+                expectedValue = toSnap(output);
+                if (expectedValue instanceof List) {
+                    expectedValue = expectedValue.blockify();
+                }
+            }
+            const [left, right] = equalsBlock.inputs();
+            equalsBlock.replaceInput(left, block);
+            equalsBlock.replaceInput(right, expectedValue);
+            equalsBlock.pickUp(world);
+        }
+
+        static getName(spec, inputs, output) {
             let index = 0;
             const testCaseName = BlockMorph.prototype.parseSpec(spec)
                 .map(spec => {
                     const isInput = !BlockMorph.prototype.labelPart(spec);
                     if (isInput) {
-                        return JSON.stringify(this.inputs[index++]);
+                        return JSON.stringify(inputs[index++]);
                     }
                     return spec;
                 })
                 .join(' ');
-            let displayText = `"${testCaseName}" ${this.description}`;
-            if (!result.status && result.getFailureReason()) {
-                displayText += ` (${result.getFailureReason()})`;
-            }
-            return displayText;
+
+            const description = `should report ${JSON.stringify(output)}`;
+            let displayName = `"${testCaseName}" ${description}`;
+            return displayName;
         }
 
-        getCustomBlockDefinition(spec) {
-            return this.ide.stage.globalBlocks.find(
-                block => block.spec === spec
-            );
-        }
-
-        getCustomBlockInstance() {
-            const definition = this.getCustomBlockDefinition(this.blockSpec);
-            const block = definition.blockInstance();
-            const inputs = Array.prototype.slice.call(arguments, 0);
-            zip(block.inputs(), inputs).forEach(pair => {
-                const [input, value] = pair;
-                if (value instanceof List) {
-                    const valueAsBlock = value.blockify();
-                    block.replaceInput(input, valueAsBlock);
+        static getTest(spec, inputs, expectedOutput) {
+            return async function() {
+                const args = inputs.map(toSnap);
+                const block = CustomBlockHelpers.getCustomBlockInstance(spec, args);
+                const actual = await CustomBlockHelpers.evalBlock(block, args);
+                if (snapEquals(actual, toSnap(expectedOutput))) {
+                    return new TestResult(true);
                 } else {
-                    input.setContents(value);
+                    return new FailingTest(actual, expectedOutput);
                 }
-            });
-            return block;
+            };
         }
-
-        async evalBlock() {
-            const block = this.getCustomBlockInstance(...arguments);
-            const {threads} = this.ide.stage;
-
-            return new Promise((resolve, reject) => {
-                const process = threads.startProcess(
-                    block,
-                    this.ide.stage,
-                    true,
-                    false,
-                    resolve,
-                );
-                const handleError = process.handleError;
-                process.handleError = function(error) {
-                    reject(error);
-                    return handleError.call(this, ...arguments);
-                };
-            });
-        }
-
     }
 
-    class ExactOutputTestCase extends CustomBlockTestCase {
-        constructor(ide, spec, inputs, output, data) {
-            super(ide, spec, inputs, actual => snapEquals(actual, toSnap(output)), data);
-            this.output = output;
-            this.description = `should report ${JSON.stringify(output)}`;
+    class CustomBlockTestCase extends TestCase {
+        constructor(name, spec, functionXML, data) {
+            const testFn = CustomBlockTestCase.getTest(spec, functionXML);
+            super(name, testFn, data);
+        }
+
+        static getTest(spec, functionXML) {
+            const fn = ide.sockets.deserializeData([functionXML])[0];
+            const variables = new VariableFrame();
+            variables.addVar('test fn', fn);
+
+            const testBlock = SpriteMorph.prototype.blockForSelector('evaluate', true);
+            const [fnToCall, fnArgs] = testBlock.inputs();
+            testBlock.replaceInput(fnToCall, SpriteMorph.prototype.variableBlock('test fn'));
+            fnArgs.addInput();
+
+            return async function() {
+                const customBlock = CustomBlockHelpers.getCustomBlockInstance(spec);
+                const ring = CustomBlockTestCase.ringify(customBlock);
+                fnArgs.replaceInput(fnArgs.inputs()[0], ring);
+                const actual = await CustomBlockHelpers.evalBlock(testBlock, [], variables);
+                if (snapEquals(actual, toSnap(true))) {
+                    return new TestResult(true);
+                } else if (typeof actual !== 'boolean') {
+                    return new TestResult(false, actual);
+                } else {
+                    return new TestResult(false);
+                }
+            };
+        }
+
+        static ringify(customBlock) {
+            const ring = new RingMorph();
+            ring.embed(customBlock);
+            const ringArgs = ring.inputs()[1];
+            customBlock.inputs().forEach(input => {
+                const arg = ringArgs.addInput().template().fullCopy();
+                arg.isTemplate = false;
+                arg.isDraggable = true;
+                customBlock.replaceInput(input, arg);
+            });
+            return ring;
+        }
+
+        static fromConfig(config) {
+            const opts = omit(config, ['type', 'spec', 'inputs', 'output']);
+            if (config.hasOwnProperty('inputs') && config.hasOwnProperty('output')) {
+                return new SimpleCustomBlockTestCase(config.spec, config.inputs, config.output, opts);
+            } else if (config.function) {
+                return new CustomBlockTestCase(config.name, config.spec, config.function, opts);
+            } else {
+                throw new Error(`Invalid configuration for CustomBlockTest: ${JSON.stringify(config, null, 2)}`);
+            }
         }
     }
 
     class TestResult {
-        constructor(testCase, status) {
-            this.testCase = testCase;
+        constructor(status, reason='') {
             this.status = status;
+            this.reason = reason;
         }
 
         getFailureReason() {
-            return '';
+            return this.reason;
         }
     }
 
     class FailingTest extends TestResult {
-        constructor(testCase, actual, expected) {
-            super(testCase, false);
+        constructor(actual, expected) {
+            super(false);
             this.actual = actual;
             this.expected = expected;
         }
@@ -529,8 +589,8 @@
     }
 
     class ErroredTest extends TestResult {
-        constructor(testCase, error) {
-            super(testCase, false);
+        constructor(error) {
+            super(false);
             this.error = error;
         }
 

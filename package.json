@@ -1,12 +1,11 @@
 {
   "name": "netsblox",
-  "version": "1.34.2",
+  "version": "1.36.2",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
   },
   "scripts": {
-    "prestart": "node bin/prestart.js",
     "start": "node bin/netsblox-start.js",
     "dev": "npx nodemon --ignore src/browser/dist -w src -w test --exec 'npm run postinstall && npm start'",
     "testmon": "npx nodemon -w src -w test --exec 'npm run test'",

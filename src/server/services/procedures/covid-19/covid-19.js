@@ -28,8 +28,6 @@ const logger = require('../utils/logger')('covid-19');
 COVID19._data = new Data(logger, COVID19Storage);
 const {DEATH, CONFIRMED, RECOVERED} = COVID19._data.types;
 
-COVID19._data.importMissingData();
-
 /**
  * Get number of confirmed cases of COVID-19 by date for a specific country and state.
  *
@@ -91,6 +89,10 @@ COVID19.getLocationsWithData = async function() {
 COVID19.getLocationCoordinates = async function(country, state='', city='') {
     const data = await this._data.getLocation(country, state, city);
     return _.pick(data, ['latitude', 'longitude']);
+};
+
+COVID19.initialize = function() {
+    this._data.importMissingData();
 };
 
 module.exports = COVID19;

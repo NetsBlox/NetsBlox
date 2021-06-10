@@ -1,4 +1,4 @@
->>>NAME<<<
+<%= name %>
 
 This section covers all of the RPCs that relate to manipulation of the customizable interactive display on the mobile device.
 The device display is a large rectangular region called the `canvas`.
@@ -11,4 +11,4 @@ Many controls take optional parameters, which are specified as a list of pairs (
 For instance, most controls take one or more optional parameters to control the color of the display.
 You can obtain color codes from :func:`PhoneIoT.getColor`.
 
->>>RPCS<<<
+<%= rpcs %>
