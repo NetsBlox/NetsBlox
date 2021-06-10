@@ -198,6 +198,14 @@ async function prepareRDF(filename) {
     return outputFilename;
 }
 
+function hasRequiredFields(doc) {
+    const requiredKeys = ['id', 'title', 'url'];
+    return requiredKeys.reduce(
+        (passing, key) => passing && doc.hasOwnProperty(key),
+        true
+    );
+}
+
 module.exports = {getDocsFromRDF, schema, getMetadataDocs};
 
 if (require.main === module) {
@@ -218,9 +226,13 @@ if (require.main === module) {
             doc.url = docURLs[doc.id];
             delete docURLs[doc.id];
 
-            console.log(JSON.stringify(doc));
+            if (hasRequiredFields(doc)) {
+                console.log(JSON.stringify(doc));
+            } else {
+                console.error(`Skipping incomplete doc: ${JSON.stringify(doc)}`);
+            }
             if (global.gc) global.gc();
-            console.error(`${++count}/${total}`);
+            console.error(`${++count}/~${total}`);
         }
     });
 }
