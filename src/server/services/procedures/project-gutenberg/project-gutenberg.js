@@ -76,29 +76,4 @@ ProjectGutenberg.search = async function(field, text) {
     return ids;
 };
 
-let titles;
-const titlesP = metadata.getMetadataDocs()
-    .then(docs => titles = docs.filter(doc => doc.title).map(doc => [normalize(doc.title + doc.author), doc.id]));
-
-function normalize(text) {
-    return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-}
-
-async function getTitles() {
-    if (titles) {
-        return titles;
-    }
-    return titlesP;
-}
-
-async function search(title) {
-    title = normalize(title);
-    const titles = await getTitles();
-    const matches = titles
-        .filter(pair => pair[0].includes(title))
-        .map(pair => pair[1]);
-
-    return matches;
-}
-
 module.exports = ProjectGutenberg;
