@@ -3,6 +3,7 @@
  *
  * @alpha
  * @service
+ * @category Language
  */
 
 const logger = require('../utils/logger')('project-gutenberg');
