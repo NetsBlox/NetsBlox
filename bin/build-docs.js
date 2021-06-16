@@ -10,6 +10,7 @@ const {exec} = require('child_process');
 const utils = require('./../src/server/api/cli/utils');
 const Logger = require('../src/server/logger');
 const ServicesWorker = require('./../src/server/services/services-worker');
+const axios = require('axios');
 
 process.chdir(srcPath);
 utils.runWithStorage(build).catch(err => console.error(err));
@@ -37,14 +38,19 @@ function getParamString(param) {
     return param.optional ? `${str}?` : str;
 }
 
+async function getLoadedServices() {
+    const res = await axios.get(process.env.SERVICES_URL);
+    return res.data.map(s => s.name);
+}
+
 const SERVICE_FILTERS = {
     all: () => true,
-    nodeprecated: service => !service.tags.includes('deprecated'),
-    fsonly: service => service.servicePath,
+    nodeprecated: (name, meta) => !meta.tags.includes('deprecated'),
+    fsonly: (name, meta) => meta.servicePath,
 };
-function getServiceFilter(filterString = 'fsonly,nodeprecated') {
+function getServiceFilter(loadedServices, filterString = 'fsonly,nodeprecated') {
     const filters = filterString.split(',').map(s => s.trim()).filter(s => s.length).map(s => SERVICE_FILTERS[s]);
-    return s => filters.every(f => f(s));
+    return (name, meta) => loadedServices.includes(name) && filters.every(f => f(name, meta));
 }
 
 const SERVICE_DIR_REGEX = /(.*)\/.*\.js/;
@@ -107,11 +113,8 @@ function getMeta(services, serviceFilter) {
     const apiKeys = {};
 
     for (const serviceName in services.metadata) {
-        if (!services.isServiceLoaded(serviceName)) {
-            continue;
-        }
         const service = services.metadata[serviceName];
-        if (!serviceFilter(service)) continue;
+        if (!serviceFilter(serviceName, service)) continue;
 
         updateCategories(categories, serviceName, service);
         servicesMeta[serviceName] = {
@@ -217,7 +220,8 @@ async function cleanRoot() {
 async function compileDocs(services) {
     const rootDocs = await cleanRoot();
 
-    const serviceFilter = getServiceFilter(process.env.DOCS_SERVICE_FILTER);
+    const loadedServices = await getLoadedServices();
+    const serviceFilter = getServiceFilter(loadedServices, process.env.DOCS_SERVICE_FILTER);
     const meta = getMeta(services, serviceFilter);
     const servicesString = '\n\n.. toctree::\n    :maxdepth: 2\n    :titlesonly:\n    :caption: Services\n\n    '
         + (Object.keys(meta.categories).concat(meta.categories.index.items)).filter(s => s !== 'index').sort().map(item => {
