@@ -39,7 +39,7 @@ function getParamString(param) {
 }
 
 async function getLoadedServices() {
-    const res = await axios.get(process.env.SERVICES_URL);
+    const res = await axios.get(process.env.SERVICES_URL || 'http://127.0.0.1:8080/services');
     return res.data.map(s => s.name);
 }
 
