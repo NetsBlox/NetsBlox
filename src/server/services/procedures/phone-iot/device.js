@@ -680,7 +680,7 @@ Device.prototype.getOrientation = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getCompassHeading = async function (device, args, clientId) {
     return (await this.getOrientation(device, args, clientId))[0];
@@ -736,7 +736,7 @@ Device.prototype.getGyroscope = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getRotation = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('rotation', clientId);
