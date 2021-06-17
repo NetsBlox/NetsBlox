@@ -63,8 +63,10 @@ const SERVICE_FILTERS = {
     fsonly: (name, meta) => meta.servicePath,
 };
 function getServiceFilter(loadedServices, filterString = 'fsonly,nodeprecated') {
+    const isServiceLoaded = name => loadedServices.includes(name);
     const filters = filterString.split(',').map(s => s.trim()).filter(s => s.length).map(s => SERVICE_FILTERS[s]);
-    return (name, meta) => loadedServices.includes(name) && filters.every(f => f(name, meta));
+    filters.unshift(isServiceLoaded);
+    return (name, meta) => filters.every(f => f(name, meta));
 }
 
 const SERVICE_DIR_REGEX = /(.*)\/.*\.js/;
