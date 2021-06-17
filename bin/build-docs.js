@@ -39,8 +39,22 @@ function getParamString(param) {
 }
 
 async function getLoadedServices() {
-    const res = await axios.get(process.env.SERVICES_URL || 'http://127.0.0.1:8080/services');
-    return res.data.map(s => s.name);
+    try {
+        const res = await axios.get(process.env.SERVICES_URL || 'http://127.0.0.1:8080/services');
+        return res.data.map(s => s.name);
+    } catch (err) {
+        if (err.errno === 'ECONNREFUSED') {
+            const msg = process.env.SERVICES_URL ? `Unable to connect to ${process.env.SERVICES_URL}. Is this the correct address?` :
+                'Unable to connect to services server. Please set the SERVICES_URL environment variable and retry.';
+            throw new Error(msg);
+        } else if (process.env.SERVICES_URL) {
+            const msg = `${process.env.SERVICES_URL} is not a valid address for NetsBlox services. ` +
+                'It should be either the services server directly or the main server URL with "/services" appended.\n\n' +
+                'For example, https://editor.netsblox.org/services.';
+            throw new Error(msg);
+        }
+        throw err;
+    }
 }
 
 const SERVICE_FILTERS = {
