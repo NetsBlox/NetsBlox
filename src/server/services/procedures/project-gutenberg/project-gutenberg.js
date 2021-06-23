@@ -1,7 +1,6 @@
 /**
  * The Project Gutenberg service provides access to public domain books. For more information, check out https://project-gutenberg.org/.
  *
- * @alpha
  * @service
  * @category Language
  */
@@ -52,7 +51,7 @@ ProjectGutenberg.getInfo = async function(id) {
 };
 
 /**
- * Search for a book given title text and optional advanced options. Returns a list of book IDs.
+ * Search for a book given title text and optional advanced options. Returns a list of up to 100 book IDs.
  *
  * @param {Enum<publisher,title,author,language,subject>} field
  * @param {String} text
@@ -72,7 +71,7 @@ ProjectGutenberg.search = async function(field, text) {
         };
     }
 
-    const info = await ProjectGutenbergStorage.find(query,  {_id: 0}).toArray();
+    const info = await ProjectGutenbergStorage.find(query,  {_id: 0}).limit(100).toArray();
     const ids = info.map(info => info.id);
     return ids;
 };
