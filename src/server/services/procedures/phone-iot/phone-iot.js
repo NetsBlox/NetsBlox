@@ -792,7 +792,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -810,7 +810,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -828,7 +828,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -844,7 +844,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -861,7 +861,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``accelerometer``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``facingDir``
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -884,7 +884,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``accelerometer``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``facingDir``
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -903,7 +903,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gravity``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -922,7 +922,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``linearAcceleration``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -937,7 +937,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gyroscope``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -953,7 +953,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``rotation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``w``
+     * Message fields: ``x``, ``y``, ``z``, ``w``, ``device``
      * 
      * @deprecated
      * @category Sensors
@@ -968,7 +968,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gameRotation``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @deprecated
      * @category Sensors
@@ -987,7 +987,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``magneticField``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1003,7 +1003,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``microphoneLevel``
      * 
-     * Message fields: ``volume``
+     * Message fields: ``volume``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1019,7 +1019,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1036,7 +1036,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Number} current bearing (in degrees)
@@ -1050,7 +1051,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1067,7 +1068,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``proximity``
      * 
-     * Message fields: ``distance``
+     * Message fields: ``distance``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1082,7 +1083,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``stepCount``
      * 
-     * Message fields: ``count``
+     * Message fields: ``count``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1097,7 +1098,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``lightLevel``
      * 
-     * Message fields: ``value``
+     * Message fields: ``value``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
