@@ -122,12 +122,12 @@ PhoneIoT.prototype._getOrCreateDevice = function (mac_addr, ip4_addr, ip4_port) 
 PhoneIoT.prototype._heartbeat = function () {
     for (const mac_addr in PhoneIoT.prototype._devices) {
         const device = PhoneIoT.prototype._devices[mac_addr];
-        if (!device.heartbeat()) {
+        if (device.requestDisconnect || !device.heartbeat()) {
             logger.log('forgetting ' + mac_addr);
             delete PhoneIoT.prototype._devices[mac_addr];
         }
     }
-    setTimeout(PhoneIoT.prototype._heartbeat, 1000);
+    setTimeout(PhoneIoT.prototype._heartbeat, 1000); // must be every second to preserve timing logic
 };
 
 /**
