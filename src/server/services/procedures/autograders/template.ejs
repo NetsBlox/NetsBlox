@@ -441,7 +441,7 @@
             const handleError = process.handleError;
             process.handleError = function(error) {
                 reject(error);
-                return handleError.call(this, ...args);
+                return handleError.call(this, ...arguments);
             };
         });
     };
