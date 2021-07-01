@@ -47,7 +47,7 @@ function detailParser(item) {
         delete dat.longitude;
     }
     return dat;
-};
+}
 
 thingspeakIoT._paginatedSearch = async function(path, query, limit=15) {
     if (limit < 1) return [];
