@@ -32,49 +32,45 @@ let feedParser = data => {
     });
 };
 
-let detailParser = item => {
-    let metaData = {
+function detailParser(item) {
+    const dat = {
         id: item.id,
         name: item.name,
         description: item.description,
         created_at: new Date(item.created_at),
         latitude: item.latitude,
         longitude: item.longitude,
-        tags: (function(data) {
-            return data.map(tag => {
-                return tag.name;
-            });
-        })(item.tags),
+        tags: item.tags.map(t => t.name),
     };
-    if (!metaData.latitude || !metaData.longitude || metaData.latitude == 0.0){
-        delete metaData.latitude;
-        delete metaData.longitude;
+    if (!dat.latitude || !dat.longitude || dat.latitude == 0.0) {
+        delete dat.latitude;
+        delete dat.longitude;
     }
-    return metaData;
+    return dat;
 };
 
-let searchParser = responses => {
-    let searchResults = responses.map(data => data.channels.map( item => {
-        let details = detailParser(item);
-        if (!details.latitude) return null;
-        return details;
-    })).reduce((results, singleRes) => results.concat(singleRes), []);
-    return searchResults;
-};
+thingspeakIoT._paginatedSearch = async function(path, query, limit=15) {
+    if (limit < 1) return [];
 
-thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
-    return this._requestData(queryOpts).then(resp => {
-        const perPage = resp.pagination.per_page;
-        const availablePages = Math.ceil(resp.pagination.total_entries / perPage);
-        const pages = Math.min(availablePages, Math.ceil(limit/perPage));
-        let queryOptsList = [];
-        for(let i = 1; i <= pages; i++){
-            const options = Object.assign({}, queryOpts);
-            options.queryString += `&page=${i}`;
-            queryOptsList.push(options);
+    query.page = 1;
+    const first = await this._requestData({ path, queryString: rpcUtils.encodeQueryData(query) });
+    const totalPages = Math.ceil(first.pagination.total_entries / first.pagination.per_page);
+    const pages = Math.min(totalPages, Math.ceil(limit / first.pagination.per_page));
+    
+    const requests = [];
+    for (query.page = 1; query.page <= pages; ++query.page) {
+        requests.push(this._requestData({ path, queryString: rpcUtils.encodeQueryData(query) }));
+    }
+    const results = await Promise.all(requests);
+
+    const items = [];
+    for (const res of results) {
+        for (const item of res.channels) {
+            items.push(detailParser(item));
+            if (items.length >= limit) break;
         }
-        return queryOptsList;
-    });
+    }
+    return items;
 };
 
 /**
@@ -84,16 +80,7 @@ thingspeakIoT._paginatedQueryOpts = function(queryOpts, limit) {
  * @param {Number=} limit
  */
 thingspeakIoT.searchByTag = function(tag, limit) {
-    let queryOptions = {
-        path: 'public.json',
-        queryString: tag && rpcUtils.encodeQueryData({
-            tag: encodeURIComponent(tag),
-        }),
-    };
-    limit = limit || 15;
-    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
-        return this._sendStruct(queryOptsList, searchParser);
-    });
+    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit);
 };
 
 /**
@@ -101,23 +88,12 @@ thingspeakIoT.searchByTag = function(tag, limit) {
  *
  * @param {Latitude} latitude
  * @param {Longitude} longitude
- * @param {Number=} distance
+ * @param {BoundedNumber<0>=} distance
  * @param {Number=} limit
  */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
-    let queryOptions = {
-        path: 'public.json',
-        queryString: '?' +
-            rpcUtils.encodeQueryData({
-                latitude: latitude,
-                longitude: longitude,
-                distance: !distance ? 100 : distance
-            }),
-    };
-    limit = limit || 15;
-    return this._paginatedQueryOpts(queryOptions, limit).then(queryOptsList => {
-        return this._sendStruct(queryOptsList, searchParser);
-    });};
+    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit);
+};
 
 /**
  * Search for channels by tag and location.
@@ -125,25 +101,22 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
  * @param {String} tag
  * @param {Latitude} latitude
  * @param {Longitude} longitude
- * @param {Number=} distance
+ * @param {BoundedNumber<0>=} distance
+ * @param {Number=} limit
  */
-thingspeakIoT.searchByTagAndLocation= function(tag, latitude, longitude, distance) {
-    let queryOptions = {
-        path: 'public.json',
-        queryString: '?' +
-        rpcUtils.encodeQueryData({
-            latitude: latitude,
-            longitude: longitude,
-            distance: !distance ? 100 : distance
-        })
-    };
-    return this._paginatedQueryOpts(queryOptions, 10000).then(queryOptsList => {
-        return this._requestData(queryOptsList).then( resultsArr => {
-            let results = searchParser(resultsArr).filter(item => item.tags.some(item => item.toLowerCase().indexOf(tag) !== -1));
-            this._logger.info('responding with', results.length, 'results');
-            return rpcUtils.jsonToSnapList(results);
-        });
-    });};
+thingspeakIoT.searchByTagAndLocation = async function(tag, latitude, longitude, distance, limit=15) {
+    if (limit < 1) return [];
+    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000);
+
+    const items = [];
+    for (const item of res) {
+        if (item.tags.some(t => t.includes(tag))) {
+            items.push(item);
+            if (items.length >= limit) break;
+        }
+    }
+    return items;
+};
 
 /**
  * Get channel feed.
@@ -184,7 +157,6 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
  * @param {Number} id channel ID
  * @returns {Object} Channel details.
  */
-
 thingspeakIoT.channelDetails = async function(id) {
     const data = await this._requestData({path: id + '.json'});
     let details = detailParser(data);
