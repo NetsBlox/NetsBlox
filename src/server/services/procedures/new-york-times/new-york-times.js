@@ -1,5 +1,7 @@
 /**
- * TODO
+ * The NewYorkTimes service provides access to the New York Times API including access
+ * to Moview Reviews, Top Stories, and their Semantic API.
+ *
  * @service
  * @alpha
  */
@@ -9,10 +11,13 @@ const baseUrl = 'https://api.nytimes.com/svc/';
 const NewYorkTimes = new ApiConsumer('NewYorkTimes', baseUrl, {cache: {ttl: Infinity}});
 ApiConsumer.setRequiredApiKey(NewYorkTimes, NewYorkTimesKey);
 
+const {ArticleSections, ConceptTypes, BestSellerLists} = require('./types');
+const prepare = require('./data-prep');
+
 /**
- * Get the top stories for a given section
+ * Get the top stories for a given section.
  *
- * @param{Section} section
+ * @param{ArticleSection} section
  * @returns{Array<String>}
  */
 NewYorkTimes.getTopStories = async function(section) {
@@ -20,27 +25,331 @@ NewYorkTimes.getTopStories = async function(section) {
         path: `topstories/v2/${section}.json`,
         queryString: `api-key=${this.apiKey.value}`,
     });
-    return response.results;
+    return response.results.map(prepare.Article);
 };
 
 /**
- * Get the top stories for a given section
+ * Get a list of all valid article sections.
  *
- * @param{Section} section
  * @returns{Array<String>}
  */
-NewYorkTimes.getLatestArticles = function(source, section) {
-    // TODO: https://developer.nytimes.com/docs/timeswire-product/1/overview
+NewYorkTimes.getArticleSections = function() {
+    return Object.keys(ArticleSections);
 };
 
 /**
- * Get the top stories for a given section
+ * Get the latest articles in a given section.
  *
- * @param{Section} section
+ * @param{ArticleSection} section
  * @returns{Array<String>}
  */
-NewYorkTimes.getLatestArticles = function(source, section) {
-    // TODO: https://developer.nytimes.com/docs/timeswire-product/1/overview
+NewYorkTimes.getLatestArticles = async function(section) {
+    const source = 'all';
+    const unsupportedSections = ['insider', 'politics'];
+    if (unsupportedSections.includes(section)) {
+        const sectionName = Object.keys(ArticleSections).find(key => ArticleSections[key] === section);
+        throw new Error(`Cannot retrieve the latest articles from the ${sectionName} section.`);
+    }
+
+    if (section === 'home') {
+        section = 'home & garden';
+    } else if (section === 'nyregion') {
+        section = 'new york';
+    } else if (section === 'realestate') {
+        section = 'real estate';
+    } else if (section === 'sundayreview') {
+        section = 'sunday review';
+    } else if (section === 'upshot') {
+        section = 'the upshort';
+    } else if (section === 't-magazine') {
+        section = 't magazine';
+    } else if (section === 'us') {
+        section = 'u.s.';
+    }
+
+    const response = await this._requestData({
+        path: `/news/v3/content/${source}/${encodeURIComponent(section)}.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+
+    return response.results.map(prepare.Article);
+};
+
+/**
+ * Get a list of movie critics.
+ *
+ * @category MovieReviews
+ * @returns{Array<String>}
+ */
+NewYorkTimes.getMovieCritics = async function() {
+    const response = await this._requestData({
+        path: '/movies/v2/critics/all.json',
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.results.map(critic => critic.display_name);
+};
+
+/**
+ * Get information about a given movie critic.
+ *
+ * @category MovieReviews
+ * @param{String} name
+ * @returns{Array<MovieCritic>}
+ */
+NewYorkTimes.getMovieCriticInfo = async function(name) {
+    const response = await this._requestData({
+        path: `/movies/v2/critics/${encodeURIComponent(name)}.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    const [criticInfo] = response.results;
+    return {
+        name: criticInfo.display_name,
+        status: criticInfo.status,
+        bio: criticInfo.bio,
+        multimedia: criticInfo.multimedia.resource,
+    };
+};
+
+/**
+ * Search for movie reviews starting at "offset". Returns up to 20 results.
+ *
+ * @category MovieReviews
+ * @param{String} query
+ * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @returns{Array<MovieReview>}
+ */
+NewYorkTimes.searchMovieReviews = async function(query, offset=0) {  // TODO: this returns at most 20 reviews. Should this be increased?
+    const response = await this._requestData({
+        path: '/movies/v2/reviews/search.json',
+        queryString: `api-key=${this.apiKey.value}&query=${encodeURIComponent(query)}&offset=${offset}`
+    });
+    return response.results.map(prepare.MovieReview);
+};
+
+// TODO: should users be able to get movie reviews from a specific critic?
+
+/**
+ * Get 20 movie reviews starting at "offset".
+ *
+ * @category MovieReviews
+ * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @returns{Array<MovieReview>}
+ */
+NewYorkTimes.getMovieReviews = async function(offset=0) {
+    const response = await this._requestData({
+        path: '/movies/v2/reviews/all.json',
+        queryString: `api-key=${this.apiKey.value}&offset=${offset}`,
+    });
+    return response.results.map(prepare.MovieReview);
+};
+
+/**
+ * Get 20 movie reviews picked by critics starting at "offset".
+ *
+ * @category MovieReviews
+ * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @returns{Array<MovieReview>}
+ */
+NewYorkTimes.getCriticsPicks = async function(offset=0) {
+    const response = await this._requestData({
+        path: '/movies/v2/reviews/picks.json',
+        queryString: `api-key=${this.apiKey.value}&offset=${offset}`,
+    });
+    return response.results.map(prepare.MovieReview);
+};
+
+/**
+ * Search for articles given a query.
+ * @category ArticleSearch
+ * @param{String} query
+ * @returns{Array<SearchResult>}
+ */
+NewYorkTimes.searchArticles = function(query) {
+    const response = this._requestData({
+        path: '/search/v2/articlesearch.json',
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.result.docs.map(prepare.SearchResult);
+    // TODO: How to handle AND? How to construct these queries into lucene?
+    // http://www.lucenetutorial.com/lucene-query-syntax.html
+};
+
+/**
+ * Get the best selling books for a given list and date.
+ *
+ * @category Books
+ * @param{BestSellerList} list
+ * @param{Date=} date
+ * @returns{Array<BestSeller>}
+ */
+NewYorkTimes.getBestSellers = async function(list, date) {
+    if (date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = (date.getDate() + 1).toString().padStart(2, '0');
+        date = [year, month, day].join('-');
+    } else {
+        date = 'current';
+    }
+    const response = await this._requestData({
+        path: `/books/v3/lists/${date}/${list}.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.results.books.map(prepare.BestSeller);
+};
+
+/**
+ * Get the best seller list names.
+ *
+ * @category Books
+ * @returns{Array<String>}
+ */
+NewYorkTimes.getBestSellerLists = function() {
+    return Object.keys(BestSellerLists);
+};
+
+/**
+ * Get the top 5 books for all the best seller lists for a given date.
+ *
+ * @category Books
+ * @param{Date} date
+ * @returns{Array<BestSeller>}
+ */
+NewYorkTimes.getTopBestSellers = async function(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = (date.getDate() + 1).toString().padStart(2, '0');
+    date = [year, month, day].join('-');
+
+    const response = await this._requestData({
+        path: '/books/v3/lists/overview.json',
+        queryString: `api-key=${this.apiKey.value}&published_date=${date}`,
+    });
+    return response.results.lists
+        .map(list => [list.list_name, list.books.map(prepare.BestSeller)]);
+};
+
+/**
+ * Search for books on current or previous best seller lists.
+ *
+ * @category Books
+ * @param{String=} title
+ * @param{String=} author
+ * @param{BoundedNumber<0>=} offset
+ * @returns{Array<Book>}
+ */
+NewYorkTimes.searchBestSellers = async function(title, author, offset=0) {
+    if (!title && !author) throw new Error('title or author must be provided.');
+    let queryString = `offset=${offset}`;
+    if (title) queryString += `&title=${encodeURIComponent(title)}`;
+    if (author) queryString += `&author=${encodeURIComponent(author)}`;
+    const response = await this._requestData({
+        path: '/books/v3/lists/best-sellers/history.json',
+        queryString: `api-key=${this.apiKey.value}&${queryString}`,
+    });
+    return response.results.map(prepare.Book);
+};
+
+/**
+ * @category Concepts
+ * @param{String} query
+ * @returns{Array<Concept>}
+ */
+NewYorkTimes.searchConcepts = async function(query) {
+    const response = await this._requestData({
+        path: '/semantic/v2/concept/search.json',
+        queryString: `api-key=${this.apiKey.value}&query=${encodeURIComponent(query)}`,
+    });
+    return response.results.map(prepare.Concept);
+};
+
+/**
+ * @category Concepts
+ * @param{Object} concept
+ * @param{String} concept.name
+ * @param{ConceptType} concept.type
+ * @returns{ConceptInfo}
+ */
+NewYorkTimes.getConceptInfo = async function(concept) {
+    const response = await this._requestData({
+        path: `/semantic/v2/concept/name/${concept.type}/${concept.name}`,
+        queryString: `api-key=${this.apiKey.value}&fields=links,geocodes`,
+    });
+    const [conceptInfo] = response.results;
+    return prepare.ConceptInfo(conceptInfo);
+};
+
+/**
+ * Get a list of all concept types.
+ *
+ * @category Concepts
+ * @returns{Array<String>}
+ */
+NewYorkTimes.getConceptTypes = function() {
+    return Object.keys(ConceptTypes);
+};
+
+/**
+ * Fetch 10 articles containing the given concept.
+ *
+ * @category Concepts
+ * @param{Object} concept
+ * @param{String} concept.name
+ * @param{ConceptType} concept.type
+ * @returns{Array<Article>}
+ */
+NewYorkTimes.getArticlesWithConcept = async function(concept) {
+    const response = await this._requestData({
+        path: `/semantic/v2/concept/name/${concept.type}/${concept.name}`,
+        queryString: `api-key=${this.apiKey.value}&fields=article_list`,
+    });
+    const [conceptInfo] = response.results;
+    return conceptInfo.article_list.results.map(prepare.ConceptArticle);
+};
+
+/**
+ * Get the most emailed articles over the past day, week, or month.
+ *
+ * @category MostPopular
+ * @param{DayWeekOrMonth} period
+ * @returns{Array<Article>}
+ */
+NewYorkTimes.getMostEmailedArticles = async function(period) {
+    const response = await this._requestData({
+        path: `/mostpopular/v2/emailed/${period}.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.results.map(prepare.PopularArticle);
+};
+
+/**
+ * Get the most viewed articles over the past day, week, or month.
+ *
+ * @category MostPopular
+ * @param{DayWeekOrMonth} period
+ * @returns{Array<Article>}
+ */
+NewYorkTimes.getMostViewedArticles = async function(period) {
+    const response = await this._requestData({
+        path: `/mostpopular/v2/viewed/${period}.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.results.map(prepare.PopularArticle);
+};
+
+/**
+ * Get the articles shared most on Facebook over the past day, week, or month.
+ *
+ * @category MostPopular
+ * @param{DayWeekOrMonth} period
+ * @returns{Array<Article>}
+ */
+NewYorkTimes.getMostSharedArticles = async function(period) {
+    const response = await this._requestData({
+        path: `/mostpopular/v2/shared/${period}/facebook.json`,
+        queryString: `api-key=${this.apiKey.value}`,
+    });
+    return response.results.map(prepare.PopularArticle);
 };
 
 module.exports = NewYorkTimes;
