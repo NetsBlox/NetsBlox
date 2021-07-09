@@ -11,6 +11,20 @@ function getConceptTypeFromCode(code) {
     return type;
 }
 
+function getFacetsAsConcepts(info) {
+    const conceptTypePairs = Object.keys(info)
+        .filter(key => key.endsWith('_facet'))
+        .map(key => [key, 'nytd_' + key.replace('_facet', '')])
+        .filter(pair => ConceptCodeToType[pair[1]]);
+
+    return conceptTypePairs.flatMap(pair => {
+        const [key, conceptCode] = pair;
+        const names = info[key] || [];
+        const type = getConceptTypeFromCode(conceptCode);
+        return names.map(name => ({name, type}));
+    });
+}
+
 const ArticleFields = [
     'title',
     'abstract',
@@ -26,20 +40,10 @@ const ArticleFields = [
 const prepare = {
     Article: info => {
         const article = _.pick(info, ArticleFields);
-        const conceptTypePairs = Object.keys(info)
-            .filter(key => key.endsWith('_facet'))
-            .map(key => [key, 'nytd_' + key.replace('_facet', '')])
-            .filter(pair => ConceptCodeToType[pair[1]]);
-
-        article.concepts = conceptTypePairs.flatMap(pair => {
-            const [key, conceptCode] = pair;
-            const names = info[key] || [];
-            const type = getConceptTypeFromCode(conceptCode);
-            return names.map(name => ({name, type}));
-        });
+        article.concepts = getFacetsAsConcepts(info);
         return article;
     },
-    SearchResult: info => ({  // TODO: test this
+    SearchResult: info => ({
         title: info.headline.main,
         abstract: info.abstract,
         url: info.web_url,
@@ -126,23 +130,23 @@ const prepare = {
         elevation: info.elevation,
         population: info.population,
     }),
-    PopularArticle: info => ({
-        title: info.title,
-        abstract: info.abstract,
-        byline: info.byline,
-        section: info.section,
-        subsection: info.subsection,
-        published_date: info.published_date,
-        url: info.url,
-        des_facet: info.des_facet,  // TODO: maybe change these to
-        org_facet: info.org_facet,
-        per_facet: info.per_facet,
-        geo_facet: info.geo_facet,
-        multimedia: info.media.flatMap(media => {
-            const commonData = _.pick(media, ['type', 'subtype', 'caption', 'copyright']);
-            return media['media-metadata'].map(md => _.extend(md, commonData));
-        }),
-    }),
+    PopularArticle: info => {
+        const article = {
+            title: info.title,
+            abstract: info.abstract,
+            byline: info.byline,
+            section: info.section,
+            subsection: info.subsection,
+            published_date: info.published_date,
+            url: info.url,
+            multimedia: info.media.flatMap(media => {
+                const commonData = _.pick(media, ['type', 'subtype', 'caption', 'copyright']);
+                return media['media-metadata'].map(md => _.extend(md, commonData));
+            }),
+        };
+        article.concepts = getFacetsAsConcepts(info);
+        return article;
+    },
 };
 
 

@@ -121,15 +121,13 @@ NewYorkTimes.getMovieCriticInfo = async function(name) {
  * @param{BoundedNumber<0>=} offset Must be a multiple of 20
  * @returns{Array<MovieReview>}
  */
-NewYorkTimes.searchMovieReviews = async function(query, offset=0) {  // TODO: this returns at most 20 reviews. Should this be increased?
+NewYorkTimes.searchMovieReviews = async function(query, offset=0) {
     const response = await this._requestData({
         path: '/movies/v2/reviews/search.json',
         queryString: `api-key=${this.apiKey.value}&query=${encodeURIComponent(query)}&offset=${offset}`
     });
     return response.results.map(prepare.MovieReview);
 };
-
-// TODO: should users be able to get movie reviews from a specific critic?
 
 /**
  * Get 20 movie reviews starting at "offset".
@@ -178,19 +176,22 @@ NewYorkTimes.getCriticsPicks = async function(offset=0) {
 };
 
 /**
- * Search for articles given a query.
+ * Search for articles given a query. Up to 10 articles will be returned.
+ * More articles can be retrieved by specifying the "offset" or number of
+ * results to skip before returning the results.
+ *
  * @category Articles
  * @param{String} query
+ * @param{BoundedNumber<0>=} offset Must be a multiple of 10
  * @returns{Array<SearchResult>}
  */
-NewYorkTimes.searchArticles = function(query) {
-    const response = this._requestData({
+NewYorkTimes.searchArticles = async function(query, offset=0) {
+    const page = Math.floor(offset/10) + 1;
+    const {response} = await this._requestData({
         path: '/search/v2/articlesearch.json',
-        queryString: `api-key=${this.apiKey.value}`,
+        queryString: `api-key=${this.apiKey.value}&q=${encodeURIComponent(query)}&page=${page}`,
     });
-    return response.result.docs.map(prepare.SearchResult);
-    // TODO: How to handle AND? How to construct these queries into lucene?
-    // http://www.lucenetutorial.com/lucene-query-syntax.html
+    return response.docs.map(prepare.SearchResult);
 };
 
 /**
