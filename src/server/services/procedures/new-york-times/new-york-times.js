@@ -272,6 +272,8 @@ NewYorkTimes.searchBestSellers = async function(title, author, offset=0) {
 };
 
 /**
+ * Search for concepts of interest.
+ *
  * @category Concepts
  * @param{String} query
  * @returns{Array<Concept>}
@@ -285,6 +287,9 @@ NewYorkTimes.searchConcepts = async function(query) {
 };
 
 /**
+ * Get additional information about a concept such as links to other concepts and
+ * geocodes.
+ *
  * @category Concepts
  * @param{Object} concept
  * @param{String} concept.name
@@ -311,7 +316,7 @@ NewYorkTimes.getConceptTypes = function() {
 };
 
 /**
- * Fetch 10 articles containing the given concept.
+ * Fetch up to 10 articles containing the given concept.
  *
  * @category Concepts
  * @category Articles
