@@ -8,7 +8,8 @@
 const ApiConsumer = require('../utils/api-consumer');
 const {NewYorkTimesKey} = require('../utils/api-key');
 const baseUrl = 'https://api.nytimes.com/svc/';
-const NewYorkTimes = new ApiConsumer('NewYorkTimes', baseUrl, {cache: {ttl: Infinity}});
+const hours = 60 * 60;
+const NewYorkTimes = new ApiConsumer('NewYorkTimes', baseUrl, {cache: {ttl: 24*hours}});
 ApiConsumer.setRequiredApiKey(NewYorkTimes, NewYorkTimesKey);
 
 const {ArticleSections, ConceptTypes, BestSellerLists} = require('./types');
