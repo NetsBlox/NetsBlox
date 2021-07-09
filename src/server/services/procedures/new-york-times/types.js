@@ -1,5 +1,5 @@
 const types = require('../../input-types');
-const BestSellerLists = Object.fromEntries(require('./bestseller-list-names.json').results.map(result => [result.display_name, result.list_name_encoded]));
+const BestSellerLists = Object.fromEntries(require('./best-seller-list-names.json').results.map(result => [result.display_name, result.list_name_encoded]));
 const ArticleSections = {
     Arts: 'arts',
     Automobiles: 'automobiles',
