@@ -17,6 +17,7 @@ const prepare = require('./data-prep');
 /**
  * Get the top stories for a given section.
  *
+ * @category Articles
  * @param{ArticleSection} section
  * @returns{Array<String>}
  */
@@ -31,6 +32,7 @@ NewYorkTimes.getTopStories = async function(section) {
 /**
  * Get a list of all valid article sections.
  *
+ * @category Articles
  * @returns{Array<String>}
  */
 NewYorkTimes.getArticleSections = function() {
@@ -40,6 +42,7 @@ NewYorkTimes.getArticleSections = function() {
 /**
  * Get the latest articles in a given section.
  *
+ * @category Articles
  * @param{ArticleSection} section
  * @returns{Array<String>}
  */
@@ -115,7 +118,7 @@ NewYorkTimes.getMovieCriticInfo = async function(name) {
  *
  * @category MovieReviews
  * @param{String} query
- * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @param{BoundedNumber<0>=} offset Must be a multiple of 20
  * @returns{Array<MovieReview>}
  */
 NewYorkTimes.searchMovieReviews = async function(query, offset=0) {  // TODO: this returns at most 20 reviews. Should this be increased?
@@ -132,7 +135,7 @@ NewYorkTimes.searchMovieReviews = async function(query, offset=0) {  // TODO: th
  * Get 20 movie reviews starting at "offset".
  *
  * @category MovieReviews
- * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @param{BoundedNumber<0>=} offset Must be a multiple of 20
  * @returns{Array<MovieReview>}
  */
 NewYorkTimes.getMovieReviews = async function(offset=0) {
@@ -144,10 +147,26 @@ NewYorkTimes.getMovieReviews = async function(offset=0) {
 };
 
 /**
+ * Get 20 movie reviews by a given critic starting at "offset".
+ *
+ * @category MovieReviews
+ * @param{String} critic
+ * @param{BoundedNumber<0>=} offset Must be a multiple of 20
+ * @returns{Array<MovieReview>}
+ */
+NewYorkTimes.getMovieReviewsByCritic = async function(critic, offset=0) {
+    const response = await this._requestData({
+        path: '/movies/v2/reviews/search.json',
+        queryString: `api-key=${this.apiKey.value}&offset=${offset}&reviewer=${encodeURIComponent(critic)}`,
+    });
+    return response.results.map(prepare.MovieReview);
+};
+
+/**
  * Get 20 movie reviews picked by critics starting at "offset".
  *
  * @category MovieReviews
- * @param{BoundedNumber<0>} offset Must be a multiple of 20
+ * @param{BoundedNumber<0>=} offset Must be a multiple of 20
  * @returns{Array<MovieReview>}
  */
 NewYorkTimes.getCriticsPicks = async function(offset=0) {
@@ -160,7 +179,7 @@ NewYorkTimes.getCriticsPicks = async function(offset=0) {
 
 /**
  * Search for articles given a query.
- * @category ArticleSearch
+ * @category Articles
  * @param{String} query
  * @returns{Array<SearchResult>}
  */
@@ -293,6 +312,7 @@ NewYorkTimes.getConceptTypes = function() {
  * Fetch 10 articles containing the given concept.
  *
  * @category Concepts
+ * @category Articles
  * @param{Object} concept
  * @param{String} concept.name
  * @param{ConceptType} concept.type
@@ -310,7 +330,7 @@ NewYorkTimes.getArticlesWithConcept = async function(concept) {
 /**
  * Get the most emailed articles over the past day, week, or month.
  *
- * @category MostPopular
+ * @category Articles;MostPopular
  * @param{DayWeekOrMonth} period
  * @returns{Array<Article>}
  */
@@ -325,7 +345,7 @@ NewYorkTimes.getMostEmailedArticles = async function(period) {
 /**
  * Get the most viewed articles over the past day, week, or month.
  *
- * @category MostPopular
+ * @category Articles;MostPopular
  * @param{DayWeekOrMonth} period
  * @returns{Array<Article>}
  */
@@ -340,7 +360,7 @@ NewYorkTimes.getMostViewedArticles = async function(period) {
 /**
  * Get the articles shared most on Facebook over the past day, week, or month.
  *
- * @category MostPopular
+ * @category Articles;MostPopular
  * @param{DayWeekOrMonth} period
  * @returns{Array<Article>}
  */

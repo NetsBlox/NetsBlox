@@ -1,13 +1,44 @@
 const _ = require('lodash');
 const {ConceptTypes} = require('./types');
+const ConceptCodeToType = Object.fromEntries(
+    Object.entries(ConceptTypes).map(entry => entry.reverse())
+);
 function getConceptTypeFromCode(code) {
-    return Object.entries(ConceptTypes).find(pair => pair[1] === code)[0] || code;
+    const type = ConceptCodeToType[code];
+    if (!type) {
+        throw new Error(`Could not find concept type for ${code}`);
+    }
+    return type;
 }
 
-const ArticleFields = ['title', 'abstract', 'url', 'byline', 'kicker', 'section', 'subsection', 'published_date',
-    'des_facet', 'org_facet', 'per_facet', 'geo_facet', 'multimedia'];  // TODO: rename these? Maybe convert them to concepts?
+const ArticleFields = [
+    'title',
+    'abstract',
+    'url',
+    'byline',
+    'kicker',
+    'section',
+    'subsection',
+    'published_date',
+    'multimedia'
+];
+
 const prepare = {
-    Article: article => _.pick(article, ArticleFields),
+    Article: info => {
+        const article = _.pick(info, ArticleFields);
+        const conceptTypePairs = Object.keys(info)
+            .filter(key => key.endsWith('_facet'))
+            .map(key => [key, 'nytd_' + key.replace('_facet', '')])
+            .filter(pair => ConceptCodeToType[pair[1]]);
+
+        article.concepts = conceptTypePairs.flatMap(pair => {
+            const [key, conceptCode] = pair;
+            const names = info[key] || [];
+            const type = getConceptTypeFromCode(conceptCode);
+            return names.map(name => ({name, type}));
+        });
+        return article;
+    },
     SearchResult: info => ({  // TODO: test this
         title: info.headline.main,
         abstract: info.abstract,
