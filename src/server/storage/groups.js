@@ -77,6 +77,7 @@
     GroupStore.init = function(_logger, db) {
         logger = _logger.fork('groups');
         collection = db.collection('groups');
+        this.collection = collection;
     };
 
     // in: groupName and owner's username

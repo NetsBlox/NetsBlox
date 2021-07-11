@@ -63,6 +63,14 @@ Perms.addPermissionSet('User', {
             new Errors.Unauthorized(requestor, `edit user "${username}"`)
         );
     },
+    DELETE: function(username) {
+        return async requestor => {
+            if (username === requestor) return;
+
+            // TODO: Check if the requestor is the group owner for the username
+            throw new Errors.Unauthorized(requestor, `delete user "${username}"`);
+        };
+    },
 });
 Perms.addPermissionSet('Library', {
     LIST: function(username) {
