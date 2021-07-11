@@ -69,7 +69,7 @@
     "moviedb": "^0.2.7",
     "node-geocoder": "^3.16.0",
     "node-schedule": "^1.3.2",
-    "nodemailer": "=2.6.4",
+    "nodemailer": "=6.4.16",
     "nop": "^1.0.0",
     "osmosis": "^1.1.10",
     "progress": "^2.0.3",
