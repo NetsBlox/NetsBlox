@@ -13,8 +13,8 @@ async function listGroups() {
         let members = await group.findMembers();
         let mUsernames = members.map(m => m.username);
         console.log([
+            group._id,
             group.name,
-            'members:',
             mUsernames.join(','),
         ].join('\t'));
     }

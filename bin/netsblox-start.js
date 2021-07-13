@@ -66,13 +66,13 @@ if (program.services) {
         useServiceProxy: isSetToTrue(process.env.PROXY_RPCS) || startAll
     };
 
-    const buildDocsBin = path.join(__dirname, 'build-docs.js');
-    const buildDocs = spawn('node', [buildDocsBin], {env: process.env});
-    buildDocs.stdout.pipe(process.stdout);
-    buildDocs.stderr.pipe(process.stderr);
     const server = new Server(opts);
-
-    server.start();
+    server.start().then(() => {
+        const buildDocsBin = path.join(__dirname, 'build-docs.js');
+        const buildDocs = spawn('node', [buildDocsBin], {env: process.env});
+        buildDocs.stdout.pipe(process.stdout);
+        buildDocs.stderr.pipe(process.stderr);
+    });
 }
 
 function isSetToTrue(envValue) {
