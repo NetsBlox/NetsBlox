@@ -11,6 +11,8 @@ const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 const SERVER_URL = 'https://alexa.netsblox.org';  // FIXME: this shouldn't be hard-coded
 const registerTypes = require('./types');
+const OAuth = require('../../../api/core/oauth');
+const OAUTH_CLIENT_NAME = 'Amazon Alexa';
 registerTypes();
 
 function clarifyError(error) {
@@ -46,6 +48,16 @@ const getAPIClient = async function(caller) {
     return new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
         .client();
+};
+
+let alexaClientID;
+Alexa.initialize = async function() {
+    const clients = await OAuth.getClients();
+    const alexaClient = clients.find(client => client.name === OAUTH_CLIENT_NAME);
+    alexaClientID = alexaClient ? alexaClient._id :
+        await OAuth.createClient(null, OAUTH_CLIENT_NAME);
+
+    console.log(`Client ID is ${alexaClientID}`);
 };
 
 /**
@@ -453,14 +465,11 @@ Alexa.createSkillV2 = async function(configuration) {
     const {skillId} = await smapiClient.createSkillForVendorV1(manifest, vendorId);
     await sleep(5000);
 
+    // TODO: filter non-alphabetic values from the utterances
+    console.log('intents:', configuration.intents);
     const interactionModel = {
         languageModel: {
             invocationName: configuration.invocation,
-            modelConfiguration: {
-                fallbackIntentSensitivity: {
-                    level: 'LOW'
-                }
-            },
             intents: configuration.intents.map(intent => ({
                 name: intent.name,
                 samples: intent.utterances,  // TODO: Should this match more closely?
@@ -492,6 +501,8 @@ Alexa.createSkillV2 = async function(configuration) {
         throw clarifyError(err);
     }
 
+    await enableAccountLinking(smapiClient, skillId, stage);
+
     const {skills} = GetStorage();
     await skills.updateOne({_id: skillId}, {
         $set: {
@@ -500,6 +511,23 @@ Alexa.createSkillV2 = async function(configuration) {
     }, {upsert: true});
     return skillId;
 };
+
+async function enableAccountLinking(client, skillId, stage) {
+    const accountLinkingRequest = {
+        type: 'AUTH_CODE',
+        skipOnEnablement: false,
+        authorizationUrl: `${SERVER_URL}/api/v2/oauth/`,
+        accessTokenUrl: `${SERVER_URL}/api/v2/oauth/token`,
+        clientId: alexaClientID,
+        clientSecret: 'unused',
+        accessTokenScheme: 'HTTP_BASIC',
+    };
+    try {
+        await client.updateAccountLinkingInfoV1(skillId, stage, {accountLinkingRequest});
+    } catch (err) {
+        throw clarifyError(err);
+    }
+}
 
 function sleep(duration) {
     return new Promise(resolve => setTimeout(resolve, duration));
