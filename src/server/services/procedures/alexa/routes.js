@@ -7,6 +7,7 @@ const {handleErrors, setUsername} = require('../../../api/rest/utils');
 const {LoginRequired, RequestError} = require('../../../api/core/errors');
 const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
 const GetTokenStore = require('./tokens');
+const GetStorage = require('./storage');
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
@@ -238,15 +239,15 @@ const NetsBloxSkillHandler = {
 skillBuilder.addRequestHandlers(
     NetsBloxSkillHandler,
 );
-//skillBuilder.addRequestHandlers(
-    //LaunchRequestHandler,
-    //SendMessageIntentHandler,
-    //HelpIntentHandler,
-    //CancelAndStopIntentHandler,
-    //SessionEndedRequestHandler,
-    //ErrorHandler,
-    //FallbackHandler,
-//);
+skillBuilder.addRequestHandlers(
+    LaunchRequestHandler,
+    SendMessageIntentHandler,
+    HelpIntentHandler,
+    CancelAndStopIntentHandler,
+    SessionEndedRequestHandler,
+    ErrorHandler,
+    FallbackHandler,
+);
 
 const skill = skillBuilder.create();
 const adapter = new ExpressAdapter(skill, true, true);
@@ -347,8 +348,68 @@ if (require.main === module) {
             return res.sendStatus(200);
         })
     );
-    router.post('/', adapter.getRequestHandlers());
-    router.get('/whoami', (req, res) => res.send(req.token.username));
+    router.post('/',
+        bodyParser.text({type: '*/*'}),
+        handleErrorsInAlexa(async (req, res) => {
+            const reqData = JSON.parse(req.body);
+            const {accessToken} = reqData.session.user;
+            const token = await OAuth.getToken(accessToken);
+            const {username} = token;
+
+            const skillId = reqData.session.application.applicationId;
+
+            if (reqData.request.type === 'IntentRequest') {
+                const {intent} = reqData.request;
+                const {skills} = GetStorage();
+                const skillData = await skills.findOne({_id: skillId});
+                if (!skillData) {
+                    throw new RequestError('Skill not found.');
+                }
+
+                const intentConfig = skillData.config.intents
+                    .find(intentConfig => intentConfig.name === intent.name);
+
+                if (!intentConfig) {
+                    return res.json(speak(`Could not find ${intent.name} intent. Perhaps you need to update the Alexa Skill.`));
+                }
+
+                const handlerXML = intentConfig.handler;
+                const {context} = skillData;
+                context.username = username;
+                const handler = await InputTypes.parse.Function(handlerXML, null, {caller: context});
+
+                const slotNames = intentConfig.slots.map(slot => slot.name);
+                const slotData = slotNames.map(name => intent.slots[name]?.value);
+                const responseText = await handler(...slotData);
+                return res.json(speak(responseText));
+            }
+        })
+    );
+    router.get('/whoami', (req, res) => res.send(req.token?.username));
     module.exports = router;
 }
 
+function speak(text) {
+    return {
+        version: '1.0',
+        response: {
+            outputSpeech: {
+                type: 'PlainText',
+                text,
+            },
+        }
+    };
+}
+
+function handleErrorsInAlexa(fn) {
+    return async function(req, res) {
+        try {
+            await fn(...arguments);
+        } catch (err) {
+            if (err instanceof RequestError) {
+                res.json(speak(`An error occurred. ${err.message}`));
+            }
+            throw err;
+        }
+    };
+}
