@@ -503,6 +503,9 @@ Alexa.createSkillV2 = async function(configuration) {
     await skills.updateOne({_id: skillId}, {
         $set: {
             config: configuration,
+            context: this.caller,
+            author: this.caller.username,
+            createdAt: new Date()
         }
     }, {upsert: true});
     return skillId;
