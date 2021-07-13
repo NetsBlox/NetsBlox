@@ -12,7 +12,7 @@ const hours = 60 * 60;
 const NewYorkTimes = new ApiConsumer('NewYorkTimes', baseUrl, {cache: {ttl: 24*hours}});
 ApiConsumer.setRequiredApiKey(NewYorkTimes, NewYorkTimesKey);
 
-const {ArticleSections, ConceptTypes, BestSellerLists} = require('./types');
+const {ArticleSections, ArticleSectionAliases, ConceptTypes, BestSellerLists, ArticleCodeToName} = require('./types');
 const prepare = require('./data-prep');
 
 /**
@@ -37,7 +37,8 @@ NewYorkTimes.getTopStories = async function(section) {
  * @returns{Array<String>}
  */
 NewYorkTimes.getArticleSections = function() {
-    return Object.keys(ArticleSections);
+    return Object.keys(ArticleSections)
+        .filter(name => !ArticleSectionAliases[name]);
 };
 
 /**
@@ -51,8 +52,8 @@ NewYorkTimes.getLatestArticles = async function(section) {
     const source = 'all';
     const unsupportedSections = ['insider', 'politics'];
     if (unsupportedSections.includes(section)) {
-        const sectionName = Object.keys(ArticleSections).find(key => ArticleSections[key] === section);
-        throw new Error(`Cannot retrieve the latest articles from the ${sectionName} section.`);
+        const sectionNames = unsupportedSections.map(code => ArticleCodeToName[code]);
+        throw new Error(`Retrieving the latest articles is unsupported for sections: ${sectionNames.join(', ')}`);
     }
 
     if (section === 'home') {

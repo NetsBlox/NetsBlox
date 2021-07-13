@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const types = require('../../input-types');
 const BestSellerLists = Object.fromEntries(require('./best-seller-list-names.json').results.map(result => [result.display_name, result.list_name_encoded]));
 const ArticleSections = {
@@ -31,6 +32,15 @@ const ArticleSections = {
     World: 'world',
 };
 
+const ArticleSectionAliases = {
+    'U.S.': 'us',
+};
+
+Object.entries(ArticleSectionAliases).forEach(entry => {
+    const [key, value] = entry;
+    ArticleSections[key] = value;
+});
+
 const ConceptTypes = {
     Descriptor: 'nytd_des',
     Location: 'nytd_geo',
@@ -46,4 +56,6 @@ types.defineType('BestSellerList', input => types.parse.Enum(input, BestSellerLi
 types.defineType('ConceptType', input => types.parse.Enum(input, ConceptTypes, undefined, 'ConceptType'));
 types.defineType('DayWeekOrMonth', input => types.parse.Enum(input, {day: 1, week: 7, month: 30}, undefined, 'DayWeekOrMonth'));
 
-module.exports = {ArticleSections, ConceptTypes, BestSellerLists};
+const ArticleCodeToName = _.invert(ArticleSections);
+
+module.exports = {ArticleSections, ArticleSectionAliases, ConceptTypes, BestSellerLists, ArticleCodeToName};
