@@ -465,14 +465,12 @@ Alexa.createSkillV2 = async function(configuration) {
     const {skillId} = await smapiClient.createSkillForVendorV1(manifest, vendorId);
     await sleep(5000);
 
-    // TODO: filter non-alphabetic values from the utterances
-    console.log('intents:', configuration.intents);
     const interactionModel = {
         languageModel: {
             invocationName: configuration.invocation,
             intents: configuration.intents.map(intent => ({
                 name: intent.name,
-                samples: intent.utterances,  // TODO: Should this match more closely?
+                samples: intent.utterances.map(utter => utter.replace(/[^a-zA-Z {}]/g, '')),
                 slots: (intent.slots || []).map(slot => ({
                     name: slot.name,
                     type: slot.type,
@@ -493,8 +491,6 @@ Alexa.createSkillV2 = async function(configuration) {
     };
 
     const stage = 'development';
-    console.log({skillId, stage});
-    console.log(JSON.stringify({interactionModel}, null, 2));
     try {
         await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
     } catch (err) {
@@ -580,10 +576,6 @@ const createManifest = (vendorId, name) => ({
 
 Alexa.isSupported = () => {
     const isSupported = process.env.ALEXA_CLIENT_ID && process.env.ALEXA_CLIENT_SECRET;
-    console.log('>>>>');
-    console.log({isSupported});
-    console.log(process.env.ALEXA_CLIENT_ID);
-    console.log(process.env.ALEXA_CLIENT_SECRET);
     if (isSupported) {
         console.log('ALEXA_CLIENT_ID and ALEXA_CLIENT_SECRET must be set for Alexa capabilities.');
     }
