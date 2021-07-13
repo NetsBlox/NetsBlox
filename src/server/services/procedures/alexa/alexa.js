@@ -507,7 +507,8 @@ const createManifest = (vendorId, name) => ({
         'apis': {
             'custom': {
                 'endpoint' : {
-                    'uri' : `${SERVER_URL}/services/routes/alexa`
+                    uri : `${SERVER_URL}/services/routes/alexa`,
+                    sslCertificateType: 'Trusted',
                 }
             }
         },
