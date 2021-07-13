@@ -56,8 +56,6 @@ Alexa.initialize = async function() {
     const alexaClient = clients.find(client => client.name === OAUTH_CLIENT_NAME);
     alexaClientID = alexaClient ? alexaClient._id :
         await OAuth.createClient(null, OAUTH_CLIENT_NAME);
-
-    console.log(`Client ID is ${alexaClientID}`);
 };
 
 /**
@@ -461,7 +459,6 @@ Alexa.createSkillV2 = async function(configuration) {
     const vendorId = vendors[0].id;
 
     const manifest = createManifest(vendorId, configuration.name);
-    console.log(JSON.stringify(manifest, null, 2));
     const {skillId} = await smapiClient.createSkillForVendorV1(manifest, vendorId);
     await sleep(5000);
 
