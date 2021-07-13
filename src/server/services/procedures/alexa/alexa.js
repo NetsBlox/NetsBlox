@@ -10,6 +10,16 @@ const AlexaSMAPI = require('ask-smapi-sdk');
 const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 const SERVER_URL = 'https://alexa.netsblox.org';  // FIXME: this shouldn't be hard-coded
+const registerTypes = require('./types');
+registerTypes();
+
+function clarifyError(error) {
+    const {violations=[]} = (error.response || {});
+    if (error.message.includes('is invalid') && violations.length) {
+        return new Error(error.response.violations.map(violation => violation.message).join('\n'));
+    }
+    return error;
+}
 
 const ensureLoggedIn = function(caller) {
     if (!caller.username) {
@@ -431,7 +441,7 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
  * @param{Object} configuration
  * @param{String} configuration.name
  * @param{String} configuration.invocation
- * @param{Array<Any>} configuration.intents FIXME: Add better type here
+ * @param{Array<Intent>} configuration.intents
  */
 Alexa.createSkillV2 = async function(configuration) {
     const smapiClient = await getAPIClient(this.caller);
@@ -464,12 +474,23 @@ Alexa.createSkillV2 = async function(configuration) {
                 })),
             })),
             types: [],
+            // TODO: The following option is only available if fallback intent is defined
+            //modelConfiguration: {
+                //fallbackIntentSensitivity: {
+                    //level: 'LOW'
+                //}
+            //},
         },
     };
 
     const stage = 'development';
-    console.log({skillId, stage, interactionModel: JSON.stringify(interactionModel, null, 2)});
-    await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
+    console.log({skillId, stage});
+    console.log(JSON.stringify({interactionModel}, null, 2));
+    try {
+        await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
+    } catch (err) {
+        throw clarifyError(err);
+    }
 
     const {skills} = GetStorage();
     await skills.updateOne({_id: skillId}, {
