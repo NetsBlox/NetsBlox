@@ -1,8 +1,7 @@
 const _ = require('lodash');
-const {ConceptTypes} = require('./types');
-const ConceptCodeToType = Object.fromEntries(
-    Object.entries(ConceptTypes).map(entry => entry.reverse())
-);
+const {ConceptTypes, ArticleCodeToName} = require('./types');
+const ConceptCodeToType = _.invert(ConceptTypes);
+
 function getConceptTypeFromCode(code) {
     const type = ConceptCodeToType[code];
     if (!type) {
@@ -40,6 +39,7 @@ const ArticleFields = [
 const prepare = {
     Article: info => {
         const article = _.pick(info, ArticleFields);
+        article.section = ArticleCodeToName[info.section] || info.section;
         article.concepts = getFacetsAsConcepts(info);
         return article;
     },
@@ -135,7 +135,7 @@ const prepare = {
             title: info.title,
             abstract: info.abstract,
             byline: info.byline,
-            section: info.section,
+            section: ArticleCodeToName[info.section] || info.section,
             subsection: info.subsection,
             published_date: info.published_date,
             url: info.url,
