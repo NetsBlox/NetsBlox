@@ -18,8 +18,18 @@ module.exports = function registerTypes() {
         },
         {
             name: 'handler',
-            type: {name: 'Function'}
+            type: {name: 'String'}  // TODO: make this a string?
         },
     ];
-    types.defineType('Intent', input => types.parse.Object(input, intentParams));
+    types.defineType('Intent', async (input, _params, ctx) => {
+        // TODO: validate the function
+        const intent = await types.parse.Object(input, intentParams);
+        await types.parse.Function(intent.handler, _params, ctx);
+        const isCustomIntent = !intent.name.startsWith('AMAZON.');
+        console.log('intent:', intent);
+        if (isCustomIntent && !intent.utterances) {
+            throw new Error('Custom intents must contain utterances.');
+        }
+        return intent;
+    });
 };

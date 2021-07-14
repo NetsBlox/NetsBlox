@@ -3,6 +3,7 @@
  *
  * @service
  */
+const _ = require('lodash');
 const Alexa = {};
 const GetTokenStore = require('./tokens');
 const GetStorage = require('./storage');
@@ -447,18 +448,44 @@ Alexa.setInteractionModel = async function (skillId, stage, intents, invocationN
     return response;
 };
 
+Alexa.deleteSkill = async function(name) {
+    const {skills} = GetStorage();
+    const value = await skills.findOne({
+        author: this.caller.username,
+        'config.name': name,
+    });
+
+    if (!value) {
+        throw new Error('Skill not found.');
+    }
+
+    const smapiClient = await getAPIClient(this.caller);
+    await smapiClient.deleteSkillV1(value._id);
+    await skills.deleteOne({_id: value._id});
+};
+
 /**
  * @param{Object} configuration
  * @param{String} configuration.name
  * @param{String} configuration.invocation
+ * @param{String=} configuration.description
+ * @param{String=} configuration.summary
  * @param{Array<Intent>} configuration.intents
+ * @param{Array<String>=} configuration.examples
  */
 Alexa.createSkillV2 = async function(configuration) {
     const smapiClient = await getAPIClient(this.caller);
     const {vendors} = (await smapiClient.getVendorListV1());
     const vendorId = vendors[0].id;
 
-    const manifest = createManifest(vendorId, configuration.name);
+    const skillConfigDefaults = {
+        description: 'An under-development Alexa Skill created in NetsBlox!',
+        examples: ['none yet!'],
+        summary: 'An under-development Alexa Skill created in NetsBlox!',
+    };
+
+    configuration = _.merge({}, skillConfigDefaults, configuration);
+    const manifest = createManifest(vendorId, configuration);
     const {skillId} = await smapiClient.createSkillForVendorV1(manifest, vendorId);
     await sleep(5000);
 
@@ -467,7 +494,7 @@ Alexa.createSkillV2 = async function(configuration) {
             invocationName: configuration.invocation,
             intents: configuration.intents.map(intent => ({
                 name: intent.name,
-                samples: intent.utterances.map(utter => utter.replace(/[^a-zA-Z {}]/g, '')),
+                samples: (intent.utterances || []).map(utter => utter.replace(/[^a-zA-Z {}]/g, '')),
                 slots: (intent.slots || []).map(slot => ({
                     name: slot.name,
                     type: slot.type,
@@ -529,45 +556,45 @@ function sleep(duration) {
     return new Promise(resolve => setTimeout(resolve, duration));
 }
 
-const createManifest = (vendorId, name) => ({
-    'vendorId': vendorId,
-    'manifest': {
-        'publishingInformation': {
-            'locales': {
+const createManifest = (vendorId, config) => ({
+    vendorId: vendorId,
+    manifest: {
+        publishingInformation: {
+            locales: {
                 'en-US': {
-                    'summary': 'An under-development Alexa Skill created in NetsBlox!',
-                    'examplePhrases': ['none yet!'],
-                    'keywords': [],
-                    'name': name,
-                    'description': 'An under-development Alexa Skill created in NetsBlox!'
+                    summary: config.summary,
+                    examplePhrases: config.examples,
+                    keywords: [],  // TODO: keywords
+                    name: config.name,
+                    description: config.description,
                 }
             },
-            'isAvailableWorldwide': true,
-            'testingInstructions': 'CUSTOM',
-            'category': '',
-            'distributionCountries': [
+            isAvailableWorldwide: true,
+            testingInstructions: 'CUSTOM',
+            category: '',
+            distributionCountries: [
                 'US',
             ]
         },
-        'apis': {
-            'custom': {
-                'endpoint' : {
+        apis: {
+            custom: {
+                endpoint : {
                     uri : `${SERVER_URL}/services/routes/alexa`,
                     sslCertificateType: 'Trusted',
                 }
             }
         },
-        'manifestVersion': '1.0',
-        'privacyAndCompliance': {
-            'allowsPurchases': false,
-            'usesPersonalInfo': false,
-            'isChildDirected': false,
-            'isExportCompliant': true,
-            'containsAds': false,
-            'locales': {
+        manifestVersion: '1.0',
+        privacyAndCompliance: {
+            allowsPurchases: false,
+            usesPersonalInfo: false,
+            isChildDirected: false,
+            isExportCompliant: true,
+            containsAds: false,
+            locales: {
                 'en-US': {
-                    'privacyPolicyUrl': `${SERVER_URL}/privacy.html`,
-                    'termsOfUseUrl': `${SERVER_URL}/tos.html`
+                    privacyPolicyUrl: `${SERVER_URL}/privacy.html`,
+                    termsOfUseUrl: `${SERVER_URL}/tos.html`
                 }
             }
         },
