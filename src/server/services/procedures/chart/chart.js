@@ -9,6 +9,8 @@ const NBService = require('../utils/service'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
 const InputTypes = require('../../input-types');
+const registerTypes = require('./types');
+registerTypes();
 
 let chart = new NBService('Chart');
 
@@ -240,7 +242,7 @@ chart._parseDrawInputs = function(lines, options){
  * @param {Number=} options.width width of the returned image
  * @param {Number=} options.height height of the returned image
  * @param {Array<String>=} options.labels labels for each line
- * @param {Array<String>=} options.types types for each line
+ * @param {Array<LineType>=} options.types types for each line
  * @param {Array<Number>=} options.xRange range of X values to graph
  * @param {Array<Number>=} options.yRange range of Y values to graph
  * @param {String=} options.xLabel label on the X axis
