@@ -72,6 +72,15 @@ function getConfigWithDefaults(configuration) {
     return _.merge({}, skillConfigDefaults, configuration);
 }
 
+async function getSkillData(id) {
+    const {skills} = GetStorage();
+    const skillData = await skills.findOne({_id: id});
+    if (!skillData) {
+        throw new Error('Skill not found.');
+    }
+    return skillData;
+}
+
 module.exports = {
     getAPIClient,
     clarifyError,
@@ -79,5 +88,6 @@ module.exports = {
     getServerURL,
     registerOAuthClient,
     getOAuthClientID,
-    getConfigWithDefaults
+    getConfigWithDefaults,
+    getSkillData,
 };

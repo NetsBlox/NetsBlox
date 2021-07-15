@@ -70,16 +70,13 @@ Alexa.createSkill = async function(configuration) {
 Alexa.invokeSkill = async function(id, utterance) {
     const stage = 'development';
     const locale = 'en-US';
+    const skillData = await h.getSkillData(id);
+    const skill = new AlexaSkill(skillData);
+
     const smapiClient = await h.getAPIClient(this.caller);
     const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
-    const {skills} = GetStorage();
-    const skillData = await skills.findOne({_id: id});
-    if (!skillData) {
-        throw new Error('Skill not found.');
-    }
-
-    const skill = new AlexaSkill(skillData);
     const {name, slots} = selectedIntent;
+
     return await skill.invokeIntent(name, slots);
 };
 
@@ -90,22 +87,18 @@ Alexa.invokeSkill = async function(id, utterance) {
  */
 Alexa.deleteSkill = async function(id) {
     const {skills} = GetStorage();
-    const value = await skills.findOne({_id: id});
-
-    if (!value) {
-        throw new Error('Skill not found.');
-    }
-    if (value.author !== this.caller.username) {
+    const skillData = await h.getSkillData(id);
+    if (skillData.author !== this.caller.username) {
         throw new Error('Unauthorized: Skills can only be deleted by the author.');
     }
 
     const smapiClient = await h.getAPIClient(this.caller);
     try {
-        await smapiClient.deleteSkillV1(value._id);
-        await skills.deleteOne({_id: value._id});
+        await smapiClient.deleteSkillV1(skillData._id);
+        await skills.deleteOne({_id: skillData._id});
     } catch (err) {
         if (err.statusCode === 404) {
-            await skills.deleteOne({_id: value._id});
+            await skills.deleteOne({_id: skillData._id});
         } else {
             throw err;
         }
@@ -129,12 +122,8 @@ Alexa.listSkills = async function() {
  * @param{String} ID
  */
 Alexa.getSkill = async function(id) {
-    const {skills} = GetStorage();
-    const value = await skills.findOne({_id: id});
-    if (!value) {
-        throw new Error('Skill not found.');
-    }
-    return value.config;
+    const {config} = await h.getSkillData(id);
+    return config;
 };
 
 /**
