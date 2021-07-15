@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const SERVER_URL = 'https://alexa.netsblox.org';  // FIXME: this shouldn't be hard-coded
+const {SERVER_URL} = process.env;
 const AlexaSMAPI = require('ask-smapi-sdk');
 const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;

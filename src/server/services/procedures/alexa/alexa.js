@@ -154,9 +154,11 @@ Alexa.updateSkill = async function(id, configuration) {
 };
 
 Alexa.isSupported = () => {
-    const isSupported = process.env.ALEXA_CLIENT_ID && process.env.ALEXA_CLIENT_SECRET;
-    if (isSupported) {
-        console.log('ALEXA_CLIENT_ID and ALEXA_CLIENT_SECRET must be set for Alexa capabilities.');
+    const envVars = ['ALEXA_CLIENT_ID', 'ALEXA_CLIENT_SECRET', 'SERVER_URL'];
+    const missingVars = envVars.filter(varName => !process.env[varName]);
+    const isSupported = missingVars.length === 0;
+    if (!isSupported) {
+        console.log(`Alexa service is disabled because the following environment variables are not set: ${missingVars.join(', ')}`);
     }
     return isSupported;
 };
