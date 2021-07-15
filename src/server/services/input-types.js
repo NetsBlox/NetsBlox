@@ -124,7 +124,7 @@ types.Date = input => {
     return input;
 };
 
-types.Array = (input, params=[]) => {
+types.Array = async (input, params=[]) => {
     const [typeParam, min=0, max=Infinity] = params;
     const innerType = getTypeParser(typeParam);
 
@@ -132,7 +132,7 @@ types.Array = (input, params=[]) => {
     if (innerType) {
         let i = 0;
         try {
-            for (; i < input.length; ++i) input[i] = innerType(input[i]);
+            for (; i < input.length; ++i) input[i] = await innerType(input[i]);
         }
         catch (e) {
             throw new ParameterError(`Item ${i+1} ${e}`);
@@ -165,7 +165,7 @@ types.Longitude = input => {
 };
 
 // all Object types are going to be structured data (simplified json for snap environment)
-types.Object = (input, params=[], ctx) => {
+types.Object = async (input, params=[], ctx) => {
     // check if it has the form of structured data
     let isArray = Array.isArray(input);
     if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
@@ -186,7 +186,7 @@ types.Object = (input, params=[], ctx) => {
         }
 
         try {
-            res[param.name] = types[param.type.name](value, param.type.params, ctx);
+            res[param.name] = await types[param.type.name](value, param.type.params, ctx);
         } catch(err) {
             throw new ParameterError(`Field ${getErrorMessage(param, err)}`);
         }
