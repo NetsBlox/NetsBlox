@@ -378,10 +378,15 @@ if (require.main === module) {
                 context.username = username;
                 const handler = await InputTypes.parse.Function(handlerXML, null, {caller: context});
 
-                const slotNames = intentConfig.slots.map(slot => slot.name);
+                const {slots=[]} = intentConfig;
+                const slotNames = slots.map(slot => slot.name);
                 const slotData = slotNames.map(name => intent.slots[name]?.value);
-                const responseText = await handler(...slotData);
-                return res.json(speak(responseText));
+                try {
+                    const responseText = await handler(...slotData);
+                    return res.json(speak(responseText));
+                } catch (err) {
+                    res.json(speak(`An error occurred in the ${intent.name} handler: ${err.message}`));
+                }
             }
         })
     );
