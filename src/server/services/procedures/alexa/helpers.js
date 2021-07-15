@@ -17,8 +17,10 @@ async function registerOAuthClient() {
 
 function clarifyError(error) {
     const {violations=[]} = (error.response || {});
-    if (error.message.includes('is invalid') && violations.length) {
-        return new Error(error.response.violations.map(violation => violation.message).join('\n'));
+    if (violations.length) {
+        const violationMsg = error.response.violations.map(violation => violation.message).join('\n');
+        const message = `${error.response.message}:\n${violationMsg}`;
+        return new Error(message);
     }
     return error;
 }
