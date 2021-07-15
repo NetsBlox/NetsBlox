@@ -4,6 +4,7 @@
  * @service
  */
 const Alexa = {};
+const AlexaSkill = require('./skill');
 const GetStorage = require('./storage');
 const registerTypes = require('./types');
 const h = require('./helpers');
@@ -57,6 +58,29 @@ Alexa.createSkill = async function(configuration) {
         }
     }, {upsert: true});
     return skillId;
+};
+
+/**
+ * Invoke the skill with the given utterance using the closest intent.
+ *
+ * @param{String} ID Alexa Skill ID to send utterance to
+ * @param{String} utterance Text to send to skill
+ * @returns{String} ID
+ */
+Alexa.invokeSkill = async function(id, utterance) {
+    const stage = 'development';
+    const locale = 'en-US';
+    const smapiClient = await h.getAPIClient(this.caller);
+    const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
+    const {skills} = GetStorage();
+    const skillData = await skills.findOne({_id: id});
+    if (!skillData) {
+        throw new Error('Skill not found.');
+    }
+
+    const skill = new AlexaSkill(skillData);
+    const {name, slots} = selectedIntent;
+    return await skill.invokeIntent(name, slots);
 };
 
 /**

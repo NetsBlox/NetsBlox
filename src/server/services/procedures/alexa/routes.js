@@ -1,4 +1,5 @@
 const InputTypes = require('../../input-types');
+const AlexaSkill = require('./skill');
 const OAuth = require('../../../api/core/oauth');
 const bodyParser = require('body-parser');
 const axios = require('axios');
@@ -365,24 +366,13 @@ if (require.main === module) {
                 if (!skillData) {
                     throw new RequestError('Skill not found.');
                 }
-
-                const intentConfig = skillData.config.intents
-                    .find(intentConfig => intentConfig.name === intent.name);
-
-                if (!intentConfig) {
+                const skill = new AlexaSkill(skillData);
+                if (!skill.hasIntent(intent.name)) {
                     return res.json(speak(`Could not find ${intent.name} intent. Perhaps you need to update the Alexa Skill.`));
                 }
 
-                const handlerXML = intentConfig.handler;
-                const {context} = skillData;
-                context.username = username;
-                const handler = await InputTypes.parse.Function(handlerXML, null, {caller: context});
-
-                const {slots=[]} = intentConfig;
-                const slotNames = slots.map(slot => slot.name);
-                const slotData = slotNames.map(name => intent.slots[name]?.value);
                 try {
-                    const responseText = await handler(...slotData);
+                    const responseText = await skill.invokeIntent(intent.name, intent.slots);
                     return res.json(speak(responseText));
                 } catch (err) {
                     res.json(speak(`An error occurred in the ${intent.name} handler: ${err.message}`));
