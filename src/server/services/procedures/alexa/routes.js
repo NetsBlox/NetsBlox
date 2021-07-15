@@ -21,6 +21,7 @@ const devLogger = require('../utils/dev-logger');
 const RemoteClient = require('../../remote-client');
 const cookieParser = require('cookie-parser');
 const skillBuilder = Alexa.SkillBuilders.custom();
+const h = require('./helpers');
 
 async function getSkillConfig(skillId) {
     const {skills} = GetStorage();
@@ -361,11 +362,7 @@ if (require.main === module) {
 
             if (reqData.request.type === 'IntentRequest') {
                 const {intent} = reqData.request;
-                const {skills} = GetStorage();
-                const skillData = await skills.findOne({_id: skillId});
-                if (!skillData) {
-                    throw new RequestError('Skill not found.');
-                }
+                const skillData = await h.getSkillData(id);
                 const skill = new AlexaSkill(skillData);
                 if (!skill.hasIntent(intent.name)) {
                     return res.json(speak(`Could not find ${intent.name} intent. Perhaps you need to update the Alexa Skill.`));
@@ -380,6 +377,24 @@ if (require.main === module) {
             }
         })
     );
+
+    router.get('/icon/:author/:name/:size(small|large)', async (req, res) => {
+        const {author, name, size} = req.params;
+        const {skills} = GetStorage();
+        const skillData = await skills.findOne({author, 'config.name': name});
+        if (!skillData) {
+            return res.status(404).send('Skill not found');
+        }
+        const iconData = skillData.config[size + 'Icon'];
+        if (!iconData) {
+            return res.status(404).send('Image not found.');
+        }
+
+        const imageData = h.getImageFromCostumeXml(iconData);
+        return res
+            .set('Content-Type', 'image/png')
+            .send(imageData);
+    });
     router.get('/whoami', (req, res) => res.send(req.token?.username));
     module.exports = router;
 }

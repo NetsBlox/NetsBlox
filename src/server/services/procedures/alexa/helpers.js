@@ -66,6 +66,7 @@ function getConfigWithDefaults(configuration) {
     const skillConfigDefaults = {
         description: 'An under-development Alexa Skill created in NetsBlox!',
         examples: ['none yet!'],
+        keywords: [],
         summary: 'An under-development Alexa Skill created in NetsBlox!',
     };
 
@@ -81,6 +82,35 @@ async function getSkillData(id) {
     return skillData;
 }
 
+async function retryWhile(fn, testFn) {
+    const seconds = 1000;
+    const maxWait = 10*seconds;
+    const startTime = Date.now();
+    let retry = true;
+    do {
+        try {
+            return await fn();
+        } catch (err) {
+            const duration = Date.now() - startTime;
+            retry = testFn(err) && duration < maxWait;
+            await sleep(.5 * seconds);
+        }
+    } while (retry);
+}
+
+function getImageFromCostumeXml(costume) {
+    const imageText = textBtwn(costume, 'image="', '"')
+        .replace(/^data:image\/png;base64,/, '');
+
+    return Buffer.from(imageText, 'base64');
+}
+
+function textBtwn(text, start, end) {
+    let startIndex = text.indexOf(start) + start.length;
+    let endIndex = text.indexOf(end, startIndex);
+    return text.substring(startIndex, endIndex);
+}
+
 module.exports = {
     getAPIClient,
     clarifyError,
@@ -90,4 +120,7 @@ module.exports = {
     getOAuthClientID,
     getConfigWithDefaults,
     getSkillData,
+    retryWhile,
+    getImageFromCostumeXml,
+    textBtwn,
 };

@@ -22,6 +22,10 @@ Alexa.initialize = async function() {
  * @param{String} configuration.name
  * @param{String} configuration.invocation
  * @param{String=} configuration.description
+ * @param{String=} configuration.smallIcon
+ * @param{String=} configuration.largeIcon
+ * @param{SkillCategory=} configuration.category
+ * @param{Array<String>=} configuration.keywords
  * @param{String=} configuration.summary
  * @param{Array<Intent>} configuration.intents
  * @param{Array<String>=} configuration.examples
@@ -35,28 +39,34 @@ Alexa.createSkill = async function(configuration) {
     const {vendors} = (await smapiClient.getVendorListV1());
     const vendorId = vendors[0].id;
 
-    const manifest = schemas.manifest(vendorId, configuration);
+    const manifest = schemas.manifest(this.caller.username, configuration);
     const interactionModel = schemas.interactionModel(configuration);
     const accountLinkingRequest = schemas.accountLinking();
+
+    const {skills} = GetStorage();
     let skillId;
     try {
-        skillId = (await smapiClient.createSkillForVendorV1(manifest, vendorId)).skillId;
-        await h.sleep(5000);
-        await smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel});
+        skillId = (await smapiClient.createSkillForVendorV1({vendorId, manifest}, vendorId)).skillId;
+        // TODO: Should I store the data here?
+        await skills.updateOne({_id: skillId}, {
+            $set: {
+                config: configuration,
+                context: this.caller,
+                author: this.caller.username,
+                createdAt: new Date()
+            }
+        }, {upsert: true});
+
+        await h.retryWhile(
+            () => smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel}),
+            err => err.statusCode === 404,
+        );
         await smapiClient.updateAccountLinkingInfoV1(skillId, stage, {accountLinkingRequest});
     } catch (err) {
+        await skills.deleteOne({_id: skillId});
         throw h.clarifyError(err);
     }
 
-    const {skills} = GetStorage();
-    await skills.updateOne({_id: skillId}, {
-        $set: {
-            config: configuration,
-            context: this.caller,
-            author: this.caller.username,
-            createdAt: new Date()
-        }
-    }, {upsert: true});
     return skillId;
 };
 
@@ -131,14 +141,18 @@ Alexa.getSkill = async function(id) {
  *
  * @param{String} ID ID of the skill to update
  * @param{Object} configuration
- * @param{String} configuration.name The name of the Alexa Skill
- * @param{String} configuration.invocation The name to use to invoke the skill
- * @param{String=} configuration.description A description of the skill
- * @param{String=} configuration.summary A summary of the skill
- * @param{Array<Intent>} configuration.intents A list of intents, or commands, for the skill to support
- * @param{Array<String>=} configuration.examples Example utterances to show in the skill description
+ * @param{String} configuration.name
+ * @param{String} configuration.invocation
+ * @param{String=} configuration.description
+ * @param{String=} configuration.smallIcon
+ * @param{String=} configuration.largeIcon
+ * @param{SkillCategory=} configuration.category
+ * @param{Array<String>=} configuration.keywords
+ * @param{String=} configuration.summary
+ * @param{Array<Intent>} configuration.intents
+ * @param{Array<String>=} configuration.examples
  */
-Alexa.updateSkill = async function(id, configuration) {
+Alexa.updateSkill = async function(id, configuration) {  // TODO: test this more...
     const smapiClient = await h.getAPIClient(this.caller);
     configuration = h.getConfigWithDefaults(configuration);
 

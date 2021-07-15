@@ -7,22 +7,21 @@
 const schemas = {};
 const h = require('./helpers');
 
-schemas.manifest = (vendorId, config) => ({
-    vendorId: vendorId,
-    manifest: {
+schemas.manifest = (author, config) => {
+    const manifest = {
         publishingInformation: {
             locales: {
                 'en-US': {
                     summary: config.summary,
                     examplePhrases: config.examples,
-                    keywords: [],  // TODO: keywords
+                    keywords: config.keywords,
                     name: config.name,
                     description: config.description,
                 }
             },
             isAvailableWorldwide: true,
             testingInstructions: 'CUSTOM',
-            category: '',
+            category: config.category,
             distributionCountries: [
                 'US',
             ]
@@ -49,8 +48,17 @@ schemas.manifest = (vendorId, config) => ({
                 }
             }
         },
+    };
+
+    const baseURL = h.getServerURL() + `/services/routes/alexa/icon/${encodeURIComponent(author)}/${encodeURIComponent(config.name)}`;
+    if (config.smallIcon) {
+        manifest.publishingInformation.locales['en-US'].smallIconUri = `${baseURL}/small`;
     }
-});
+    if (config.largeIcon) {
+        manifest.publishingInformation.locales['en-US'].largeIconUri = `${baseURL}/large`;
+    }
+    return manifest;
+};
 
 schemas.accountLinking = () => ({
     type: 'AUTH_CODE',
