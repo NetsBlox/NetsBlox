@@ -159,7 +159,7 @@ Alexa.updateSkill = async function(id, configuration) {  // TODO: test this more
     const interactionModel = schemas.interactionModel(configuration);
     try {
         const stage = 'development';
-        await smapiClient.updateSkillManifestV1(id, stage, manifest);
+        await smapiClient.updateSkillManifestV1(id, stage, {manifest});
         await smapiClient.setInteractionModelV1(id, stage, 'en-US', {interactionModel});
     } catch (err) {
         throw h.clarifyError(err);
