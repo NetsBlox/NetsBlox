@@ -15,6 +15,10 @@ async function registerOAuthClient() {
         await OAuth.createClient(null, OAUTH_CLIENT_NAME);
 }
 
+function getClientID() {
+    return clientID;
+}
+
 function clarifyError(error) {
     if (error.response) {
         const {violations=[]} = (error.response || {});
@@ -121,9 +125,10 @@ module.exports = {
     getAPIClient,
     clarifyError,
     sleep,
-    getServerURL,
     registerOAuthClient,
     getOAuthClientID,
+    getServerURL,
+    getClientID,
     getConfigWithDefaults,
     getSkillData,
     retryWhile,

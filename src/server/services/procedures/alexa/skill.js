@@ -8,7 +8,8 @@ class AlexaSkill {
     hasIntent(name) {
         const intentConfig = this.skillData.config.intents
             .find(intentConfig => intentConfig.name === name);
-        return !intentConfig;
+
+        return !!intentConfig;
     }
 
     async invokeIntent(name, slotDict, username=null) {

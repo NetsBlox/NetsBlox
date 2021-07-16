@@ -11,7 +11,7 @@
 <div id="amazon-root"></div>
 <script type="text/javascript">
     window.onAmazonLoginReady = function() {
-        amazon.Login.setClientId('<%= env.ALEXA_CLIENT_ID %>');
+        amazon.Login.setClientId('<%= clientID %>');
     };
     (function(d) {
         var a = d.createElement('script'); a.type = 'text/javascript';
@@ -50,7 +50,7 @@
         options = {
             scope: 'alexa::ask:skills:readwrite alexa::ask:models:readwrite alexa::ask:skills:test',
             response_type: 'code',
-            redirect_uri: 'https://alexa.netsblox.org/services/routes/alexa/tokens'
+            redirect_uri: '<%= serverURL %>/services/routes/alexa/tokens'
         };
         amazon.Login.authorize(options, function(response) {
             if ( response.error ) {
@@ -63,9 +63,8 @@
     };
 
     async function sendResponse(response) {
-        console.log(JSON.stringify(response));
         if (response) {
-            await fetch("https://alexa.netsblox.org/services/routes/alexa/tokens", {
+            await fetch("<%= serverURL %>/services/routes/alexa/tokens", {
                 method: "PUT",
                 headers: {
                     'Content-Type': 'application/json',
