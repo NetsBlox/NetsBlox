@@ -30,22 +30,24 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('Array', function() {
-        it('should throw error w/ numeric input', () => {
+        it('should throw error w/ numeric input', async () => {
             let rawInput = '181',
                 type = 'Array';
 
-            assert.throws(() => typesParser[type](rawInput));
+            await utils.shouldThrow(
+                () => typesParser[type](rawInput),
+            );
         });
 
-        it('should throw error w/ string input', () => {
+        it('should throw error w/ string input', async () => {
             let rawInput = 'cat',
                 type = 'Array';
 
-            assert.throws(() => typesParser[type](rawInput));
+            await utils.shouldThrow(() => typesParser[type](rawInput));
         });
 
-        it('should throw invalid nested types', () => {
-            assert.throws(() => typesParser.Array(['text'], ['Number']));
+        it('should throw invalid nested types', async () => {
+            await utils.shouldThrow(() => typesParser.Array(['text'], ['Number']));
         });
 
         it('should support nested types', () => {
@@ -55,37 +57,37 @@ describe(utils.suiteName(__filename), function() {
             typesParser.Array([1, 2], [{ name: 'BoundedNumber', params: [1, 2] }]);
         });
 
-        it('should enforce bounded lengths', () => {
-            assert.throws(() => typesParser.Array([], [undefined, 2]));
-            assert.throws(() => typesParser.Array([1], [undefined, 2]));
+        it('should enforce bounded lengths', async () => {
+            await utils.shouldThrow(() => typesParser.Array([], [undefined, 2]));
+            await utils.shouldThrow(() => typesParser.Array([1], [undefined, 2]));
             typesParser.Array([1, 2], [undefined, 2]);
             typesParser.Array([1, 2, 3], [undefined, 2]);
 
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
             typesParser.Array([1, 2, 3, 4], [undefined, undefined, 4]);
             typesParser.Array([1, 2, 3], [undefined, undefined, 4]);
 
-            assert.throws(() => typesParser.Array([], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1, 2], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
             typesParser.Array([1, 2, 3, 4], [undefined, 3, 4]);
             typesParser.Array([1, 2, 3], [undefined, 3, 4]);
         });
     });
 
     describe('Object', function() {
-        it('should throw error if input has a pair of size 0', () => {
+        it('should throw error if input has a pair of size 0', async () => {
             let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];
             let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /It should be a list of/);
         });
 
-        it('should throw error if input has a pair of length more than 2', () => {
+        it('should throw error if input has a pair of length more than 2', async () => {
             let rawInput = [['a', 234],['name', 'Hamid', 'Z'], ['connections', ['b','c','d']]];
             let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /It should be a list of/);
         });
 
         it('should not throw if input has a pair of length 1', () => {
@@ -111,9 +113,9 @@ describe(utils.suiteName(__filename), function() {
                 };
             }
 
-            it('should not support additional fields', function() {
+            it('should not support additional fields', async function() {
                 const input = [['name', 'Donald Duck'], ['age', 50]];
-                assert.throws(
+                await utils.shouldThrow(
                     () => typesParser.Object(input, [param('name', 'String')]),
                     /extra fields/
                 );
@@ -143,9 +145,9 @@ describe(utils.suiteName(__filename), function() {
                 assert.deepEqual(parsedInput.age, 50);
             });
 
-            it('should support required fields', function() {
+            it('should support required fields', async function() {
                 const input = [['name', 'Donald Duck']];
-                assert.throws(
+                await utils.shouldThrow(
                     () => typesParser.Object(input, [param('name', 'String'), param('age', 'Number')]),
                     /must contain/
                 );
@@ -161,14 +163,14 @@ describe(utils.suiteName(__filename), function() {
     describe('Latitude', function() {
         const type = 'Latitude';
 
-        it('should throw on latitudes less than -90', () => {
+        it('should throw on latitudes less than -90', async () => {
             let rawInput = '-91';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /Latitude/);
         });
 
-        it('should throw on latitudes more than 90', () => {
+        it('should throw on latitudes more than 90', async () => {
             let rawInput = '91';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /Latitude/);
         });
 
     });
@@ -176,14 +178,14 @@ describe(utils.suiteName(__filename), function() {
     describe('Longitude', function() {
         const type = 'Longitude';
 
-        it('should throw on longitude less than -180', () => {
+        it('should throw on longitude less than -180', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /Longitude/);
         });
 
-        it('should throw on longitude more than 180', () => {
+        it('should throw on longitude more than 180', async () => {
             let rawInput = '181';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            await utils.shouldThrow(() => typesParser[type](rawInput), /Longitude/);
         });
 
     });
@@ -207,19 +209,19 @@ describe(utils.suiteName(__filename), function() {
             assert.strictEqual(typeof value, 'number');
         });
 
-        it('should throw if less than min', () => {
+        it('should throw if less than min', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, [-180, 180]), /-180/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, [-180, 180]), /-180/);
         });
 
-        it('should throw if more than max', () => {
+        it('should throw if more than max', async () => {
             let rawInput = '181';
-            assert.throws(() => typesParser[type](rawInput, ['-180', '180']), /180/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, ['-180', '180']), /180/);
         });
 
-        it('should throw if below minimum (w/o max)', () => {
+        it('should throw if below minimum (w/o max)', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, ['-180']), /180/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, ['-180']), /180/);
         });
 
         it('should not print NaN in error if below minimum (w/o max)', () => {
@@ -250,19 +252,19 @@ describe(utils.suiteName(__filename), function() {
             typesParser[type](rawInput, [2, 180]);
         });
 
-        it('should throw if less than min', () => {
+        it('should throw if less than min', async () => {
             let rawInput = 'a';
-            assert.throws(() => typesParser[type](rawInput, [4, 180]), /4/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, [4, 180]), /4/);
         });
 
-        it('should throw if more than max', () => {
+        it('should throw if more than max', async () => {
             let rawInput = 'abcdefg';
-            assert.throws(() => typesParser[type](rawInput, [2, 4]), /4/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, [2, 4]), /4/);
         });
 
-        it('should throw if below minimum (w/o max)', () => {
+        it('should throw if below minimum (w/o max)', async () => {
             let rawInput = 'abc';
-            assert.throws(() => typesParser[type](rawInput, [5]), /5/);
+            await utils.shouldThrow(() => typesParser[type](rawInput, [5]), /5/);
         });
 
         it('should accept if above minimum (w/o max)', () => {
@@ -316,8 +318,8 @@ describe(utils.suiteName(__filename), function() {
     describe('defineType', function() {
         before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
 
-        it('should not be able to define the same type twice', function() {
-            assert.throws(() => InputTypes.defineType('NewType', input => input));
+        it('should not be able to define the same type twice', async function() {
+            await utils.shouldThrow(() => InputTypes.defineType('NewType', input => input));
         });
     });
 });

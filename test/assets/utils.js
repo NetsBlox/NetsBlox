@@ -175,7 +175,7 @@ const sleep = delay => {
     return deferred.promise;
 };
 
-async function shouldThrow(fn, Err, msg) {
+async function shouldThrow(fn, Err=Error, msg) {
     try {
         await fn();
     } catch (err) {
