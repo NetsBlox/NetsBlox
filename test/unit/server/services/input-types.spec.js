@@ -327,6 +327,18 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('SerializedFunction', function() {
+        it('should throw an error if doesnt compile', async function() {
+            await utils.shouldThrow(() => typesParser.SerializedFunction('thisIsNotXml'));
+        });
+
+        it('should return an xml string', async function() {
+            const reportStopping = '<context id="1"><inputs></inputs><variables></variables><script><block collabId="item_204" s="doReport"><l>Stopping!</l></block></script><receiver><sprite name="Sprite" collabId="item_-1" idx="1" x="-450.67597895992844" y="-174.19822319735795" heading="90" scale="1" rotation="1" draggable="true" costume="1" color="80,80,80" pen="tip" id="6"><costumes><list struct="atomic" id="7"></list></costumes><sounds><list struct="atomic" id="8"></list></sounds><variables></variables><blocks></blocks><scripts></scripts></sprite></receiver><origin><ref id="6"></ref></origin><context id="11"><inputs></inputs><variables></variables><receiver><ref id="6"></ref></receiver><origin><ref id="6"></ref></origin></context></context>';
+            const xml = await typesParser.SerializedFunction(reportStopping);
+            assert.equal(typeof xml, 'string');
+        });
+    });
+
     describe('defineType', function() {
         before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
 
