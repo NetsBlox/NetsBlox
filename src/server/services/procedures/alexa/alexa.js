@@ -22,8 +22,6 @@ Alexa.initialize = async function() {
  * @param{String} configuration.name
  * @param{String} configuration.invocation
  * @param{String=} configuration.description
- * @param{String=} configuration.smallIcon
- * @param{String=} configuration.largeIcon
  * @param{SkillCategory=} configuration.category
  * @param{Array<String>=} configuration.keywords
  * @param{String=} configuration.summary
@@ -144,8 +142,6 @@ Alexa.getSkill = async function(id) {
  * @param{String} configuration.name
  * @param{String} configuration.invocation
  * @param{String=} configuration.description
- * @param{String=} configuration.smallIcon
- * @param{String=} configuration.largeIcon
  * @param{SkillCategory=} configuration.category
  * @param{Array<String>=} configuration.keywords
  * @param{String=} configuration.summary

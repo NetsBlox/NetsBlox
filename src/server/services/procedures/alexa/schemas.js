@@ -6,6 +6,7 @@
  */
 const schemas = {};
 const h = require('./helpers');
+const iconsEnabled = false;
 
 schemas.manifest = (author, config) => {
     const manifest = {
@@ -50,12 +51,14 @@ schemas.manifest = (author, config) => {
         },
     };
 
-    const baseURL = h.getServerURL() + `/services/routes/alexa/icon/${encodeURIComponent(author)}/${encodeURIComponent(config.name)}`;
-    if (config.smallIcon) {
-        manifest.publishingInformation.locales['en-US'].smallIconUri = `${baseURL}/small`;
-    }
-    if (config.largeIcon) {
-        manifest.publishingInformation.locales['en-US'].largeIconUri = `${baseURL}/large`;
+    if (iconsEnabled) {
+        const baseURL = h.getServerURL() + `/services/routes/alexa/icon/${encodeURIComponent(author)}/${encodeURIComponent(config.name)}`;
+        if (config.smallIcon) {
+            manifest.publishingInformation.locales['en-US'].smallIconUri = `${baseURL}/small`;
+        }
+        if (config.largeIcon) {
+            manifest.publishingInformation.locales['en-US'].largeIconUri = `${baseURL}/large`;
+        }
     }
     return manifest;
 };
