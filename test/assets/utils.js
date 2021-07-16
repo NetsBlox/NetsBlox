@@ -175,9 +175,13 @@ const sleep = delay => {
     return deferred.promise;
 };
 
+function isSubclass(Subclass, Clazz) {
+    return Subclass.prototype instanceof Clazz;
+}
+
 async function shouldThrow(fn, Err, msg) {
     assert(
-        Err === undefined || Err instanceof Error,
+        Err === undefined || Err instanceof Error || isSubclass(Err, Error),
         `shouldThrow expected Err to be a type of Error: ${Err}`
     );
     try {
