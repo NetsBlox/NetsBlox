@@ -41,29 +41,27 @@ Alexa.createSkill = async function(configuration) {
     const interactionModel = schemas.interactionModel(configuration);
     const accountLinkingRequest = schemas.accountLinking();
 
-    const {skills} = GetStorage();
     let skillId;
     try {
         skillId = (await smapiClient.createSkillForVendorV1({vendorId, manifest}, vendorId)).skillId;
-        // TODO: Should I store the data here?
-        await skills.updateOne({_id: skillId}, {
-            $set: {
-                config: configuration,
-                context: this.caller,
-                author: this.caller.username,
-                createdAt: new Date()
-            }
-        }, {upsert: true});
-
         await h.retryWhile(
             () => smapiClient.setInteractionModelV1(skillId, stage, 'en-US', {interactionModel}),
             err => err.statusCode === 404,
         );
         await smapiClient.updateAccountLinkingInfoV1(skillId, stage, {accountLinkingRequest});
     } catch (err) {
-        await skills.deleteOne({_id: skillId});
         throw h.clarifyError(err);
     }
+
+    const {skills} = GetStorage();
+    await skills.updateOne({_id: skillId}, {
+        $set: {
+            config: configuration,
+            context: this.caller,
+            author: this.caller.username,
+            createdAt: new Date()
+        }
+    }, {upsert: true});
 
     return skillId;
 };
@@ -148,7 +146,7 @@ Alexa.getSkill = async function(id) {
  * @param{Array<Intent>} configuration.intents
  * @param{Array<String>=} configuration.examples
  */
-Alexa.updateSkill = async function(id, configuration) {  // TODO: test this more...
+Alexa.updateSkill = async function(id, configuration) {
     const smapiClient = await h.getAPIClient(this.caller);
     configuration = h.getConfigWithDefaults(configuration);
 
