@@ -227,6 +227,11 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
+types.SerializedFunction = async (blockXml, _params, ctx) => {
+    await types.Function(blockXml, _params, ctx);  // check that it compiles
+    return blockXml;
+};
+
 class EnumError extends ParameterError {
     constructor(name, variants) {
         const message = name ? `${name} must be one of ${variants.join(', ')}` :
