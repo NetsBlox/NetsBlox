@@ -92,10 +92,14 @@ Alexa.invokeSkill = async function(id, utterance) {
     const skill = new AlexaSkill(skillData);
 
     const smapiClient = await h.getAPIClient(this.caller);
-    const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
-    const {name, slots} = selectedIntent;
+    try {
+        const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
+        const {name, slots} = selectedIntent;
 
-    return await skill.invokeIntent(name, slots);
+        return await skill.invokeIntent(name, slots);
+    } catch (err) {
+        throw h.clarifyError(err);
+    }
 };
 
 /**
