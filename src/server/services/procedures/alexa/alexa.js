@@ -1,7 +1,19 @@
 /**
  * The Alexa service provides capabilities for building your own Alexa skills!
  *
+ * An Alexa skill consists of some general information (such as the name to use
+ * for invocation) as well as a list of supported intents. An intent is a command
+ * or question to which the skill can respond. Intents consist of a name, list of
+ * utterances, and any required slots. Utterances are examples of how the user might
+ * phrase questions or commands. Slots are used to define placeholders for concepts
+ * like names, cities, etc.
+ *
+ * When Alexa determines that a request was made to a given intent, the slots are
+ * resolved to their corresponding values and then passed to the "handler" for the
+ * intent.
+ *
  * @service
+ * @alpha
  */
 const Alexa = {};
 const AlexaSkill = require('./skill');
@@ -19,13 +31,13 @@ Alexa.initialize = async function() {
  * Create an Alexa Skill from a configuration.
  *
  * @param{Object} configuration
- * @param{String} configuration.name
- * @param{String} configuration.invocation
+ * @param{String} configuration.name The name of the skill
+ * @param{String} configuration.invocation The name to use to invoke the skill (eg, "tell <invocation> to <intent>")
+ * @param{Array<Intent>} configuration.intents Intents (ie, commands) supported by the skill.
  * @param{String=} configuration.description
  * @param{SkillCategory=} configuration.category
  * @param{Array<String>=} configuration.keywords
  * @param{String=} configuration.summary
- * @param{Array<Intent>} configuration.intents
  * @param{Array<String>=} configuration.examples
  * @returns{String} ID
  */
@@ -137,13 +149,13 @@ Alexa.getSkill = async function(id) {
  *
  * @param{String} ID ID of the skill to update
  * @param{Object} configuration
- * @param{String} configuration.name
- * @param{String} configuration.invocation
+ * @param{String} configuration.name The name of the skill
+ * @param{String} configuration.invocation The name to use to invoke the skill (eg, "tell <invocation> to <intent>")
+ * @param{Array<Intent>} configuration.intents Intents (ie, commands) supported by the skill.
  * @param{String=} configuration.description
  * @param{SkillCategory=} configuration.category
  * @param{Array<String>=} configuration.keywords
  * @param{String=} configuration.summary
- * @param{Array<Intent>} configuration.intents
  * @param{Array<String>=} configuration.examples
  */
 Alexa.updateSkill = async function(id, configuration) {

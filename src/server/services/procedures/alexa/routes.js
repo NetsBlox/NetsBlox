@@ -362,7 +362,7 @@ if (require.main === module) {
 
             if (reqData.request.type === 'IntentRequest') {
                 const {intent} = reqData.request;
-                const skillData = await h.getSkillData(id);
+                const skillData = await h.getSkillData(skillId);
                 const skill = new AlexaSkill(skillData);
                 if (!skill.hasIntent(intent.name)) {
                     return res.json(speak(`Could not find ${intent.name} intent. Perhaps you need to update the Alexa Skill.`));

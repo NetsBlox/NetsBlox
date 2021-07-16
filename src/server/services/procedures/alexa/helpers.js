@@ -16,11 +16,15 @@ async function registerOAuthClient() {
 }
 
 function clarifyError(error) {
-    const {violations=[]} = (error.response || {});
-    if (violations.length) {
-        const violationMsg = error.response.violations.map(violation => violation.message).join('\n');
-        const message = `${error.response.message}:\n${violationMsg}`;
-        return new Error(message);
+    if (error.response) {
+        const {violations=[]} = (error.response || {});
+        if (violations.length) {
+            const violationMsg = error.response.violations.map(violation => violation.message).join('\n');
+            const message = `${error.response.message}:\n${violationMsg}`;
+            return new Error(message);
+        } else {
+            return new Error(error.response.message);
+        }
     }
     return error;
 }
