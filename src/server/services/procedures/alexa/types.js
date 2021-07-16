@@ -177,12 +177,11 @@ function registerTypes() {
         },
         {
             name: 'handler',
-            type: {name: 'String'}  // TODO: make this FunctionXML or SerializedFunction?
+            type: {name: 'SerializedFunction'}
         },
     ];
-    types.defineType('Intent', async (input, _params, ctx) => {
+    types.defineType('Intent', async input => {
         const intent = await types.parse.Object(input, intentParams);
-        await types.parse.Function(intent.handler, _params, ctx);
         const isCustomIntent = !intent.name.startsWith('AMAZON.');
         if (isCustomIntent && !intent.utterances) {
             throw new Error('Custom intents must contain utterances.');
