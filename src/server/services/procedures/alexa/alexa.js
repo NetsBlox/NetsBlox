@@ -18,7 +18,7 @@
 const Alexa = {};
 const AlexaSkill = require('./skill');
 const GetStorage = require('./storage');
-const registerTypes = require('./types');
+const {registerTypes, SkillCategories, SlotTypes} = require('./types');
 const h = require('./helpers');
 const schemas = require('./schemas');
 registerTypes();
@@ -188,6 +188,20 @@ Alexa.updateSkill = async function(id, configuration) {
             updatedAt: new Date()
         }
     }, {upsert: true});
+};
+
+/**
+ * Get a list of all valid categories for Alexa skills.
+ */
+Alexa.getSkillCategories = function() {
+    return SkillCategories;
+};
+
+/**
+ * Get a list of all valid slot types that can be added to an intent.
+ */
+Alexa.getSlotTypes = function() {
+    return SlotTypes;
 };
 
 Alexa.isSupported = () => {

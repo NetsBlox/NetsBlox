@@ -1,6 +1,6 @@
 const types = require('../../input-types');
 
-const Categories = [
+const SkillCategories = [
     'ALARMS_AND_CLOCKS',
     'ASTROLOGY',
     'BUSINESS_AND_FINANCE',
@@ -62,7 +62,104 @@ const Categories = [
     'ZIP_CODE_LOOKUP',
 ];
 
-module.exports = function registerTypes() {
+const SlotTypes = [
+    'AMAZON.Actor',
+    'AMAZON.AdministrativeArea',
+    'AMAZON.AggregateRating',
+    'AMAZON.Airline',
+    'AMAZON.Airport',
+    'AMAZON.Anaphor',
+    'AMAZON.Animal',
+    'AMAZON.Artist',
+    'AMAZON.AT_CITY',
+    'AMAZON.AT_REGION',
+    'AMAZON.Athlete',
+    'AMAZON.Author',
+    'AMAZON.Book',
+    'AMAZON.BookSeries',
+    'AMAZON.BroadcastChannel',
+    'AMAZON.City',
+    'AMAZON.CivicStructure',
+    'AMAZON.Color',
+    'AMAZON.Comic',
+    'AMAZON.Corporation',
+    'AMAZON.Country',
+    'AMAZON.CreativeWorkType',
+    'AMAZON.DayOfWeek',
+    'AMAZON.DE_CITY',
+    'AMAZON.DE_FIRST_NAME',
+    'AMAZON.DE_REGION',
+    'AMAZON.Dessert',
+    'AMAZON.DeviceType',
+    'AMAZON.Director',
+    'AMAZON.Drink',
+    'AMAZON.EducationalOrganization',
+    'AMAZON.EUROPE_CITY',
+    'AMAZON.EventType',
+    'AMAZON.Festival',
+    'AMAZON.FictionalCharacter',
+    'AMAZON.FinancialService',
+    'AMAZON.FirstName',
+    'AMAZON.Food',
+    'AMAZON.FoodEstablishment',
+    'AMAZON.Game',
+    'AMAZON.GB_CITY',
+    'AMAZON.GB_FIRST_NAME',
+    'AMAZON.GB_REGION',
+    'AMAZON.Genre',
+    'AMAZON.Landform',
+    'AMAZON.LandmarksOrHistoricalBuildings',
+    'AMAZON.Language',
+    'AMAZON.LocalBusiness',
+    'AMAZON.LocalBusinessType',
+    'AMAZON.MedicalOrganization',
+    'AMAZON.Month',
+    'AMAZON.Movie',
+    'AMAZON.MovieSeries',
+    'AMAZON.MovieTheater',
+    'AMAZON.MusicAlbum',
+    'AMAZON.MusicCreativeWorkType',
+    'AMAZON.MusicEvent',
+    'AMAZON.MusicGroup',
+    'AMAZON.Musician',
+    'AMAZON.MusicPlaylist',
+    'AMAZON.MusicRecording',
+    'AMAZON.MusicVenue',
+    'AMAZON.MusicVideo',
+    'AMAZON.Organization',
+    'AMAZON.Person',
+    'AMAZON.PostalAddress',
+    'AMAZON.Professional',
+    'AMAZON.ProfessionalType',
+    'AMAZON.RadioChannel',
+    'AMAZON.Region',
+    'AMAZON.RelativePosition',
+    'AMAZON.Residence',
+    'AMAZON.Room',
+    'AMAZON.ScreeningEvent',
+    'AMAZON.Service',
+    'AMAZON.SocialMediaPlatform',
+    'AMAZON.SoftwareApplication',
+    'AMAZON.SoftwareGame',
+    'AMAZON.Sport',
+    'AMAZON.SportsEvent',
+    'AMAZON.SportsTeam',
+    'AMAZON.StreetAddress',
+    'AMAZON.StreetName',
+    'AMAZON.TelevisionChannel',
+    'AMAZON.TVEpisode',
+    'AMAZON.TVSeason',
+    'AMAZON.TVSeries',
+    'AMAZON.US_CITY',
+    'AMAZON.US_FIRST_NAME',
+    'AMAZON.US_STATE',
+    'AMAZON.VideoGame',
+    'AMAZON.VisualModeTrigger',
+    'AMAZON.WeatherCondition',
+    'AMAZON.WrittenCreativeWorkType',
+];
+
+function registerTypes() {
     const intentParams = [
         {
             name: 'name',
@@ -76,7 +173,7 @@ module.exports = function registerTypes() {
         {
             name: 'slots',
             optional: true,
-            type: {name: 'Array', params: ['Object']}
+            type: {name: 'Array', params: ['Slot']}
         },
         {
             name: 'handler',
@@ -93,5 +190,23 @@ module.exports = function registerTypes() {
         return intent;
     });
 
-    types.defineType('SkillCategory', input => types.parse.Enum(input, Categories, undefined, 'SkillCategory'));
+    types.defineType('SlotType', input => types.parse.Enum(input, SlotTypes, undefined, 'SlotType'));
+    const slotParams = [
+        {
+            name: 'name',
+            type: {name: 'String'},
+        },
+        {
+            name: 'type',
+            type: {name: 'SlotType'},
+        }
+    ];
+    types.defineType('Slot', input => types.parse.Object(input, slotParams, undefined));
+    types.defineType('SkillCategory', input => types.parse.Enum(input, SkillCategories, undefined, 'SkillCategory'));
+}
+
+module.exports = {
+    registerTypes,
+    SlotTypes,
+    SkillCategories,
 };
