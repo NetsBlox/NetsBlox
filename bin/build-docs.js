@@ -293,8 +293,9 @@ async function compileDocs(services) {
     // the reason for not using promisify is so that we still get the stderr/stdout on failure so user can see what the issue was
     await new Promise((resolve, reject) => {
         exec('make clean && make html', { cwd: GENERATED_PATH }, async (error, stdout, stderr) => {
-            if (error || stderr.length !== 0) {
-                reject(Error(`failed to compile docs: error: ${error ? error : ''}, stderr: ${stderr}, stdout: ${stdout}`));
+            const { ignored, important } = splitErrors(stderr);
+            if (error || important.length) {
+                reject(Error(`failed to compile docs:\nerror: ${error ? error : ''}\n\nimportant:\n${important}\n\nignored:\n${ignored}\n\nstdout:\n${stdout}`));
             }
             else if (!await hasDirectory(GENERATED_PATH, '_build')) {
                 reject(Error(`failed to find docs build directory`));
@@ -308,6 +309,15 @@ async function compileDocs(services) {
             }
         });
     });
+}
+
+function splitErrors(str) {
+    const important = [];
+    const ignored = [];
+    for (const line of str.split('\n').map(s => s.trim()).filter(s => s.length)) {
+        (line.includes('WARNING: duplicate function description') ? ignored : important).push(line);
+    }
+    return { ignored: ignored.join('\n'), important: important.join('\n') };
 }
 
 /* eslint-enable no-console */
