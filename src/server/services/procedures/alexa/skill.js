@@ -26,7 +26,7 @@ class AlexaSkill {
 
         const {slots=[]} = intentConfig;
         const slotNames = slots.map(slot => slot.name);
-        const slotData = slotNames.map(name => slotDict[name]?.value);
+        const slotData = slotNames.map(name => slotDict[name] && slotDict[name].value);
         return await handler(...slotData);
     }
 }

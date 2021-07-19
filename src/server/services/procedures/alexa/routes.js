@@ -143,7 +143,7 @@ router.get('/icon/:author/:name/:size(small|large)', async (req, res) => {
         .set('Content-Type', 'image/png')
         .send(imageData);
 });
-router.get('/whoami', (req, res) => res.send(req.token?.username));
+router.get('/whoami', (req, res) => res.send(req.token && req.token.username));
 
 function speak(text) {
     return {
