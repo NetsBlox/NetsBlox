@@ -209,6 +209,7 @@ Alexa.isSupported = () => {
     const missingVars = envVars.filter(varName => !process.env[varName]);
     const isSupported = missingVars.length === 0;
     if (!isSupported) {
+        // eslint-disable-next-line no-console
         console.log(`Alexa service is disabled because the following environment variables are not set: ${missingVars.join(', ')}`);
     }
     return isSupported;
