@@ -12,7 +12,6 @@ const fs = require('fs');
 const path = require('path');
 const AmazonLoginTemplate = _.template(fs.readFileSync(path.join(__dirname, 'login.html.ejs'), 'utf8'));
 const express = require('express');
-const RemoteClient = require('../../remote-client');
 const cookieParser = require('cookie-parser');
 const h = require('./helpers');
 
@@ -117,7 +116,7 @@ router.post('/',
             }
 
             try {
-                const responseText = await skill.invokeIntent(intent.name, intent.slots);
+                const responseText = await skill.invokeIntent(intent.name, intent.slots, username);
                 return res.json(speak(responseText));
             } catch (err) {
                 res.json(speak(`An error occurred in the ${intent.name} handler: ${err.message}`));
