@@ -19,7 +19,7 @@ function allDefaults() {
         json(),
         cookieParser(),
         (req, res, next) => middleware.tryLogIn(req, res, next, true),
-    ]
+    ];
 }
 
 module.exports = {

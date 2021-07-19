@@ -78,9 +78,10 @@ class ServicesAPI {
     router() {
         const router = express.Router({mergeParams: true});
 
+        router.use(...routeUtils.allDefaults());
+
         this.addServiceRoutes(router);
 
-        router.use(...routeUtils.allDefaults());
         router.route('/').get((req, res) => {
             const metadata = Object.entries(this.services.metadata)
                 .filter(nameAndMetadata => this.isServiceLoaded(nameAndMetadata[0]))
