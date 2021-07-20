@@ -315,9 +315,9 @@ const IGNORED_WARNINGS = [
     'WARNING: duplicate function description',
 ];
 function splitErrors(str) {
-    const isImportant = e => IGNORED_WARNINGS.some(p => e.includes(p));
+    const isIgnored = e => IGNORED_WARNINGS.some(p => e.includes(p));
     const errors = str.split('\n').map(s => s.trim()).filter(s => s.length);
-    const [ignored, important] = _.partition(errors, isImportant);
+    const [ignored, important] = _.partition(errors, isIgnored);
     return { ignored: ignored.join('\n'), important: important.join('\n') };
 }
 
