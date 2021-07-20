@@ -311,12 +311,13 @@ async function compileDocs(services) {
     });
 }
 
+const IGNORED_WARNINGS = [
+    'WARNING: duplicate function description',
+];
 function splitErrors(str) {
-    const important = [];
-    const ignored = [];
-    for (const line of str.split('\n').map(s => s.trim()).filter(s => s.length)) {
-        (line.includes('WARNING: duplicate function description') ? ignored : important).push(line);
-    }
+    const isImportant = e => IGNORED_WARNINGS.some(p => e.includes(p));
+    const errors = str.split('\n').map(s => s.trim()).filter(s => s.length);
+    const [ignored, important] = _.partition(errors, isImportant);
     return { ignored: ignored.join('\n'), important: important.join('\n') };
 }
 
