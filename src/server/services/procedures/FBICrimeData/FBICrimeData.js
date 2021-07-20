@@ -21,7 +21,6 @@ ApiConsumer.setRequiredApiKey(Crime, DataDotGovKey);
  * @returns {Any} structured data representing the location of the address
  */
 Crime.national_offense_count = async function (offense,variable) {
-    console.log(this.apiKey.value);
     const data = await this._requestData({path:`api/data/nibrs/${offense}/offense/national/${variable}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -33,8 +32,7 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {String} variable target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.regional_offense_count = async function (offense,regionName, variable) {
-    console.log(this.apiKey.value);
+Crime.regional_offense_count = async function (offense,regionName, variable) {
     const data = await this._requestData({path:`api/data/nibrs/${offense}/offense/regions/${regionName}/${variable}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -46,8 +44,7 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {String} variable target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.state_offense_count = async function (offense, stateAbbr, variable) {
-    console.log(this.apiKey.value);
+Crime.state_offense_count = async function (offense, stateAbbr, variable) {
     const data = await this._requestData({path:`api/data/nibrs/${offense}/offense/states/${stateAbbr}/${variable}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -60,8 +57,7 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {Number} until target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.national_supplemental_count = async function (offense, variable, since, until) {
-    console.log(this.apiKey.value);
+Crime.national_supplemental_count = async function (offense, variable, since, until) {
     const data = await this._requestData({path:`api/data/supplemental/${offense}/national/${variable}/${since}/${until}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -75,8 +71,7 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {Number} until target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.state_supplemental_count = async function (offense, stateAbbr, variable, since, until) {
-    console.log(this.apiKey.value);
+Crime.state_supplemental_count = async function (offense, stateAbbr, variable, since, until) {
     const data = await this._requestData({path:`api/data/supplemental/${offense}/states/${stateAbbr}/${variable}/${since}/${until}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -89,8 +84,7 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {Number} until target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.national_arrest_count = async function (offense, variable, since, until) {
-    console.log(this.apiKey.value);
+Crime.national_arrest_count = async function (offense, variable, since, until) {
     const data = await this._requestData({path:`api/arrest/national/${offense}/${variable}/${since}/${until}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
@@ -104,11 +98,44 @@ Crime.national_offense_count = async function (offense,variable) {
  * @param {Number} until target address
  * @returns {Any} structured data representing the location of the address
  */
- Crime.region_arrest_count = async function (regionName, offense, variable, since, until) {
-    console.log(this.apiKey.value);
+Crime.region_arrest_count = async function (regionName, offense, variable, since, until) {
     const data = await this._requestData({path:`api/arrest/national/${regionName}/${offense}/${variable}/${since}/${until}`, queryString:`api_key=${this.apiKey.value}`});
     return data;
 };
 
+/**
+ * State Name arrest Count- returns the number of arrests(for a particular offense) for the state in a certain time period
+ * @param {String} stateAbbr target address
+ * @param {String} variable target address
+ * @param {Number} since target address
+ * @param {Number} until target address
+ * @returns {Any} structured data representing the location of the address
+ */
+Crime.state_arrest_count = async function (stateAbbr, variable, since, until) {
+    const data = await this._requestData({path:`api/arrest/national/${stateAbbr}/${variable}/${since}/${until}`, queryString:`api_key=${this.apiKey.value}`});
+    return data;
+};
 
+/**
+ * National victim Count- returns the number of victims for the nation based on the offense and variable
+ * @param {String} offense target address
+ * @param {String} variable target address
+ * @returns {Any} structured data representing the location of the address
+ */
+Crime.national_victim_count = async function (offense, variable) {
+    const data = await this._requestData({path:`api/nibrs/${offense}/victim/national/${variable}`, queryString:`api_key=${this.apiKey.value}`});
+    return data;
+};
+
+/**
+ * Regional victim Count- returns the number of victims for the nation based on the offense and variable
+ * @param {String} offense target address
+ * @param {String} regionName target address
+ * @param {String} variable target address
+ * @returns {Any} structured data representing the location of the address
+ */
+Crime.regional_victim_count = async function (offense, regionName, variable) {
+    const data = await this._requestData({path:`api/nibrs/${offense}/victim/regions/${regionName}/${variable}`, queryString:`api_key=${this.apiKey.value}`});
+    return data;
+};
 module.exports=Crime;
