@@ -3,7 +3,7 @@ Creating Your First Alexa Skill
 
 Let's make our first Alexa skill in NetsBlox! At a high level, the service expects the user to provide a configuration for an Alexa service (as a table) and then will create the skill from this configuration. The skill will be automatically available on your phone or any Alexa device that uses the same Amazon account (though it may need to be enabled, first!). In this walkthrough, we will create a simple Alexa skill and test it within NetsBlox!
 
-Before using any Alexa RPCs, you will first need to login to Amazon `here </services/routes/alexa/login.html>`_.
+Before using any Alexa RPCs, you will first need to `register as a developer with Amazon <https://developer.amazon.com/settings/console/registration?return_to=/settings/console/mycid>`_ and login to Amazon `here </services/routes/alexa/login.html>`_.
 
 Creating the Configuration
 ##########################
