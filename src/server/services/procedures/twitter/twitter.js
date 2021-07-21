@@ -1,5 +1,5 @@
 /**
- * The Twitter Service provides access to real-time and historical stock price data.
+ * The Twitter Service provides access to posts and profile information from Twitter.
  * For more information, check out https://twitter.com.
  *
  * Terms of use: https://twitter.com/en/tos
