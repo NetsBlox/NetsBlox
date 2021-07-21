@@ -6,6 +6,7 @@ const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 const GetStorage = require('./storage');
 const OAuth = require('../../../api/core/oauth');
 const OAUTH_CLIENT_NAME = 'Amazon Alexa';
+const assert = require('assert');
 
 let alexaClientID;
 async function registerOAuthClient() {
@@ -58,6 +59,12 @@ const getAPIClient = async function(caller) {
     return new AlexaSMAPI.StandardSmapiClientBuilder()
         .withRefreshTokenConfig(refreshTokenConfig)
         .client();
+};
+
+const getVendorID = async function (smapiClient) {
+    const {vendors} = (await smapiClient.getVendorListV1());
+    assert(vendors.length, 'Developer account required.');
+    return vendors[0].id;
 };
 
 function sleep(duration) {
@@ -134,4 +141,5 @@ module.exports = {
     retryWhile,
     getImageFromCostumeXml,
     textBtwn,
+    getVendorID,
 };

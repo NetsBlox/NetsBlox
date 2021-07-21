@@ -46,8 +46,7 @@ Alexa.createSkill = async function(configuration) {
     configuration = h.getConfigWithDefaults(configuration);
     const stage = 'development';
 
-    const {vendors} = (await smapiClient.getVendorListV1());
-    const vendorId = vendors[0].id;
+    const vendorId = await h.getVendorID(smapiClient);
 
     const manifest = schemas.manifest(this.caller.username, configuration);
     const interactionModel = schemas.interactionModel(configuration);
@@ -166,9 +165,7 @@ Alexa.updateSkill = async function(id, configuration) {
     const smapiClient = await h.getAPIClient(this.caller);
     configuration = h.getConfigWithDefaults(configuration);
 
-    const {vendors} = (await smapiClient.getVendorListV1());
-    const vendorId = vendors[0].id;
-
+    const vendorId = await h.getVendorID(smapiClient);
     const manifest = schemas.manifest(vendorId, configuration);
     const interactionModel = schemas.interactionModel(configuration);
     try {
