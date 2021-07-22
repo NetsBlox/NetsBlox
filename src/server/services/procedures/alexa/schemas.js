@@ -80,7 +80,7 @@ schemas.interactionModel = config => {
             invocationName: config.invocation,
             intents: config.intents.map(intent => ({
                 name: intent.name,
-                samples: (intent.utterances || []).map(utter => utter.replace(/[^a-zA-Z {}]/g, '')),
+                samples: intent.utterances || [],
                 slots: (intent.slots || []).map(slot => ({
                     name: slot.name,
                     type: slot.type,
