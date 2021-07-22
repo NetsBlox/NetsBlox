@@ -93,6 +93,9 @@ Alexa.invokeSkill = async function(id, utterance) {
     const smapiClient = await h.getAPIClient(this.caller);
     try {
         const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
+        if (!selectedIntent) {
+            throw new Error('No matching intent found. Please try again later as the model may still be building.');
+        }
         const {name, slots} = selectedIntent;
 
         return await skill.invokeIntent(name, slots);
