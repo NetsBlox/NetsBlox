@@ -81,6 +81,20 @@ types.BoundedNumber = (input, params) => {
     return number;
 };
 
+types.Integer = input => {
+    input = types.Number(input);
+    if (!Number.isInteger(input)) {
+        throw new InputTypeError('Number must be an integer (whole number)');
+    }
+    return input
+};
+types.BoundedInteger = (input, params) => {
+    input = types.BoundedNumber(input, params);
+    if (!Number.isInteger(input)) {
+        throw new InputTypeError('Number must be an integer (whole number)');
+    }
+    return input
+};
 
 types.BoundedString = (input, params) => {
     const [min, max] = params.map(num => parseInt(num));
@@ -145,20 +159,16 @@ types.Array = async (input, params=[]) => {
 };
 
 types.Latitude = input => {
-    input = parseFloat(input);
-    if (isNaN(input)) {
-        throw GENERIC_ERROR;
-    } else if (input < -90 || input > 90) {
+    input = types.Number(input);
+    if (input < -90 || input > 90) {
         throw new InputTypeError('Latitude must be between -90 and 90.');
     }
     return input;
 };
 
 types.Longitude = input => {
-    input = parseFloat(input);
-    if (isNaN(input)) {
-        throw GENERIC_ERROR;
-    } else if (input < -180 || input > 180) {
+    input = types.Number(input);
+    if (input < -180 || input > 180) {
         throw new InputTypeError('Longitude must be between -180 and 180.');
     }
     return input;

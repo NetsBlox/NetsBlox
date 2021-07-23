@@ -90,7 +90,7 @@ SimpleHangman.prototype.isWordGuessed = function() {
 
 /**
  * Get the current number of incorrect guesses.
- * @returns {Number} number of wrong guesses
+ * @returns {Integer} number of wrong guesses
  */
 SimpleHangman.prototype.getWrongCount = function() {
     logger.trace('wrong count is '+this._state.wrongGuesses);

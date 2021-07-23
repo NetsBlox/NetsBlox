@@ -68,7 +68,7 @@ AirConsumer.qualityIndex = function(latitude, longitude) {
 
 /**
  * Get air quality index of closest reporting location for ZIP code
- * @param {BoundedNumber<0,99999>} zipCode ZIP code of location
+ * @param {BoundedInteger<0,99999>} zipCode ZIP code of location
  * @returns {Number} AQI of closest station
  */
 AirConsumer.qualityIndexByZipCode = function(zipCode) {
