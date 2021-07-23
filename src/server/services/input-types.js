@@ -86,14 +86,14 @@ types.Integer = input => {
     if (!Number.isInteger(input)) {
         throw new InputTypeError('Number must be an integer (whole number)');
     }
-    return input
+    return input;
 };
 types.BoundedInteger = (input, params) => {
     input = types.BoundedNumber(input, params);
     if (!Number.isInteger(input)) {
         throw new InputTypeError('Number must be an integer (whole number)');
     }
-    return input
+    return input;
 };
 
 types.BoundedString = (input, params) => {
