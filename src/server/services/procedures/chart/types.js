@@ -18,5 +18,5 @@ const LineTypes = [
 ];
 
 module.exports = function registerTypes() {
-    types.defineType('LineType', input => types.parse.Enum(input, LineTypes, undefined, 'LineType'));
+    types.defineEnum('LineType', LineTypes);
 };

@@ -187,9 +187,9 @@ function registerTypes() {
             throw new Error('Custom intents must contain utterances.');
         }
         return intent;
-    });
+    }, 'Object');
 
-    types.defineType('SlotType', input => types.parse.Enum(input, SlotTypes, undefined, 'SlotType'));
+    types.defineEnum('SlotType', SlotTypes);
     const slotParams = [
         {
             name: 'name',
@@ -200,8 +200,8 @@ function registerTypes() {
             type: {name: 'SlotType'},
         }
     ];
-    types.defineType('Slot', input => types.parse.Object(input, slotParams, undefined));
-    types.defineType('SkillCategory', input => types.parse.Enum(input, SkillCategories, undefined, 'SkillCategory'));
+    types.defineType('Slot', input => types.parse.Object(input, slotParams, undefined), 'Object');
+    types.defineEnum('SkillCategory', SkillCategories);
 }
 
 module.exports = {

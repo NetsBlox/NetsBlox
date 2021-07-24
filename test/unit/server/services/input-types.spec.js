@@ -340,10 +340,10 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('defineType', function() {
-        before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
+        before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2), 'Number'));
 
         it('should not be able to define the same type twice', async function() {
-            await utils.shouldThrow(() => InputTypes.defineType('NewType', input => input));
+            await utils.shouldThrow(() => InputTypes.defineType('NewType', input => input, 'Any'));
         });
     });
 });

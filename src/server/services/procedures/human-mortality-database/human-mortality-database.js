@@ -40,7 +40,7 @@ const CATEGORIES = [
     'rate 85+',
     'rate total',
 ];
-types.defineType('MortalityCategory', input => types.parse.Enum(input, CATEGORIES));
+types.defineEnum('MortalityCategory', CATEGORIES);
 const GENDERS = [
     'male', 'female', 'both',
 ];

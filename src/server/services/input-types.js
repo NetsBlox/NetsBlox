@@ -258,17 +258,40 @@ types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolea
 types.String = input => input.toString();
 types.Any = input => input;
 
-function defineType(name, parser) {
+const baseTypes = {};
+for (const t in types) {
+    baseTypes[t] = t;
+}
+
+function defineType(name, parser, baseType) {
     if (types[name]) {
         throw new Error(`Defining duplicate type: ${name}`);
     }
+    if (!baseType) {
+        throw new Error('Base type is required for complete type info. If the new type is truly stand-alone, you can use \'Any\' as the base type');
+    }
+    const baseTypeName = baseType.name || baseType;
+    if (!baseTypes[baseTypeName]) {
+        throw new Error(`Base type ${baseTypeName} does not exist`);
+    }
+
     types[name] = parser;
+    baseTypes[name] = baseType;
+    return parser;
+}
+function defineEnum(name, variants) {
+    const parser = input => types.Enum(input, variants, undefined, name);
+    const variantOptions = Array.isArray(variants) ? variants : Object.keys(variants);
+    const baseType = { 'name': 'Enum', params: variantOptions }
+    return defineType(name, parser, baseType);
 }
 
 module.exports = {
     parse: types,
     getNBType,
     defineType,
+    defineEnum,
+    baseTypes,
     getErrorMessage,
     Errors: {
         ParameterError,

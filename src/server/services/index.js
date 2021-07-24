@@ -8,6 +8,7 @@ const ServiceStorage = require('./storage');
 const ApiKeys = require('./api-keys');
 const Logger = require('../logger');
 const routeUtils = require('./procedures/utils/router-utils');
+const types = require('./input-types');
 
 async function listen(port) {
     const app = express();
@@ -37,6 +38,9 @@ async function listen(port) {
         middleware.isLoggedIn,
         ApiKeys.router()
     );
+    app.use('/input-types/base-types', async (_, res) => {
+        res.status(200).json(types.baseTypes);
+    });
     app.use('/', ServicesAPI.router());
     const RPC_ROOT = path.join(__dirname, 'libs');
     const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')
