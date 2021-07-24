@@ -54,6 +54,15 @@ describe(utils.suiteName(__filename), function() {
         it('should not allow non-numbers', async () => {
             await utils.shouldThrow(() => typesParser.BoundedInteger('hello', params));
         });
+        it('should allow numbers between min and max', () => {
+            let rawInput = '12';
+            let parsedInput = typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 12);
+
+            rawInput = '20';
+            parsedInput = typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 20);
+        });
         it('should allow numbers equal to min and max', () => {
             let rawInput = '7';
             let parsedInput = typesParser.BoundedInteger(rawInput, params);
