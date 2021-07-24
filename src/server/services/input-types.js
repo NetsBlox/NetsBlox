@@ -282,7 +282,7 @@ function defineType(name, parser, baseType) {
 function defineEnum(name, variants) {
     const parser = input => types.Enum(input, variants, undefined, name);
     const variantOptions = Array.isArray(variants) ? variants : Object.keys(variants);
-    const baseType = { 'name': 'Enum', params: variantOptions }
+    const baseType = { 'name': 'Enum', params: variantOptions };
     return defineType(name, parser, baseType);
 }
 
