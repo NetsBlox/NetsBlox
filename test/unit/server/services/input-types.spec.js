@@ -29,6 +29,50 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('Integer', function() {
+        it('should parse into JS numbers', () => {
+            let rawInput = '54';
+            let parsedInput = typesParser.Integer(rawInput);
+            assert.deepStrictEqual(parsedInput, 54);
+
+            rawInput = '-4';
+            parsedInput = typesParser.Integer(rawInput);
+            assert.deepStrictEqual(parsedInput, -4);
+        });
+        it('should not allow fractional values', async () => {
+            await utils.shouldThrow(() => typesParser.Integer('7.5'));
+        });
+        it('should not allow non-numbers', async () => {
+            await utils.shouldThrow(() => typesParser.Integer('hello'));
+        });
+    });
+    describe('BoundedInteger', function() {
+        const params = [7, 21]; // min, max
+        it('should not allow fractional values', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('7.5', params));
+        });
+        it('should not allow non-numbers', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('hello', params));
+        });
+        it('should allow numbers equal to min and max', () => {
+            let rawInput = '7';
+            let parsedInput = typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 7);
+
+            rawInput = '21';
+            parsedInput = typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 21);
+        });
+        it('should not allow numbers below min', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('6', params));
+            await utils.shouldThrow(() => typesParser.BoundedInteger('-3', params));
+        });
+        it('should not allow numbers above max', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('22', params));
+            await utils.shouldThrow(() => typesParser.BoundedInteger('87', params));
+        });
+    });
+
     describe('Array', function() {
         it('should throw error w/ numeric input', async () => {
             let rawInput = '181',
