@@ -204,8 +204,8 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
      * Returns true if the given robot is alive, sent messages in the
      * last two seconds.
-     * @param {string} robot name of the robot (matches at the end)
-     * @returns {boolean} True if the robot is alive
+     * @param {String} robot name of the robot (matches at the end)
+     * @returns {Boolean} ``true`` if the robot is alive
      */
     RoboScape.prototype.isAlive = function (robot) {
         return this._passToRobot('isAlive', arguments);
@@ -213,10 +213,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Sets the wheel speed of the given robots.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} left speed of the left wheel in [-128, 128]
-     * @param {number} right speed of the right wheel in [-128, 128]
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} left speed of the left wheel in ``[-128, 128]``
+     * @param {Number} right speed of the right wheel in ``[-128, 128]``
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.setSpeed = function (robot, left, right) {
         return this._passToRobot('setSpeed', arguments);
@@ -224,10 +224,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Sets one of the LEDs of the given robots.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} led the number of the LED (0 or 1)
-     * @param {number} command false/off/0, true/on/1, or toggle/2
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} led the number of the LED (0 or 1)
+     * @param {Number} command false/off/0, true/on/1, or toggle/2
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.setLed = function (robot, led, command) {
         return this._passToRobot('setLed', arguments);
@@ -235,10 +235,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Beeps with the speaker.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} msec duration in milliseconds
-     * @param {number} tone frequency of the beep in Hz
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} msec duration in milliseconds
+     * @param {Number} tone frequency of the beep in Hz
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.beep = function (robot, msec, tone) {
         return this._passToRobot('beep', arguments);
@@ -246,10 +246,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Turns on the infra red LED.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} msec duration in milliseconds between 0 and 1000
-     * @param {number} pwr power level between 0 and 100
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {BoundedNumber<0,1000>} msec duration in milliseconds
+     * @param {BoundedNumber<0,100>} pwr power level
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.infraLight = function (robot, msec, pwr) {
         return this._passToRobot('infraLight', arguments);
@@ -257,8 +257,8 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Ranges with the ultrasound sensor
-     * @param {string} robot name of the robot (matches at the end)
-     * @returns {number} range in centimeters
+     * @param {String} robot name of the robot (matches at the end)
+     * @returns {Number} range in centimeters
      */
     RoboScape.prototype.getRange = function (robot) {
         return this._passToRobot('getRange', arguments);
@@ -266,7 +266,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Returns the current number of wheel ticks (1/64th rotations)
-     * @param {string} robot name of the robot (matches at the end)
+     * @param {String} robot name of the robot (matches at the end)
      * @returns {array} the number of ticks for the left and right wheels
      */
     RoboScape.prototype.getTicks = function (robot) {
@@ -275,10 +275,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Drives the whiles for the specified ticks.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} left distance for left wheel in ticks
-     * @param {number} right distance for right wheel in ticks
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} left distance for left wheel in ticks
+     * @param {Number} right distance for right wheel in ticks
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.drive = function (robot, left, right) {
         return this._passToRobot('drive', arguments);
@@ -286,9 +286,9 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Sets the total message limit for the given robot.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} rate number of messages per seconds
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} rate number of messages per seconds
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.setTotalRate = function (robot, rate) {
         return this._passToRobot('setTotalRate', arguments);
@@ -296,10 +296,10 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 
     /**
      * Sets the client message limit and penalty for the given robot.
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {number} rate number of messages per seconds
-     * @param {number} penalty number seconds of penalty if rate is violated
-     * @returns {boolean} True if the robot was found
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {Number} rate number of messages per seconds
+     * @param {Number} penalty number seconds of penalty if rate is violated
+     * @returns {Boolean} ``true`` if the robot was found
      */
     RoboScape.prototype.setClientRate = function (robot, rate, penalty) {
         return this._passToRobot('setClientRate', arguments);
@@ -310,9 +310,9 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
 if (ROBOSCAPE_MODE === 'security' || ROBOSCAPE_MODE === 'both') {
     /**
      * Sends a textual command to the robot
-     * @param {string} robot name of the robot (matches at the end)
-     * @param {string} command textual command
-     * @returns {string} textual response
+     * @param {String} robot name of the robot (matches at the end)
+     * @param {String} command textual command
+     * @returns {String} textual response
      */
     RoboScape.prototype.send = async function (robot, command) {
         robot = await this._getRobot(robot);
@@ -363,12 +363,12 @@ server.on('message', function (message, remote) {
 });
 
 /* eslint no-console: off */
-if (process.env.ROBOSCAPE_PORT) {
+RoboScape.initialize = function () {
     console.log('ROBOSCAPE_PORT is ' + process.env.ROBOSCAPE_PORT);
     server.bind(process.env.ROBOSCAPE_PORT || 1973);
 
     setTimeout(RoboScape.prototype._heartbeat, 1000);
-}
+};
 
 RoboScape.isSupported = function () {
     if (!process.env.ROBOSCAPE_PORT) {

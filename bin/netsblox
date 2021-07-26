@@ -28,6 +28,7 @@ program
     .command('projects', 'list the user projects')
     .command('export-project <owner> <project>', 'export a project')
     .command('export-user-projects <owner> <bool:includeUnsaved>', `export a user's projects`)
+    .command('add-group', 'create new user group')
     .command('groups', 'manage user groups')
     .command('users', 'list the usernames')
     .command('user [sessionId]', 'display user information')

@@ -2,7 +2,6 @@
  * The Smithsonian Service provides access to the Smithsonan open-access EDAN database,
  * containing catalogued information on millions of historical items.
  * 
- * @alpha
  * @service
  * @category History
  */
@@ -64,10 +63,28 @@ Smithsonian._raw_search = async function(term, count, skip) {
 };
 
 /**
- * Search and return up to count matching items
+ * Search and return a list of up to ``count`` items that match the search ``term``.
+ * Because there may be a large number of matching items, you can also provide a number of items to ``skip``.
+ * 
+ * Each item in the returned array is structured data about that matching item.
+ * The fields for this data include:
+ * 
+ * - ``id`` - the id of the matching item, needed by :func:`Smithsonian.getImage`.
+ * - ``title`` - the title/name of the matching item
+ * - ``types`` - a list of categories the item falls under (e.g., ``Vases``, ``Paintings``)
+ * - ``authors`` - a list of authors/creators of the item or digitized version
+ * - ``topics`` - a list of topic names for the item (e.g., ``Anthropology``, ``Ethnology``)
+ * - ``notes`` - a list of extra notes about the object, in no particular organization
+ * - ``physicalDescription`` - a list of pairs of ``[label, content]`` regarding the physical description of the object
+ * - ``sources`` - a list of pairs of ``[label, content]`` describing the source of the item or digitization
+ * - ``hasImage`` - ``true`` if the image is listed as having image content in the database. Only items with this field being ``true`` can expect :func:`Smithsonian.getImage` to succeed.
+ * 
+ * If you would like to search for only items which have image content available,
+ * you can perform manual filtering on the ``hasImage`` field of the results,
+ * or you can use :func:`Smithsonian.searchImageContent`, which does the same thing for you.
  * 
  * @param {String} term Term to search for
- * @param {BoundedNumber<1,1000>=} count Maximum number of items to return
+ * @param {BoundedNumber<1,1000>=} count Maximum number of items to return (default 100)
  * @param {BoundedNumber<0>=} skip Number of items to skip from beginning
  * @returns {Array} Up to count matches
  */
@@ -89,7 +106,11 @@ Smithsonian._raw_filter = async function(term, count, skip) {
 };
 
 /**
- * Search and return up to count matching items (only ones with images)
+ * Equivalent to :func:`Smithsonian.search` except that only images with image content (``hasImage = true``) are returned.
+ * 
+ * The filtering of returned matches is done after pulling data from the database.
+ * Thus, you should treat ``count`` as the max number of *unfiltered* items to return,
+ * and similarly ``skip`` as the number of *unfiltered* items to skip.
  * 
  * @param {String} term Term to search for
  * @param {BoundedNumber<1,1000>=} count Maximum number of items to return
@@ -146,9 +167,11 @@ Smithsonian._getImageURLs = function(id) {
 };
 
 /**
- * Get an image associated with the given object
+ * Get an image associated with the given object, if available.
+ * This requires the ``id`` of the object, as provided by :func:`Smithsonian.search` or :func:`Smithsonian.searchImageContent`.
  * 
- * @param {String} id ID of an object returned from search
+ * @param {String} id id of the object
+ * @returns {Image} an image of the object
  */
 Smithsonian.getImage = function(id) {
     return this._getImageURLs(id).then(urls => urls.length == 0 ? '' : this._sendImage({url:urls[0]})).catch(() => '');

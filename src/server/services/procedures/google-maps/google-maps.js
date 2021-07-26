@@ -144,7 +144,7 @@ GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, ma
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<1>} width Image width
  * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
@@ -158,7 +158,7 @@ GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<1>} width Image width
  * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
@@ -172,7 +172,7 @@ GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
  * @param {Longitude} longitude Longitude of center point
  * @param {BoundedNumber<1>} width Image width
  * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedNumber<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getTerrainMap = function(latitude, longitude, width, height, zoom){
@@ -216,7 +216,7 @@ GoogleMaps.getLongitudeFromX = async function(x){
 /**
  * Convert y value of map image to latitude.
  * @param {Number} y y value of map image
- * @returns {Latitude} Latitude of the y value from the image
+ * @returns {Latitude} Latitude of the ``y`` value from the image
  */
 GoogleMaps.getLatitudeFromY = async function(y){
     const mapInfo = await this._getClientMap(this.caller.clientId);
@@ -227,7 +227,7 @@ GoogleMaps.getLatitudeFromY = async function(y){
 /**
  * Convert x value of map image to longitude.
  * @param {Number} x x value of map image
- * @returns {Longitude} Longitude of the x value from the image
+ * @returns {Longitude} Longitude of the ``x`` value from the image
  *
  * @deprecated
  */
@@ -247,7 +247,7 @@ GoogleMaps.getLatitude = function(y){
 };
 
 /**
- * Get the earth coordinates (latitude, longitude) of a given point in the last requested map image (x, y).
+ * Get the earth coordinates ``[latitude, longitude]`` of a given point in the last requested map image ``[x, y]``.
  * @param {Number} x x position of the point
  * @param {Number} y y position of the point
  * @returns {Array} A list containing the latitude and longitude of the given point.
@@ -261,10 +261,10 @@ GoogleMaps.getEarthCoordinates = function(x, y){
 };
 
 /**
- * Get the image coordinates (x, y) of a given location on the earth (latitude, longitude).
+ * Get the image coordinates ``[x, y]`` of a given location on the earth ``[latitude, longitude]``.
  * @param {Latitude} latitude latitude of the point
  * @param {Longitude} longitude longitude of the point
- * @returns {Array} A list containing (x, y) position of the given point.
+ * @returns {Array} A list containing the ``[x, y]`` position of the given point.
  */
 
 GoogleMaps.getImageCoordinates = function(latitude, longitude){

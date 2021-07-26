@@ -1,5 +1,5 @@
 /**
- * Charting service powered by gnuplot
+ * A charting service powered by gnuplot.
  *
  * @service
  */
@@ -9,6 +9,8 @@ const NBService = require('../utils/service'),
     gnuPlot = require('./node-gnuplot.js'),
     _ = require('lodash');
 const InputTypes = require('../../input-types');
+const registerTypes = require('./types');
+registerTypes();
 
 let chart = new NBService('Chart');
 
@@ -232,10 +234,29 @@ chart._parseDrawInputs = function(lines, options){
 };
 
 /**
- * Create charts and histograms from data
+ * Create charts and histograms from data.
  *
- * @param {Array} lines a single line or list of lines. Each line should be in form of [[x1,y1], [x2,y2]]
+ * @param {Array} lines a single line or list of lines. Each line should be ``[[x1,y1], [x2,y2], ...]``.
  * @param {Object=} options Configuration for graph title, axes, and more
+ * @param {String=} options.title title to show on the graph
+ * @param {Number=} options.width width of the returned image
+ * @param {Number=} options.height height of the returned image
+ * @param {Array<String>=} options.labels labels for each line
+ * @param {Array<LineType>=} options.types types for each line
+ * @param {Array<Number>=} options.xRange range of X values to graph
+ * @param {Array<Number>=} options.yRange range of Y values to graph
+ * @param {String=} options.xLabel label on the X axis
+ * @param {String=} options.yLabel label on the Y axis
+ * @param {Number=} options.xTicks tick interval for the X axis
+ * @param {Boolean=} options.isCategorical true to enable categorical mode
+ * @param {Boolean=} options.smooth true to enable smoothing
+ * @param {Enum<line,dot>=} options.grid grid type to use
+ * @param {Boolean=} options.isTimeSeries true to enable time series mode
+ * @param {String=} options.timeInputFormat input time format for time series data
+ * @param {String=} options.timeDisplayFormat output time format for time series data
+ * @param {Array=} options.logscale logscale settings to use
+ * 
+ * @returns {Image} the generated chart
  */
 chart.draw = function(lines, options={}){
     const [data, parsedOptions] = this._parseDrawInputs(lines, options);
@@ -250,7 +271,9 @@ chart.draw = function(lines, options={}){
 };
 
 /**
- * Get the default options for the "draw" RPC.
+ * Get the default options for the :func:`Chart.draw` RPC.
+ * 
+ * @returns {Object} the default draw options
  */
 chart.defaultOptions = function(){
     return rpcUtils.jsonToSnapList(defaults);

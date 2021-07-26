@@ -6,6 +6,7 @@
  * Terms of use: https://www.paralleldots.com/terms-and-conditions
  * @service
  * @category Language
+ * @category ArtificialIntelligence
  */
 
 const ApiConsumer = require('../utils/api-consumer');
@@ -40,8 +41,11 @@ ParallelDots._parallelDotsRequest = async function(path, text){
 
 /**
  * Find the overall sentiment of the given text along with the confidence score.
+ * The returned structured data hasa confidence level for each of the following sentiment categories:
+ * ``negative``, ``neutral``, and ``positive``.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Object} structured data with confidence level for each category
  */
 ParallelDots.getSentiment = async function(text) {
     const result = await this._parallelDotsRequest('/sentiment', text);
@@ -49,10 +53,12 @@ ParallelDots.getSentiment = async function(text) {
 };
 
 /**
- * Find the similarity between two snippets of text.
- *
- * @param {String} text1 Long text (more than 2 words)
- * @param {String} text2 Long text (more than 2 words)
+ * Get the level of similarity between two snippets of text.
+ * Note that the two pieces of text should be long, like full sentences (not just 2 words).
+ * 
+ * @param {String} text1 the first piece of text
+ * @param {String} text2 a second piece of text
+ * @returns {BoundedNumber<0,1>} the computed similarity level
  */
 ParallelDots.getSimilarity = async function(text1, text2) {
     const body = `api_key=${this.apiKey.value}&text_1=${encodeURIComponent(text1)}&text_2=${encodeURIComponent(text2)}`;
@@ -68,7 +74,8 @@ ParallelDots.getSimilarity = async function(text1, text2) {
 /**
  * Identify named entities in the given text.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Array} speculated information about named entities in the text, including the confidence level
  */
 ParallelDots.getNamedEntities = async function(text) {
     const result = await this._parallelDotsRequest('/ner', text);
@@ -78,7 +85,8 @@ ParallelDots.getNamedEntities = async function(text) {
 /**
  * Extract keywords from the given text along with their confidence score.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Array} information about keywords in the text
  */
 ParallelDots.getKeywords = async function(text) {
     const result = await this._parallelDotsRequest('/keywords', text);
@@ -91,7 +99,8 @@ ParallelDots.getKeywords = async function(text) {
  * For more information about IAB categories, see
  * https://www.iab.com/guidelines/iab-quality-assurance-guidelines-qag-taxonomy/
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Array} information about the category breakdown, along with confidence scores
  */
 ParallelDots.getTaxonomy = async function(text) {
     const result = await this._parallelDotsRequest('/taxonomy', text);
@@ -100,8 +109,11 @@ ParallelDots.getTaxonomy = async function(text) {
 
 /**
  * Find the emotion in the given text.
+ * This is returned as structured data containing confidence levels for each of the following emotions:
+ * ``excited``, ``angry``, ``bored``, ``fear``, ``sad``, and ``happy``.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Object} structured data with confidence levels for each emotion
  */
 ParallelDots.getEmotion = async function(text) {
     const result = await this._parallelDotsRequest('/emotion', text);
@@ -111,7 +123,8 @@ ParallelDots.getEmotion = async function(text) {
 /**
  * Compute the probability of sarcasm for the given text.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {BoundedNumber<0,1>} predicted likelihood that the text is sarcastic
  */
 ParallelDots.getSarcasmProbability = async function(text) {
     const result = await this._parallelDotsRequest('/sarcasm', text);
@@ -120,8 +133,11 @@ ParallelDots.getSarcasmProbability = async function(text) {
 
 /**
  * Get the intent of the given text along with the confidence score.
+ * This is returned as structed data with confidence levels for each of the following intents:
+ * ``news``, ``query``, ``spam``, ``marketing``, and ``feedback``.
  *
- * @param {String} text
+ * @param {String} text text to analyze
+ * @returns {Object} structed data with confidence levels for each intent
  */
 ParallelDots.getIntent = async function(text) {
     const result = await this._parallelDotsRequest('/intent', text);
@@ -129,9 +145,11 @@ ParallelDots.getIntent = async function(text) {
 };
 
 /**
- * Classify the given text as abuse, hate speech, or neither.
- *
- * @param {String} text
+ * Classify the given text as ``abusive``, ``hate_speech``, or ``neither``.
+ * The returned structured data has confidence levels for each of these categories.
+ * 
+ * @param {String} text text to analyze
+ * @returns {Object} structured data containing the confidence levels
  */
 ParallelDots.getAbuse = function(text) {
     return this._parallelDotsRequest('/abuse', text);

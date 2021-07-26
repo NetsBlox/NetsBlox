@@ -51,8 +51,15 @@ class ServicesWorker {
         return !!service;
     }
 
-    async initialize() {
+    async load() {
         await this.loadRPCs();
+    }
+
+    async initialize() {
+        this.getServices()
+            .filter(service => service.isSupported() && service.initialize)
+            .forEach(service => service.initialize());
+
         this.checkStaleServices();
     }
 
@@ -75,6 +82,7 @@ class ServicesWorker {
                 if (service.init) {
                     service.init(this._logger);
                 }
+                service._docs.apiKey = service.apiKey;
 
                 // Register the rpc actions, method signatures
                 if (service.serviceName) {
@@ -86,7 +94,11 @@ class ServicesWorker {
                     service.serviceName = this.getDefaultServiceName(name);
                 }
 
-                if(service.isSupported && !service.isSupported()){
+                if (!service.isSupported) {
+                    service.isSupported = () => true;
+                }
+
+                if(!service.isSupported()){
                     /* eslint-disable no-console*/
                     console.error(`${service.serviceName} is not supported in this deployment.`);
                     /* eslint-enable no-console*/
@@ -166,7 +178,11 @@ class ServicesWorker {
             });
 
         serviceDoc.description = service._docs.description;
+        serviceDoc.rawDescription = service._docs.rawDescription;
         serviceDoc.categories = service._docs.categories;
+        serviceDoc.servicePath = service._docs.servicePath;
+        serviceDoc.tags = service._docs.tags;
+        serviceDoc.apiKey = service._docs.apiKey;
         return serviceDoc;
     }
 
@@ -288,13 +304,7 @@ class ServicesWorker {
             const typeName = arg.type.name;
             const recordError = err => {
                 inputStatus.isValid = false;
-                const netsbloxType = InputTypes.getNBType(typeName);
-                inputStatus.msg = `"${arg.name}" is not a valid ${netsbloxType}.`;
-                if (err.message.includes(netsbloxType)) {
-                    inputStatus.msg = `"${arg.name}" is not valid. ` + err.message;
-                } else if (err.message) {
-                    inputStatus.msg += ' ' + err.message;
-                }
+                inputStatus.msg = InputTypes.getErrorMessage(arg, err);
             };
 
             if (InputTypes.parse.hasOwnProperty(typeName)) { // if we have the type handler

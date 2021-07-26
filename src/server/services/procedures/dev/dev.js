@@ -76,6 +76,18 @@ dev.sum = function(numbers) {
 };
 
 /**
+ * Call an argument with a duck typed options object
+ *
+ * @param{Object} options
+ * @param{String} options.name
+ * @param{Number} options.age
+ * @param{Number=} options.height
+ */
+dev.echoOptionsExample = function(options) {
+    return options;
+};
+
+/**
  * Fetch debug logs for debugging remotely.
  * @category logging
  */

@@ -13,7 +13,7 @@ const Trivia = new ApiConsumer('Trivia', 'http://jservice.io/api',{cache: {ttl: 
 /**
  * Get a random trivia question.
  * This includes the question, answer, and additional information.
- * @returns {Promise<Object>}
+ * @returns {Object} structured data representing the trivia question
  */
 Trivia.getRandomQuestion = function() {
     const keepKeys = [
@@ -42,7 +42,7 @@ Trivia.getRandomQuestion = function() {
 /**
  * Get random trivia question.
  * @deprecated
- * @returns {Promise<String>}
+ * @returns {String}
  */
 Trivia.random = function() {
     return this._requestData({path: '/random'})

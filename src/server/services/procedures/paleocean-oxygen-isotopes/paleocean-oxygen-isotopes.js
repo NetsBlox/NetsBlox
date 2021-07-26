@@ -4,13 +4,14 @@
  * For more information, check out
  * https://www.ncdc.noaa.gov/paleo-search/study/5847
  *
- * Original datasets are available at
- * https://www1.ncdc.noaa.gov/pub/data/paleo/contributions_by_author/lisiecki2005/lisiecki2005.txt
- * @alpha
+ * Original datasets are available at:
+ * https://www1.ncdc.noaa.gov/pub/data/paleo/contributions_by_author/lisiecki2005/lisiecki2005.txt.
+ * 
  * @service
  * @category Science
  * @category Climate
  */
+
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -56,12 +57,11 @@ PaleoceanOxygenIsotopes._dataSedim = fs.readFileSync(path.join(__dirname, 'Sedim
  * refer to isotopic ratios and calculated by calculating the ratio of isotopic concentrations in 
  * a sample and in a standard, subtracting one and multiplying by one thousand).
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} delta 18O
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear least year of data to include
+ * @returns {Array} a list of delta 18O values by year
  */
 PaleoceanOxygenIsotopes.getDelta18O = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataDelta18O
@@ -72,12 +72,11 @@ PaleoceanOxygenIsotopes.getDelta18O = function(startyear = -Infinity, endyear = 
 /**
  * Get delta 18O error value (unit: per mill).
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} delta 18O error
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear least year of data to include
+ * @returns {Array} a list of delta 18O error values by year
  */
 PaleoceanOxygenIsotopes.getDelta18OError = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataDelta18O
@@ -88,12 +87,11 @@ PaleoceanOxygenIsotopes.getDelta18OError = function(startyear = -Infinity, endye
 /**
  * Get average sedimentation rate value (unit: centimeter per kiloyear).
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} average sedimentation rate
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear least year of data to include
+ * @returns {Array} a list of average sedimentation rate by year
  */
 PaleoceanOxygenIsotopes.getAverageSedimentationRates = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataSedim
@@ -104,12 +102,11 @@ PaleoceanOxygenIsotopes.getAverageSedimentationRates = function(startyear = -Inf
 /**
  * Get normalized sedimentation rate value (unit: dimensionless).
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array} normalized sedimentation rate
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear least year of data to include
+ * @returns {Array} a list of normalized sedimentation rate by year
  */
 PaleoceanOxygenIsotopes.getNormalizedSedimentationRates = function(startyear = -Infinity, endyear = Infinity) {
     return this._dataSedim

@@ -4,6 +4,7 @@ const fse = require('fs-extra'),
     doctrine = require('doctrine');
 
 
+const assert = require('assert');
 const MARKER_START = '/**',
     MARKER_START_SKIP = '/***',
     MARKER_END = '*/';
@@ -13,14 +14,51 @@ let parseSync = (filePath, searchScope = 5) => {
     return parseSource(source, searchScope);
 };
 
+const RTD_ROLE_REGEX = /:(\w+:)?\w+:`([^`]+)`/g;
+const RTD_BOLD_REGEX = /\*\*([^*]+)\*\*/g;
+const RTD_CODE_REGEX = /``([^`]+)``/g;
+const RTD_LINK_REGEX = /`([^`]+)`_/g;
+const RTD_EMPH_REGEX = /`([^`]+)`/g;
+function cleanMarkup(str) {
+    if (!str) return str;
+    str = str.replace(RTD_ROLE_REGEX, '$2');
+    str = str.replace(RTD_BOLD_REGEX, '$1');
+    str = str.replace(RTD_CODE_REGEX, '$1');
+    str = str.replace(RTD_LINK_REGEX, '$1');
+    str = str.replace(RTD_EMPH_REGEX, '$1');
+    return str;
+}
+
+function parseInlineTags(desc) {
+    if (!desc) return { tags: [], desc };
+    const tags = [];
+
+    for (;;) {
+        const parsed = doctrine.parse(desc, {unwrap: true});
+        assert(!parsed.description.length || !parsed.tags.length, 'An inline tag may not have a description');
+        if (parsed.description.length) {
+            return { tags, description: parsed.description };
+        }
+        assert(parsed.tags.length === 1); // rest is desc on the tag
+        tags.push(parsed.tags[0].title);
+        desc = parsed.tags[0].description;
+    }
+}
+
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
     let {description, tags} = metadata;
+    const rawDescription = description;
+    description = cleanMarkup(description);
+    
     let fnName = tags.find(tag => tag.title === 'name').name;
 
     let simplifyParam = param => {
         let {name, type, description} = param;
-        let simpleParam = {name, description};
+        const rawDescription = description;
+
+        let simpleParam = {name, rawDescription};
+
         // if type is defined
         if (type) {
             simpleParam.optional = type.type === 'OptionalType';
@@ -34,14 +72,45 @@ function simplify(metadata) {
         }
         return simpleParam;
     };
+    let cleanDesc = arg => {
+        assert(arg.tags === undefined);
+        const parsedDesc = parseInlineTags(arg.rawDescription);
+        arg.rawDescription = parsedDesc.description;
+        arg.tags = parsedDesc.tags;
+        arg.description = cleanMarkup(arg.rawDescription);
+    };
 
     let args = tags
         .filter(tag => tag.title === 'param')
-        .map(simplifyParam);
+        .map(simplifyParam)
+        .reduce((args, arg) => {
+            const {name} = arg;
+            const isFieldInObject = name.includes('.');
+            if (isFieldInObject) {
+                const [objectName, fieldName] = name.split('.');
+                const objectArg = args.find(arg => arg.name === objectName);
+                assert(objectArg, `Could not find ${objectName} argument expected for ${name}`);
+                assert.equal(
+                    objectArg.type.name, 'Object',
+                    `Cannot add field ${fieldName} to ${objectName}. Argument is not an object.`
+                );
+                arg.name = fieldName;
+                cleanDesc(arg);
+                objectArg.type.params.push(arg);
+            } else {
+                cleanDesc(arg);
+                args.push(arg);
+            }
+            return args;
+        }, []);
 
     // find and simplify the return doc
     let returns = tags.find(tag => tag.title === 'returns');
-    if (returns) returns = {type: new InputType(returns.type), description: returns.description};
+    if (returns) returns = {
+        type: new InputType(returns.type),
+        description: cleanMarkup(returns.description),
+        rawDescription: returns.description,
+    };
 
     const isDeprecated = !!tags.find(tag => tag.title === 'deprecated');
     const categories = tags.filter(tag => tag.title === 'category')
@@ -51,6 +120,7 @@ function simplify(metadata) {
         deprecated: isDeprecated,
         categories,
         description,
+        rawDescription,
         args,
         returns
     };
@@ -87,7 +157,8 @@ function parseSource(source, searchScope) {
     const serviceAnnotation = blocks
         .find(block => block.parsed.tags.find(tag => tag.title === 'service'));
 
-    const description = serviceAnnotation && serviceAnnotation.parsed.description;
+    const rawDescription = serviceAnnotation && serviceAnnotation.parsed.description;
+    const description = rawDescription ? cleanMarkup(rawDescription) : rawDescription;
     let categories = [];
     let tags = [];
     if (serviceAnnotation) {
@@ -124,6 +195,7 @@ function parseSource(source, searchScope) {
 
     return {
         description,
+        rawDescription,
         categories,
         tags,
         rpcs: rpcDocs
@@ -146,7 +218,8 @@ function findFn(line){
     // regexlist to find the fn name in format of [regex string, matchgroup]
     const regexList = [
         [/function (\w+)\(/, 1],
-        [/\w+\.(\w+)[\w\s]*=.*(function|=>)/, 1],
+        [/\w+\.(\w+)[\w\s]*= *(.*function|.*=>|\w+(\.\w+)*;)/, 1],
+        [/\w+\[['"`]([^'"`]+)['"`]\] *= *(.*function|.*=>|\w+(\.\w+)*;)/, 1],
         [/(let|var|const) (\w+) *= *(\w|\().*=>/, 2],
         [/ *(\w+) *: *(async)? +function *\(.*\)/, 1],
     ];
@@ -255,9 +328,11 @@ function parseService(path, scope) {
 let Docs = function(servicePath) {
     const serviceDocs = parseService(servicePath);
     this.description = serviceDocs.description;
+    this.rawDescription = serviceDocs.rawDescription;
     this.rpcs = serviceDocs.rpcs.map(doc => doc.parsed);
     this.categories = serviceDocs.categories;
     this.tags = serviceDocs.tags;
+    this.servicePath = servicePath;
 };
 
 // get a doc for an action

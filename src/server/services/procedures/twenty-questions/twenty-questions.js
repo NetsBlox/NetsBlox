@@ -41,6 +41,7 @@ TwentyQuestions.prototype._ensureCallerIsGuesser = function () {
  * Start a new game of twenty questions.
  *
  * @param {String} answer The word or phrase to guess
+ * @returns {Boolean} ``true`` on successful start
  */
 TwentyQuestions.prototype.start = function (answer) {
     this._ensureGameStarted(false);
@@ -57,7 +58,8 @@ TwentyQuestions.prototype.start = function (answer) {
 /**
  * Guess the word or phrase.
  *
- * @param {String} guess word or phrase
+ * @param {String} guess word or phrase to guess
+ * @returns {Boolean} ``true`` if the guess was correct, otherwise ``false``
  */
 TwentyQuestions.prototype.guess = function(guess) {
     this._ensureGameStarted();
@@ -66,9 +68,10 @@ TwentyQuestions.prototype.guess = function(guess) {
     // split the guess
     var correct = false;
     var attempt = guess.toLowerCase().split(/[\s\?]+/);
-    for (var i = 0; i < attempt.length && !correct; i++) {
+    for (var i = 0; i < attempt.length; i++) {
         if (attempt[i] === this._state.correctAnswer) {
             correct = true;
+            break;
         }
     }
 
@@ -87,7 +90,7 @@ TwentyQuestions.prototype.guess = function(guess) {
             content.guess = guess;
             this.socket.sendMessageToRoom('EndGuesserTurn', content);
         }
-        return correct;
+        return false;
     }
     // correct guess, end the game
     content.GuesserWin = true;
@@ -119,6 +122,7 @@ TwentyQuestions.prototype.answer = function(answer) {
 
 /**
  * Check if the game has been started.
+ * @returns {Boolean} ``true`` if the game has started
  */
 TwentyQuestions.prototype.gameStarted = function() {
     return this._state.started;

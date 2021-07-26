@@ -365,7 +365,7 @@
 
         persist() {
             if (this.isDeleted()) return Promise.reject('cannot call persist: project has been deleted!');
-            const query = {$set: {transient: false}};
+            const query = {$set: {transient: false, deleteAt: null}};
             this._logger.trace(`persisting project ${this.owner}/${this.name}`);
             return this._execUpdate(query);
         }

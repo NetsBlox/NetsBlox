@@ -10,8 +10,8 @@ const path = require('path');
 const AuthorizeTemplate = _.template(fs.readFileSync(path.join(__dirname, 'index.html.ejs'), 'utf8'));
 
 const DEFAULT_SCOPES = [
-    'List your projects',
-    'Send messages to your projects',
+    'Execute blocks on your behalf',  // TODO: these should not be hard-coded
+    'View created Alexa Skills',
 ];
 
 OAuthRouter.route('/netsblox_logo.png')

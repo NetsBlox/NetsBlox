@@ -118,7 +118,7 @@ class Projects {
         const isAlreadySaved = !project.transient;
         if (isAlreadySaved) {
             this.logger.trace(`Original project already saved. Copying original ${project.name}`);
-            project = await project.getCopy({transient: false});
+            project = await project.getCopy({transient: false, deleteAt: null});
         }
 
         if (overwrite) {

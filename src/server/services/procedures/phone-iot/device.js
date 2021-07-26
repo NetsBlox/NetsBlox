@@ -12,21 +12,27 @@ const common = require('./common');
 // b - button press event
 // C - clear custom controls
 // c - remove custom control
+// D - add slider control
+// d - level (slider) event
+// E - get level (slider)
+// e - set level (slider)
 // G - gravity
 // g - add custom label control
 // H - set text
 // h - get text
 // I - heartbeat
 // i - set image
-// J - get joystick vector
+// J - get pos vector
 // j - add joystick
-// K - joystick event
 // L - linear acceleration
 // l - light level
 // M - magnetic field
 // m - microphone level
+// N - add touchpad control
+// n - touchpad event
 // O - orientation calculator
 // P - proximity
+// p - set sensor update periods
 // Q - sensor packet
 // R - rotation vector
 // r - game rotation vector
@@ -35,8 +41,10 @@ const common = require('./common');
 // t - text field content
 // U - add custom image box
 // u - image box content
+// V - is pressed
 // v - image box updated
 // W - get toggle state
+// w - set toggle state
 // X - location (latlong + bearing + altitude)
 // Y - gyroscope
 // y - add custom radiobutton control
@@ -46,33 +54,6 @@ const common = require('./common');
 // these might be better defined as an attribute on the device
 const FORGET_TIME = 120; // forgetting a device in seconds
 const RESPONSE_TIMEOUT = 2000; // ms (well over worst case)
-
-const DIRECTIONS_3D = [
-    [[0, 0, 1], 'up'],
-    [[0, 0, -1], 'down'],
-    [[0, 1, 0], 'vertical'],
-    [[0, -1, 0], 'upside down'],
-    [[1, 0, 0], 'left'],
-    [[-1, 0, 0], 'right'],  
-];
-const COMPASS_DIRECTIONS_4 = [
-    [0, 'N'],
-    [90, 'E'],
-    [-90, 'W'],
-    [180, 'S'],
-    [-180, 'S'],
-];
-const COMPASS_DIRECTIONS_8 = [
-    [0, 'N'],
-    [45, 'NE'],
-    [-45, 'NW'],
-    [90, 'E'],
-    [-90, 'W'],
-    [135, 'SE'],
-    [-135, 'SW'],
-    [180, 'S'],
-    [-180, 'S'],
-];
 
 const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.id = mac_addr;
@@ -101,12 +82,14 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.guiIdToEvent = {}; // Map<GUI ID, Event ID>
     this.guiListeners = {}; // Map<ClientID, Socket>
 
-    this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, Socket>>
+    this.sensorToListeners = {}; // Map<SensorID, Map<ClientID, (Socket, lastUpdate, period)>>
 
-    this.joystickUpdateTimestamps = {}; // Map<GUI ID, time index>
+    this.controlUpdateTimestamps = {}; // Map<GUI ID, time index>
     this.sensorPacketTimestamp = -1; // timestamp of last sensor packet
 
     this.controlCount = 0; // counter used to generate unique custom control ids
+
+    this.requestDisconnect = false; // when set to true, _heartbeat will delete us (in phone-iot.js)
 };
 
 Device.prototype.getPassword = function (clientId) {
@@ -284,6 +267,18 @@ function throwIfErr(obj) {
     return obj;
 }
 
+Device.prototype.setSensorUpdatePeriods = async function (periods, clientId) {
+    const { response, password } = this.rpcHeader('setsensorperiods', clientId);
+
+    const message = Buffer.alloc(9 + 4 * periods.length);
+    message.write('p', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    for (let i = 0; i < periods.length; ++i) message.writeInt32BE(periods[i], 9 + 4 * i);
+    this.sendToDevice(message);
+
+    throwIfErr(await response);
+};
+
 Device.prototype.authenticate = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('auth', clientId);
 
@@ -306,7 +301,7 @@ Device.prototype.clearControls = async function (device, args, clientId) {
     throwIfErr(await response);
 
     this.controlCount = 0; // we can safely reset this to zero and reuse old ids
-    this.joystickUpdateTimestamps = {}; // discard all the old joystick data
+    this.controlUpdateTimestamps = {}; // discard all the old control timestamp data
 };
 Device.prototype.removeControl = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('removecontrol', clientId);
@@ -319,7 +314,7 @@ Device.prototype.removeControl = async function (device, args, clientId) {
 
     throwIfErr(await response);
 
-    delete this.joystickUpdateTimestamps[args[0]]; // discard any joystick data relating to this id
+    delete this.controlUpdateTimestamps[args[0]]; // discard any timestamp data relating to this id
 };
 Device.prototype.addLabel = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addlabel', clientId);
@@ -327,13 +322,16 @@ Device.prototype.addLabel = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(22);
+    const message = Buffer.alloc(28);
     message.write('g', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeInt32BE(opts.textColor, 17);
-    message[21] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 21);
+    message[25] = opts.align;
+    message[26] = opts.landscape ? 1 : 0;
+    message[27] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -376,7 +374,7 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(26);
+    const message = Buffer.alloc(28);
     message.write('U', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -384,6 +382,8 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     message.writeFloatBE(args[2], 17);
     message.writeFloatBE(args[3], 21);
     message[25] = opts.readonly ? 1 : 0;
+    message[26] = opts.landscape ? 1 : 0;
+    message[27] = opts.fit;
     this.sendToDevice(Buffer.concat([message, idbuf]));
     
     throwIfErr(await response);
@@ -397,7 +397,7 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(35);
+    const message = Buffer.alloc(41);
     message.write('T', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
@@ -406,8 +406,11 @@ Device.prototype.addTextField = async function (device, args, clientId) {
     message.writeFloatBE(args[3], 21);
     message.writeInt32BE(opts.color, 25);
     message.writeInt32BE(opts.textColor, 29);
-    message[33] = opts.readonly ? 1 : 0;
-    message[34] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 33);
+    message[37] = opts.align;
+    message[38] = opts.readonly ? 1 : 0;
+    message[39] = opts.landscape ? 1 : 0;
+    message[40] = idbuf.length;
 
     const text = Buffer.from(opts.text, 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -439,22 +442,74 @@ Device.prototype.addJoystick = async function (device, args, clientId) {
     device.guiIdToEvent[id] = opts.event;
     return id;
 };
+Device.prototype.addTouchpad = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addtouchpad', clientId);
+    const opts = args[4];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(31);
+    message.write('N', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeFloatBE(args[3], 21);
+    message.writeInt32BE(opts.color, 25);
+    message[29] = opts.style;
+    message[30] = opts.landscape ? 1 : 0;
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
+Device.prototype.addSlider = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('addslider', clientId);
+    const opts = args[3];
+    const id = this.getNewId(opts);
+    const idbuf = Buffer.from(id, 'utf8');
+
+    const message = Buffer.alloc(32);
+    message.write('D', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[0], 9);
+    message.writeFloatBE(args[1], 13);
+    message.writeFloatBE(args[2], 17);
+    message.writeInt32BE(opts.color, 21);
+    message.writeFloatBE(opts.value, 25);
+    message[29] = opts.style;
+    message[30] = opts.landscape ? 1 : 0;
+    message[31] = opts.readonly ? 1 : 0;
+
+    this.sendToDevice(Buffer.concat([message, idbuf]));
+    
+    throwIfErr(await response);
+
+    device.guiIdToEvent[id] = opts.event;
+    return id;
+};
 Device.prototype.addToggle = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('addtoggle', clientId);
     const opts = args[3];
     const id = this.getNewId(opts);
     const idbuf = Buffer.from(id, 'utf8');
 
-    const message = Buffer.alloc(28);
+    const message = Buffer.alloc(34);
     message.write('Z', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeInt32BE(opts.color, 17);
     message.writeInt32BE(opts.textColor, 21);
-    message[25] = opts.state ? 1 : 0;
-    message[26] = opts.style;
-    message[27] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 25);
+    message[29] = opts.checked ? 1 : 0;
+    message[30] = opts.style;
+    message[31] = opts.landscape ? 1 : 0;
+    message[32] = opts.readonly ? 1 : 0;
+    message[33] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
@@ -474,15 +529,18 @@ Device.prototype.addRadioButton = async function (device, args, clientId) {
     const groupPrefix = Buffer.alloc(1);
     groupPrefix[0] = group.length;
 
-    const message = Buffer.alloc(27);
+    const message = Buffer.alloc(33);
     message.write('y', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[0], 9);
     message.writeFloatBE(args[1], 13);
     message.writeInt32BE(opts.color, 17);
     message.writeInt32BE(opts.textColor, 21);
-    message[25] = opts.state ? 1 : 0;
-    message[26] = idbuf.length;
+    message.writeFloatBE(opts.fontSize, 25);
+    message[29] = opts.checked ? 1 : 0;
+    message[30] = opts.landscape ? 1 : 0;
+    message[31] = opts.readonly ? 1 : 0;
+    message[32] = idbuf.length;
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, groupPrefix, group, text]));
@@ -542,8 +600,8 @@ Device.prototype.getText = async function (device, args, clientId) {
     
     return throwIfErr(await response).text;
 };
-Device.prototype.getJoystickVector = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('getjoystickvec', clientId);
+Device.prototype.getPosition = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getpos', clientId);
     const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
@@ -551,15 +609,65 @@ Device.prototype.getJoystickVector = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
     
-    return throwIfErr(await response).vals;
+    return throwIfErr(await response).res;
 };
-Device.prototype.getState = async function (device, args, clientId) {
-    const { response, password } = this.rpcHeader('getState', clientId);
+Device.prototype.getLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getlevel', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('E', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).level;
+};
+Device.prototype.setLevel = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('setlevel', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(13);
+    message.write('e', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message.writeFloatBE(args[1], 9);
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).res;
+};
+
+Device.prototype.isPressed = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('isPressed', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(9);
+    message.write('V', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).state;
+};
+
+Device.prototype.getToggleState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('getToggleState', clientId);
     const id = parseId(args[0]);
 
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    
+    this.sendToDevice(Buffer.concat([message, id]));
+    
+    return throwIfErr(await response).state;
+};
+Device.prototype.setToggleState = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('setToggleState', clientId);
+    const id = parseId(args[0]);
+
+    const message = Buffer.alloc(10);
+    message.write('w', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    message[9] = args[1] ? 1 : 0;
     
     this.sendToDevice(Buffer.concat([message, id]));
     
@@ -574,16 +682,16 @@ Device.prototype.getOrientation = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getCompassHeading = async function (device, args, clientId) {
     return (await this.getOrientation(device, args, clientId))[0];
 };
 Device.prototype.getCompassDirection = async function (device, args, clientId) {
-    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_8);
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), common.COMPASS_DIRECTIONS_8);
 };
 Device.prototype.getCompassCardinalDirection = async function (device, args, clientId) {
-    return common.closestScalar(await this.getCompassHeading(device, args, clientId), COMPASS_DIRECTIONS_4);
+    return common.closestScalar(await this.getCompassHeading(device, args, clientId), common.COMPASS_DIRECTIONS_4);
 };
 
 Device.prototype.getAccelerometer = async function (device, args, clientId) {
@@ -597,7 +705,7 @@ Device.prototype.getAccelerometer = async function (device, args, clientId) {
     return throwIfErr(await response).vals;
 };
 Device.prototype.getFacingDirection = async function (device, args, clientId) {
-    return common.closestVector(await this.getAccelerometer(device, args, clientId), DIRECTIONS_3D);
+    return common.closestVector(await this.getAccelerometer(device, args, clientId), common.DIRECTIONS_3D);
 };
 
 Device.prototype.getGravity = async function (device, args, clientId) {
@@ -630,7 +738,7 @@ Device.prototype.getGyroscope = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getRotation = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('rotation', clientId);
@@ -653,7 +761,7 @@ Device.prototype.getGameRotation = async function (device, args, clientId) {
     return throwIfErr(await response).vals;
 };
 
-Device.prototype.getMagneticFieldVector = async function (device, args, clientId) {
+Device.prototype.getMagneticField = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('magfield', clientId);
 
     const message = Buffer.alloc(9);
@@ -820,15 +928,15 @@ Device.prototype._sendSensorResult = function(name, sensorName, message) {
 const ORDERED_SENSOR_TYPES = [
     'accelerometer',
     'gravity',
-    'linear acceleration',
+    'linearAcceleration',
     'gyroscope',
-    'rotation vector',
-    'game rotation vector',
-    'magnetic field',
-    'sound',
+    'rotation',
+    'gameRotation',
+    'magneticField',
+    'microphoneLevel',
     'proximity',
-    'step counter',
-    'light',
+    'stepCount',
+    'lightLevel',
     'location',
     'orientation',
 ];
@@ -858,11 +966,15 @@ Device.prototype._parseSensorPacket = function (message, pos, stop) {
     return res;
 };
 Device.prototype._sendSensorPacketUpdates = function (packet) {
+    const now = new Date();
     for (const sensor in packet) {
         const content = packet[sensor];
         const listeners = this.sensorToListeners[sensor] || {};
         for (const listener in listeners) {
-            const socket = listeners[listener];
+            const [socket, lastUpdate, period] = listeners[listener];
+            if (now - lastUpdate < period) continue;
+            listeners[listener][1] = now; // update lastUpdate
+
             try {
                 socket.sendMessage(sensor, content);
             }
@@ -872,6 +984,23 @@ Device.prototype._sendSensorPacketUpdates = function (packet) {
         }
     }
 };
+Device.prototype._sendBoolStateResult = function (name, meta, message) {
+    let state = undefined;
+    if (message.length === 12) switch (message[11]) {
+        case 0: state = false; break;
+        case 1: state = true; break;
+    }
+    this.sendToClient(name, state !== undefined ? { state } : { err: `no ${meta} with matching id` });
+};
+
+function parseClickTag(tag) {
+    switch (tag) {
+        case 0: return 'down';
+        case 1: return 'move';
+        case 2: return 'up';
+    }
+    return undefined;
+}
 
 // used for handling incoming message from the device
 Device.prototype.onMessage = function (message) {
@@ -891,10 +1020,21 @@ Device.prototype.onMessage = function (message) {
             this.setEncryptionKey([]);
             this.resetRates();
         }
-        if (message.length > 11) {
-            const rsp = Buffer.alloc(1);
-            rsp.write('I', 0, 1);
-            this.sendToDevice(rsp);
+        if (message.length === 12) {
+            if (message[11] === 0) { // send conn ack
+                const rsp = Buffer.alloc(2);
+                rsp.write('I', 0, 1);
+                rsp[1] = 1;
+                this.sendToDevice(rsp);
+            }
+            else if (message[11] === 86) { // disconnect (and send disconn ack)
+                this.requestDisconnect = true;
+
+                const rsp = Buffer.alloc(2);
+                rsp.write('I', 0, 1);
+                rsp[1] = 87;
+                this.sendToDevice(rsp);
+            }
         }
     }
     else if (command === 'Q') {
@@ -908,6 +1048,7 @@ Device.prototype.onMessage = function (message) {
         }
     }
     else if (command === 'a') this._sendVoidResult('auth', message, 'failed to auth');
+    else if (command === 'p') this._sendVoidResult('setsensorperiods', message, 'failed to set sensor periods');
     else if (command === 'C') this._sendVoidResult('clearcontrols', message, 'failed to clear controls');
     else if (command === 'c') this._sendVoidResult('removecontrol', message, 'failed to remove control');
     else if (command === 'u') {
@@ -918,30 +1059,53 @@ Device.prototype.onMessage = function (message) {
         const text = message.length >= 12 && message[11] === 0 ? message.toString('utf8', 12) : undefined;
         this.sendToClient('gettext', text !== undefined ? {text} : { err: 'no text with matching id' });
     }
+    else if (command === 'E') {
+        const level = message.length === 15 ? message.readFloatBE(11) : undefined;
+        this.sendToClient('getlevel', level !== undefined ? {level} : { err: 'no level-like control with matching id' });
+    }
     else if (command === 'J') {
-        if (message.length === 11) this.sendToClient('getjoystickvec', { err: 'no joystick with matching id' });
-        else if (message.length === 19) this.sendToClient('getjoystickvec', { vals: [message.readFloatBE(11), message.readFloatBE(15)] });
+        if (message.length === 11) this.sendToClient('getpos', { err: 'no positional control with matching id' });
+        else if (message.length === 12) this.sendToClient('getpos', { err: 'control does not have a current position' });
+        else if (message.length === 20) this.sendToClient('getpos', { res: [message.readFloatBE(12), message.readFloatBE(16)] });
     }
     else if (command === 'H') this._sendControlResult('settext', message);
+    else if (command === 'e') this._sendControlResult('setlevel', message); 
     else if (command === 'i') this._sendControlResult('setimage', message);
     else if (command === 'g') this._sendControlResult('addlabel', message);
     else if (command === 'B') this._sendControlResult('addbutton', message);
-    else if (command === 'j') this._sendControlResult('addjoystick', message);
+    else if (command === 'D') this._sendControlResult('addslider', message);
     else if (command === 'Z') this._sendControlResult('addtoggle', message);
+    else if (command === 'j') this._sendControlResult('addjoystick', message);
+    else if (command === 'N') this._sendControlResult('addtouchpad', message);
     else if (command === 'T') this._sendControlResult('addtextfield', message);
+    else if (command === 'w') this._sendControlResult('setToggleState', message);
     else if (command === 'y') this._sendControlResult('addradiobutton', message);
     else if (command === 'U') this._sendControlResult('addimagedisplay', message);
     else if (command === 'b') {
         const id = message.toString('utf8', 11);
         this._fireRawCustomEvent(id, {id});
     }
-    else if (command === 'K') {
-        if (message.length >= 23) {
-            const id = message.toString('utf8', 23);
+    else if (command === 'n') {
+        if (message.length >= 24) {
+            const id = message.toString('utf8', 24);
             const time = message.readInt32BE(11); // check the time index so we don't send events out of order
-            if (!(time < this.joystickUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it
-                this.joystickUpdateTimestamps[id] = time;
-                this._fireRawCustomEvent(id, { id, x: message.readFloatBE(15), y: message.readFloatBE(19) });
+            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
+                this.controlUpdateTimestamps[id] = time;
+
+                const tag = parseClickTag(message[15]);
+                if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(16), y: message.readFloatBE(20), tag });
+            }
+        }
+    }
+    else if (command === 'd') {
+        if (message.length >= 20) {
+            const id = message.toString('utf8', 20);
+            const time = message.readInt32BE(11); // check the time index so we don't send events out of order
+            if (!(time < this.controlUpdateTimestamps[id])) { // this way we include if it's undefined (in which case we set it)
+                this.controlUpdateTimestamps[id] = time;
+
+                const tag = parseClickTag(message[15]);
+                if (tag) this._fireRawCustomEvent(id, { id, level: message.readFloatBE(16), tag });
             }
         }
     }
@@ -962,27 +1126,21 @@ Device.prototype.onMessage = function (message) {
             this._fireRawCustomEvent(id, { id, state });
         }
     }
-    else if (command === 'W') {
-        let state = undefined;
-        if (message.length === 12) switch (message[11]) {
-            case 0: state = false; break;
-            case 1: state = true; break;
-        }
-        this.sendToClient('getState', state !== undefined ? { state } : { err: 'no toggleable with matching id' });
-    }
-    else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
-    else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
-    else if (command === 'X') this._sendSensorResult('location', 'location', message);
-    else if (command === 'A') this._sendSensorResult('accelerometer', 'accelerometer', message);
-    else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
-    else if (command === 'L') this._sendSensorResult('linear', 'linear acceleration sensor', message);
-    else if (command === 'Y') this._sendSensorResult('gyroscope', 'gyroscope', message);
+    else if (command === 'W') this._sendBoolStateResult('getToggleState', 'toggleable', message);
+    else if (command === 'V') this._sendBoolStateResult('isPressed', 'pressable', message);
     else if (command === 'r') this._sendSensorResult('gamerotation', 'game rotation sensor', message);
+    else if (command === 'L') this._sendSensorResult('linear', 'linear acceleration sensor', message);
     else if (command === 'M') this._sendSensorResult('magfield', 'magnetic field sensor', message);
-    else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);
+    else if (command === 'O') this._sendSensorResult('orientation', 'orientation sensor', message);
+    else if (command === 'A') this._sendSensorResult('accelerometer', 'accelerometer', message);
     else if (command === 'P') this._sendSensorResult('proximity', 'proximity sensor', message);
-    else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
+    else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
     else if (command === 'l') this._sendSensorResult('lightlevel', 'light sensor', message);
+    else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
+    else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
+    else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);
+    else if (command === 'Y') this._sendSensorResult('gyroscope', 'gyroscope', message);
+    else if (command === 'X') this._sendSensorResult('location', 'location', message);
     else this._logger.log('unknown command from ' + this.ip4_addr + ':' + this.ip4_port + ' - content bin: ' + message.toString('hex'));
 };
 

@@ -68,12 +68,15 @@ describe(utils.suiteName(__filename), function() {
                     params: []
                 },
                 description,
+                rawDescription: description,
+                tags: [],
             });
             let simpleMetadata = jp._simplify(metadata.parsed);
 
             assert.deepEqual(simpleMetadata, {
                 name: 'doStuff',
                 description: metadata.parsed.description,
+                rawDescription: metadata.parsed.description,
                 deprecated: false,
                 args: [
                     arg('address', 'String', 'target address'),
@@ -81,7 +84,7 @@ describe(utils.suiteName(__filename), function() {
                     arg('options', 'Object', null),
                 ],
                 categories: [],
-                returns: {type: {name: 'String', params: []}, description: null}
+                returns: {type: {name: 'String', params: []}, description: null, rawDescription: null}
             });
         });
 
@@ -160,6 +163,36 @@ describe(utils.suiteName(__filename), function() {
                     'Array',
                     `Expected to find nested Array type but found: ${nestedType}`
                 );
+            });
+        });
+
+        describe('duck typing', function() {
+            let parsed;
+            before(() => {
+                const duckTypes = `
+                /**
+                 * this is the description
+                 * @param {Object} duck some duck-typed object (aka anonymous struct)
+                 * @param {String} duck.name name of the given duck
+                 * @param {Number} duck.age age of the given duck
+                 * @name doSomething
+                 */
+                `;
+                const metadata = jp._parseSource(duckTypes).rpcs[0];
+                parsed = jp._simplify(metadata.parsed);
+                console.log(parsed.args);
+            });
+
+            it('should parse field names', () => {
+                const [duckArg] = parsed.args;
+                const fieldNames = duckArg.type.params.map(field => field.name);
+                assert.deepEqual(fieldNames, ['name', 'age']);
+            });
+
+            it('should parse field types', () => {
+                const [duckArg] = parsed.args;
+                const fieldTypes = duckArg.type.params.map(field => field.type.name);
+                assert.deepEqual(fieldTypes, ['String', 'Number']);
             });
         });
 

@@ -9,8 +9,29 @@ const NB_TYPES = {
     Array: 'List',
     Object: 'Structured Data',
     BoundedNumber: 'Number',
-    BoundedString: 'Input',
 };
+
+class InputTypeError extends Error {
+}
+
+class ParameterError extends InputTypeError {
+}
+
+function getErrorMessage(arg, err) {
+    const typeName = arg.type.name;
+    const netsbloxType = getNBType(typeName);
+    const omitTypeName = err instanceof ParameterError ||
+        err.message.includes(netsbloxType);
+    const msg = omitTypeName ? 
+        `"${arg.name}" is not valid.` :
+        `"${arg.name}" is not a valid ${netsbloxType}.`;
+
+    if (err.message) {
+        return msg + ' ' + err.message;
+    } else {
+        return msg;
+    }
+}
 
 // converts a javascript type name into netsblox type name
 function getNBType(jsType) {
@@ -18,6 +39,16 @@ function getNBType(jsType) {
 }
 
 const types = {};
+
+function getTypeParser(type) {
+    if (!type) return undefined;
+
+    const t = types[type];
+    if (t) return t;
+
+    const t2 = types[type.name]; // alias so we don't repeat lookups on every call of closure
+    return input => t2(input, type.params);
+}
 
 types.Number = input => {
     input = parseFloat(input);
@@ -32,20 +63,20 @@ types.BoundedNumber = (input, params) => {
     const number = types.Number(input);
     if (isNaN(max)) {  // only minimum specified
         if (number < min) {
-            throw new Error(`Number must be greater than ${min}`);
+            throw new ParameterError(`Number must be greater than ${min}`);
         }
         return number;
     }
 
     if (isNaN(min)) {  // only maximum specified
         if (max < number) {
-            throw new Error(`Number must be less than ${max}`);
+            throw new ParameterError(`Number must be less than ${max}`);
         }
         return number;
     }
 
     if (number < min || max < number) {  // both min and max bounds
-        throw new Error(`Number must be between ${min} and ${max}`);
+        throw new ParameterError(`Number must be between ${min} and ${max}`);
     }
     return number;
 };
@@ -58,14 +89,14 @@ types.BoundedString = (input, params) => {
     if(max == min)
     {
         if (inString.length != min) {
-            throw new Error(`Length must be ${min}`);
+            throw new ParameterError(`Length must be ${min}`);
         }
         return inString;
     }
 
     if (isNaN(max)) {  // only minimum specified
         if (inString.length < min) {
-            throw new Error(`Length must be greater than ${min}`);
+            throw new ParameterError(`Length must be greater than ${min}`);
         }
         return inString;
     }
@@ -73,13 +104,13 @@ types.BoundedString = (input, params) => {
 
     if (isNaN(min)) {  // only maximum specified
         if (max < inString.length) {
-            throw new Error(`Length must be less than ${max}`);
+            throw new ParameterError(`Length must be less than ${max}`);
         }
         return inString;
     }
 
     if (inString.length < min || max < inString.length) {  // both min and max bounds
-        throw new Error(`Length must be between ${min} and ${max}`);
+        throw new ParameterError(`Length must be between ${min} and ${max}`);
     }
     return inString;
 };
@@ -93,12 +124,23 @@ types.Date = input => {
     return input;
 };
 
-types.Array = (input, params) => {
-    const [innerType] = params;
-    if (!Array.isArray(input)) throw GENERIC_ERROR;
+types.Array = async (input, params=[]) => {
+    const [typeParam, min=0, max=Infinity] = params;
+    const innerType = getTypeParser(typeParam);
+
+    if (!Array.isArray(input)) throw new InputTypeError();
     if (innerType) {
-        input = input.map(value => types[innerType](value));
+        let i = 0;
+        try {
+            for (; i < input.length; ++i) input[i] = await innerType(input[i]);
+        }
+        catch (e) {
+            throw new ParameterError(`Item ${i+1} ${e}`);
+        }
     }
+    if (min === max && input.length !== min) throw new ParameterError(`List must contain ${min} items`);
+    if (input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
+    if (input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
     return input;
 };
 
@@ -107,7 +149,7 @@ types.Latitude = input => {
     if (isNaN(input)) {
         throw GENERIC_ERROR;
     } else if (input < -90 || input > 90) {
-        throw new Error('Latitude must be between -90 and 90.');
+        throw new InputTypeError('Latitude must be between -90 and 90.');
     }
     return input;
 };
@@ -117,20 +159,44 @@ types.Longitude = input => {
     if (isNaN(input)) {
         throw GENERIC_ERROR;
     } else if (input < -180 || input > 180) {
-        throw new Error('Longitude must be between -180 and 180.');
+        throw new InputTypeError('Longitude must be between -180 and 180.');
     }
     return input;
 };
 
 // all Object types are going to be structured data (simplified json for snap environment)
-types.Object = input => {
+types.Object = async (input, params=[], ctx) => {
     // check if it has the form of structured data
     let isArray = Array.isArray(input);
     if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
-        throw new Error('It should be a list of (key, value) pairs.');
+        throw new InputTypeError('It should be a list of (key, value) pairs.');
     }
     input = _.fromPairs(input);
-    return input;
+    if (!params.length) return input; // no params means we accept anything, so return raw input as obj
+
+    const res = {};
+    for (const param of params) {
+        const value = input[param.name];
+        delete input[param.name];
+        const isMissingField = value === undefined || value === null;
+
+        if (isMissingField) {
+            if (param.optional) continue;
+            throw new ParameterError(`It must contain a(n) ${param.name} field`);
+        }
+
+        try {
+            res[param.name] = await types[param.type.name](value, param.type.params, ctx);
+        } catch(err) {
+            throw new ParameterError(`Field ${getErrorMessage(param, err)}`);
+        }
+    }
+
+    const extraFields = Object.keys(input);
+    if (extraFields.length) {
+        throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
+    }
+    return res;
 };
 
 types.Function = async (blockXml, _params, ctx) => {
@@ -161,10 +227,51 @@ types.Function = async (blockXml, _params, ctx) => {
     };
 };
 
+types.SerializedFunction = async (blockXml, _params, ctx) => {
+    await types.Function(blockXml, _params, ctx);  // check that it compiles
+    return blockXml;
+};
+
+class EnumError extends ParameterError {
+    constructor(name, variants) {
+        const message = name ? `${name} must be one of ${variants.join(', ')}` :
+            `It must be one of ${variants.join(', ')}`;
+        super(message);
+    }
+}
+
+types.Enum = (input, variants, _ctx, name) => {
+    const lower = input.toString().toLowerCase();
+    const variantDict = Array.isArray(variants) ?
+        _.fromPairs(variants.map(name => [name, name])) :
+        variants;
+
+    for (const variant in variantDict) {
+        if (lower === variant.toLowerCase()) return variantDict[variant];
+    }
+
+    throw new EnumError(name, Object.keys(variantDict));
+};
+
+types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolean') === 'true';
+
 types.String = input => input.toString();
 types.Any = input => input;
 
+function defineType(name, parser) {
+    if (types[name]) {
+        throw new Error(`Defining duplicate type: ${name}`);
+    }
+    types[name] = parser;
+}
+
 module.exports = {
     parse: types,
-    getNBType
+    getNBType,
+    defineType,
+    getErrorMessage,
+    Errors: {
+        ParameterError,
+        InputTypeError,
+    }
 };

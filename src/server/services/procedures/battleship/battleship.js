@@ -1,7 +1,33 @@
 /**
  * The Battleship Service provides helpful utilities for building a distributed
  * game of battleship.
- *
+ * 
+ * Overview
+ * --------
+ * 
+ * Like regular Battleship, the Battleship service has two states: placing ships and shooting at ships.
+ * During placement, it expects each role to place each ship on his/her board and will not allow the game to proceed to the shooting phase until each role has placed all his/her ships.
+ * Placement, firing and starting blocks will return true if successful or an error message if it fails.
+ * 
+ * Blocks
+ * ------
+ * 
+ * - ``place <ship> at <row> <column> facing <direction>`` - Places a ship on your board with the front at the given row and column facing the given direction. Returns ``true`` if placed successfully (eg, on the board and not overlapping another ship). Also, placing a ship twice results in a move (not duplicates).
+ * - ``start game`` - Try to start the game. If both users have all their ships placed, it should return true and send ``start`` messages to all roles. Otherwise, it will return with a message saying that it is waiting on a specific role.
+ * - ``fire at <row> <column>`` - This block allows the user to try to fire at the given row and column. It returns ``true`` if it was a valid move; otherwise it will return an error message like ``it's not your turn!``. On a successful move, the server will send either a ``hit`` or ``miss`` message to everyone in the room. Then it will send a ``your turn`` message to the player to play next.
+ * - ``active ships for <role>`` - This block returns a list of all ships that are still afloat for the given role. If no role is specified, it defaults to the sender's role.
+ * - ``all ships`` - Returns a list of all ship names. Useful in programmatically placing ships.
+ * - ``ship length <ship>`` - Returns the length of the given ship.
+ * - ``restart game`` - Restarts the given game (all boards, etc)
+ * 
+ * Message Types
+ * -------------
+ * 
+ * - ``start`` - Received when ``start game`` finishes successfully for any role. After game has officially started, users can no longer move ships.
+ * - ``your turn`` - Received when the given role's turn starts.
+ * - ``hit`` - ``role`` is the owner of the ship that has been hit. ``ship`` is the name of the ship that has been hit, and ``row`` and ``column`` provide the location on the board where it was hit. ``sunk`` provides a true/false value for if the ship was sunk.
+ * - ``miss`` - ``role`` is the owner of the board receiving the shot and ``row`` and ``column`` correspond to the board location or the shot.
+ * 
  * @service
  * @category Games
  */
@@ -219,7 +245,7 @@ Battleship.prototype.remainingShips = function(roleId) {
 
 /**
  * Get list of ship types
- * @returns {Array} Types of ships
+ * @returns {Array<String>} Types of ships
  */
 Battleship.prototype.allShips = function() {
     return Object.keys(SHIPS);

@@ -23,6 +23,10 @@ module.exports.NewYorkPublicLibraryKey = new ApiKey(
     'New York Public Library',
     'http://api.repo.nypl.org/sign_up' // key is 'Authentication Token' from account info
 );
+module.exports.NewYorkTimesKey = new ApiKey(
+    'New York Times',
+    'https://developer.nytimes.com/get-started'
+);
 module.exports.DataDotGovKey = new ApiKey(
     'Data.gov',
     'https://api.data.gov/signup/',
@@ -57,7 +61,7 @@ module.exports.TheMovieDBKey = new ApiKey(
 );
 module.exports.OpenWeatherMapKey = new ApiKey(
     'Open Weather Map',
-    'https://developers.themoviedb.org/3/getting-started/introduction',
+    'https://openweathermap.org/api',
 );
 module.exports.AzureTranslationKey = new ApiKey(
     'Azure Translation',

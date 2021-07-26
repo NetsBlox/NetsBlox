@@ -4,6 +4,33 @@ const types = require('../../input-types');
 
 const common = {};
 
+common.DIRECTIONS_3D = [
+    [[0, 0, 1], 'up'],
+    [[0, 0, -1], 'down'],
+    [[0, 1, 0], 'vertical'],
+    [[0, -1, 0], 'upside down'],
+    [[1, 0, 0], 'left'],
+    [[-1, 0, 0], 'right'],
+];
+common.COMPASS_DIRECTIONS_4 = [
+    [0, 'N'],
+    [90, 'E'],
+    [-90, 'W'],
+    [180, 'S'],
+    [-180, 'S'],
+];
+common.COMPASS_DIRECTIONS_8 = [
+    [0, 'N'],
+    [45, 'NE'],
+    [-45, 'NW'],
+    [90, 'E'],
+    [-90, 'W'],
+    [135, 'SE'],
+    [-135, 'SW'],
+    [180, 'S'],
+    [-180, 'S'],
+];
+
 common.dotProduct = function(a, b) {
     let total = 0;
     for (var i = 0; i < a.length; ++i) {
@@ -78,47 +105,35 @@ common.prepImageToSend = async function(raw) {
     throw Error('unsupported image type');
 };
 
-common.parseBool = function (val) {
-    const lower = val.toString().toLowerCase();
-    if (lower === 'true' || lower === 'yes') return true;
-    if (lower === 'false' || lower === 'no') return false;
-    throw Error(`failed to parse bool: ${val}`);
-};
-common.parseFontSize = function (val) {
-    return types.parse.BoundedNumber(val, [0.1, 10.0]);
-};
-
-// given an options dict and a rules dict, generates a sanitized options dict.
-common.parseOptions = function (opts, rules) {
-    const res = {};
-    for (const key in opts) {
-        const value = opts[key];
-        const rule = rules[key];
-        if (rule === undefined) throw Error(`unknown option: ${key}`);
-        res[key] = rule.parse(value);
-    }
-    for (const key in rules) {
-        if (res[key] === undefined) res[key] = rules[key].default;
-    }
-    return res;
-};
-
 function packXYZ(vals) { return { x: vals[0], y: vals[1], z: vals[2] }; };
-function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[2] }; };
+function packXYZW(vals) { return { x: vals[0], y: vals[1], z: vals[2], w: vals[3] }; };
+function packAcceleration(vals) {
+    const facingDir = common.closestVector(vals, common.DIRECTIONS_3D);
+    return { x: vals[0], y: vals[1], z: vals[2], facingDir };
+}
+function packOrientation(vals) {
+    const heading = vals[0];
+    const dir = common.closestScalar(heading, common.COMPASS_DIRECTIONS_8);
+    const cardinalDir = common.closestScalar(heading, common.COMPASS_DIRECTIONS_4);
+    return { x: vals[0], y: vals[1], z: vals[2], heading, dir, cardinalDir };
+}
 common.SENSOR_PACKERS = {
     'gravity': packXYZ,
     'gyroscope': packXYZ,
-    'orientation': packXYZ,
-    'accelerometer': packXYZ,
-    'magnetic field': packXYZ,
-    'rotation vector': packXYZW,
-    'linear acceleration': packXYZ,
-    'game rotation vector': packXYZ,
-    'light': vals => { return { value: vals[0] }; },
-    'sound': vals => { return { volume: vals[0] }; },
+    'orientation': packOrientation,
+    'accelerometer': packAcceleration,
+    'magneticField': packXYZ,
+    'rotation': packXYZW,
+    'linearAcceleration': packXYZ,
+    'gameRotation': packXYZ,
+    'lightLevel': vals => { return { value: vals[0] }; },
+    'microphoneLevel': vals => { return { volume: vals[0] }; },
     'proximity': vals => { return { distance: vals[0] }; },
-    'step counter': vals => { return { count: vals[0] }; },
+    'stepCount': vals => { return { count: vals[0] }; },
     'location': vals => { return { latitude: vals[0], longitude: vals[1], bearing: vals[2], altitude: vals[3] }; },
 };
+common.DEPRECATED_SENSORS = new Set([
+    'rotation', 'gameRotation',
+]);
 
 module.exports = common;

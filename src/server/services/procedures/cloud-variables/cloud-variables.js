@@ -95,6 +95,7 @@ CloudVariables._setMaxLockAge = function(age) {  // for testing
  * Get the value of a cloud variable
  * @param {String} name Variable name
  * @param {String=} password Password (if password-protected)
+ * @returns {Any} the stored value
  */
 CloudVariables.getVariable = function(name, password) {
     const {sharedVars} = getCollections();
@@ -354,6 +355,7 @@ CloudVariables._onUnlockVariable = function(id) {
 /**
  * Get the value of a variable for the current user.
  * @param {String} name Variable name
+ * @returns {Any} the stored value
  */
 CloudVariables.getUserVariable = function(name) {
     const {userVars} = getCollections();
@@ -379,7 +381,7 @@ CloudVariables.getUserVariable = function(name) {
 /**
  * Set the value of the user cloud variable for the current user.
  * @param {String} name Variable name
- * @param {Any} value
+ * @param {Any} value Value to store in variable
  */
 CloudVariables.setUserVariable = function(name, value) {
     ensureLoggedIn(this.caller);

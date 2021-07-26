@@ -2,19 +2,20 @@
  * Access to NOAA Paleoclimatology ice core data.
  *
  * For more information, check out
- * https://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/ice-core
+ * https://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/ice-core.
  *
- * Original datasets are available at
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2composite.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2law.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2wais.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/co2nat.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/deutnat.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/epica_domec/edc3deuttemp2007.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/greenland/summit/grip/isotopes/gripd18o.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/gt4nat.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/law/law2012d18o.txt
- * https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/wdc05a2013d18o.txt
+ * Original datasets are available at:
+ * 
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2composite.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2law.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/antarctica2015co2wais.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/co2nat.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/deutnat.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/epica_domec/edc3deuttemp2007.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/greenland/summit/grip/isotopes/gripd18o.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/gt4nat.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/law/law2012d18o.txt
+ * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/wdc05a2013d18o.txt
  *
  * @service
  * @category Science
@@ -79,14 +80,6 @@ function importData() {
     IceCoreDataStorage.insertMany(records);
     IceCoreMetadata.insertMany(Object.values(metadata));
 }
-
-// Test for existing data
-IceCoreDataStorage.findOne({}).then(result => {
-    if (!result) {
-        IceCoreData._logger.info('No data found in database, importing from data files.');
-        importData();
-    }
-});
 
 function validateIceCore(core) {
     const validCores = IceCoreData.getIceCoreNames();
@@ -187,7 +180,7 @@ IceCoreData._getColumnData = async function(core, datatype, startyear, endyear) 
 
 /**
  * Get names of ice cores with data available.
- * @returns {Array}
+ * @returns {Array<String>} list of ice core names
  */
 IceCoreData.getIceCoreNames = function() {
     return Object.keys(IceCoreData._coreMetadata); 
@@ -196,7 +189,7 @@ IceCoreData.getIceCoreNames = function() {
 /**
  * Get a table showing the amount of available data for each ice core.
  *
- * @returns {Array}
+ * @returns {Table} data availability table
  */
 IceCoreData.getDataAvailability = async function() {
     const dataStatistics = await IceCoreMetadata.find({}).lean();
@@ -236,13 +229,13 @@ IceCoreData.getDataAvailability = async function() {
 /**
  * Get CO2 in ppm (parts per million) by year from the ice core.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
  * @param {String} core Core to get data from
- * @param {Number=} startyear Year to begin data at
- * @param {Number=} endyear Year to begin data at
- * @returns {Array}
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * 
+ * @returns {Array} the requested data
  */
 IceCoreData.getCarbonDioxideData = function(core, startyear, endyear){
     return IceCoreData._getColumnData(core, 'Carbon Dioxide', startyear, endyear);
@@ -251,13 +244,13 @@ IceCoreData.getCarbonDioxideData = function(core, startyear, endyear){
 /**
  * Get delta-O-18 in per mil (parts per thousand) by year from the ice core.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number=} startyear
- * @param {Number=} endyear
- * @returns {Array}
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * 
+ * @returns {Array} the requested data
  */
 IceCoreData.getDelta18OData = function(core, startyear, endyear){
     return IceCoreData._getColumnData(core, 'Delta18O', startyear, endyear);
@@ -266,13 +259,13 @@ IceCoreData.getDelta18OData = function(core, startyear, endyear){
 /**
  * Get deuterium in per mil (parts per thousand) by year from the ice core.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number=} startyear
- * @param {Number=} endyear
- * @returns {Array}
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * 
+ * @returns {Array} the requested data
  */
 IceCoreData.getDeuteriumData = function(core, startyear, endyear){
     return IceCoreData._getColumnData(core, 'Deuterium', startyear, endyear);
@@ -281,13 +274,13 @@ IceCoreData.getDeuteriumData = function(core, startyear, endyear){
 /**
  * Get temperature difference in Celsius by year from the ice core.
  *
- * If a start and end year is provided, only measurements within the given range will be
- * returned.
+ * If ``startyear`` or ``endyear`` is provided, only measurements within the given range will be returned.
  *
  * @param {String} core Ice core to get data from
- * @param {Number=} startyear
- * @param {Number=} endyear
- * @returns {Array}
+ * @param {Number=} startyear first year of data to include
+ * @param {Number=} endyear last year of data to include
+ * 
+ * @returns {Array} the requested data
  */
 IceCoreData.getTemperatureData = function(core, startyear, endyear){
     return IceCoreData._getColumnData(core, 'Temperature', startyear, endyear);
@@ -297,6 +290,8 @@ IceCoreData.getTemperatureData = function(core, startyear, endyear){
  * Get metadata about an ice core including statistics about the available data.
  *
  * @param {String} core Name of core to get metadata of
+ * 
+ * @returns {Object} ice core metadata
  */
 IceCoreData.getIceCoreMetadata = async function(core){
     validateIceCore(core);
@@ -304,6 +299,15 @@ IceCoreData.getIceCoreMetadata = async function(core){
     const dataStatistics = await IceCoreMetadata.findOne({core}).lean();
     metadata.data = _.pick(dataStatistics, DATA_TYPES);
     return metadata;
+};
+
+IceCoreData.initialize = function() {
+    IceCoreDataStorage.findOne({}).then(result => {
+        if (!result) {
+            IceCoreData._logger.info('No data found in database, importing from data files.');
+            importData();
+        }
+    });
 };
 
 module.exports = IceCoreData;

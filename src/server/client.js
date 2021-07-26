@@ -22,6 +22,7 @@ const REQUEST_TIMEOUT = 60*1000;  // 1 minute
 const HEARTBEAT_INTERVAL = 25*1000;  // 25 seconds
 const BugReporter = require('./bug-reporter');
 const Projects = require('./storage/projects');
+const ProjectsAPI = require('./api/core/projects');
 const NetsBloxAddress = require('./netsblox-address');
 const NetworkTopology = require('./network-topology');
 const {RequestError} = require('./api/core/errors');
@@ -43,7 +44,7 @@ class Client extends EventEmitter {
         this.nextHeartbeat = null;
         this.reconnect(websocket);
 
-        this._initialize();
+        this.keepAlive();
 
         this._logger.trace('created');
     }
@@ -53,6 +54,49 @@ class Client extends EventEmitter {
         this.isWaitingForReconnect = false;
         this.connError = null;
         this.lastSocketActivity = Date.now();
+
+        this._socket.on('message', data => {
+            try {
+                var msg = JSON.parse(data);
+                return this.onMessage(msg);
+            } catch (err) {
+                if (err.name === 'SyntaxError') {
+                    this._logger.error(`failed to parse message: ${err} (${data})`);
+                    BugReporter.reportInvalidSocketMessage(err, data, this);
+                } else {
+                    this._logger.error(`${data} threw exception ${err}`);
+                    throw err;
+                }
+            }
+        });
+
+        this._socket.on('close', async () => {
+            if (this.connError) {
+                const reconnected = await this.waitForReconnect();
+                if (reconnected) {
+                    this.checkAlive();
+                } else {
+                    this.close(this.connError);
+                }
+            } else {
+                return this.close();
+            }
+        });
+
+        // Report the server version
+        this.send({
+            type: 'report-version',
+            body: Utils.version
+        });
+    }
+
+    async waitForReconnect () {
+        const brokenSocket = this._socket;
+        this.isWaitingForReconnect = true;
+        await Utils.sleep(5 * Client.HEARTBEAT_INTERVAL);
+        this.isWaitingForReconnect = false;
+        const reconnected = this._socket !== brokenSocket;
+        return reconnected;
     }
 
     isOwner () {  // TODO: move to auth stuff...
@@ -110,55 +154,6 @@ class Client extends EventEmitter {
         const actionId = await ProjectActions.getLatestActionId(this.projectId, this.roleId);
         const canApply = actionId < action.id && this.roleId === startRole;
         return {canApply, actionId};
-    }
-
-    _initialize () {
-        this._socket.on('message', data => {
-            try {
-                var msg = JSON.parse(data);
-                return this.onMessage(msg);
-            } catch (err) {
-                if (err.name === 'SyntaxError') {
-                    this._logger.error(`failed to parse message: ${err} (${data})`);
-                    BugReporter.reportInvalidSocketMessage(err, data, this);
-                } else {
-                    this._logger.error(`${data} threw exception ${err}`);
-                    throw err;
-                }
-            }
-        });
-
-        this._socket.on('close', async () => {
-            if (this.connError) {
-                const reconnected = await this.waitForReconnect();
-                if (reconnected) {
-                    this.checkAlive();
-                } else {
-                    this.close(this.connError);
-                }
-            } else {
-                return this.close();
-            }
-        });
-
-        // change the heartbeat to use ping/pong from the ws spec
-        this.keepAlive();
-        this.checkAlive();
-
-        // Report the server version
-        this.send({
-            type: 'report-version',
-            body: Utils.version
-        });
-    }
-
-    async waitForReconnect () {
-        const brokenSocket = this._socket;
-        this.isWaitingForReconnect = true;
-        await Utils.sleep(5 * Client.HEARTBEAT_INTERVAL);
-        this.isWaitingForReconnect = false;
-        const reconnected = this._socket !== brokenSocket;
-        return reconnected;
     }
 
     close (err) {
@@ -245,8 +240,12 @@ class Client extends EventEmitter {
         return name;
     }
 
-    onEvicted () {
-        this.send({type: 'evicted'});
+    async evict () {
+        const state = await ProjectsAPI.newProject(this.username, undefined, this.uuid);
+        this.send({
+            type: 'evicted',
+            state,
+        });
     }
 
     sendToEveryone (msg) {
