@@ -46,7 +46,7 @@ NPlayer.prototype.start = async function() {
 
 /**
  * Get the number of detected players in the game.
- * @returns {Number} number of players
+ * @returns {Integer} number of players
  */
 NPlayer.prototype.getN = function() {
     return this._state.players.length;
