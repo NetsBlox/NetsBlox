@@ -10,11 +10,19 @@ const NB_TYPES = {
     Object: 'Structured Data',
     BoundedNumber: 'Number',
 };
-
-class InputTypeError extends Error {
+// converts a javascript type name into netsblox type name
+function getNBType(jsType) {
+    return NB_TYPES[jsType] || jsType;
 }
 
-class ParameterError extends InputTypeError {
+class InputTypeError extends Error { }
+class ParameterError extends InputTypeError { }
+class EnumError extends ParameterError {
+    constructor(name, variants) {
+        const message = name ? `${name} must be one of ${variants.join(', ')}` :
+            `It must be one of ${variants.join(', ')}`;
+        super(message);
+    }
 }
 
 function getErrorMessage(arg, err) {
@@ -33,12 +41,9 @@ function getErrorMessage(arg, err) {
     }
 }
 
-// converts a javascript type name into netsblox type name
-function getNBType(jsType) {
-    return NB_TYPES[jsType] || jsType;
-}
-
-const types = {};
+// Any is the only first-order type, and it has no base type
+const types = { Any: input => input };
+const baseTypes = { Any: { name: null } };
 
 function getTypeParser(type) {
     if (!type) return undefined;
@@ -50,81 +55,50 @@ function getTypeParser(type) {
     return input => t2(input, type.params);
 }
 
-types.Number = input => {
+function defineType(name, parser, baseType) {
+    if (types[name]) throw Error(`Defining duplicate type: ${name}`);
+    if (!baseType) throw Error('Base type is required for complete type info. If the new type is truly stand-alone, you can use \'Any\' as the base type');
+    if (typeof(baseType) === 'string') baseType = { name: baseType };
+    if (!baseTypes[baseType.name]) throw Error(`Base type ${baseType.name} does not exist`);
+
+    types[name] = parser;
+    baseTypes[name] = baseType;
+    return parser;
+}
+
+defineType('String', input => input.toString(), 'Any');
+
+defineType('Enum', (input, variants, _ctx, name) => {
+    const lower = input.toString().toLowerCase();
+    const variantDict = Array.isArray(variants) ?
+        _.fromPairs(variants.map(name => [name, name])) :
+        variants;
+
+    for (const variant in variantDict) {
+        if (lower === variant.toLowerCase()) return variantDict[variant];
+    }
+
+    throw new EnumError(name, Object.keys(variantDict));
+}, 'String');
+
+function defineEnum(name, variants) {
+    const parser = input => types.Enum(input, variants, undefined, name);
+    const variantOptions = Array.isArray(variants) ? variants : Object.keys(variants);
+    const baseType = { name: 'Enum', params: variantOptions };
+    return defineType(name, parser, baseType);
+}
+
+defineEnum('Boolean', {'true': true, 'false': false});
+
+defineType('Number', input => {
     input = parseFloat(input);
     if (isNaN(input)) {
         throw GENERIC_ERROR;
     }
     return input;
-};
+}, 'Any');
 
-types.BoundedNumber = (input, params) => {
-    const [min, max] = params.map(num => parseInt(num));
-    const number = types.Number(input);
-    if (isNaN(max)) {  // only minimum specified
-        if (number < min) {
-            throw new ParameterError(`Number must be greater than ${min}`);
-        }
-        return number;
-    }
-
-    if (isNaN(min)) {  // only maximum specified
-        if (max < number) {
-            throw new ParameterError(`Number must be less than ${max}`);
-        }
-        return number;
-    }
-
-    if (number < min || max < number) {  // both min and max bounds
-        throw new ParameterError(`Number must be between ${min} and ${max}`);
-    }
-    return number;
-};
-
-
-types.BoundedString = (input, params) => {
-    const [min, max] = params.map(num => parseInt(num));
-    const inString = input.toString();
-
-    if(max == min)
-    {
-        if (inString.length != min) {
-            throw new ParameterError(`Length must be ${min}`);
-        }
-        return inString;
-    }
-
-    if (isNaN(max)) {  // only minimum specified
-        if (inString.length < min) {
-            throw new ParameterError(`Length must be greater than ${min}`);
-        }
-        return inString;
-    }
-
-
-    if (isNaN(min)) {  // only maximum specified
-        if (max < inString.length) {
-            throw new ParameterError(`Length must be less than ${max}`);
-        }
-        return inString;
-    }
-
-    if (inString.length < min || max < inString.length) {  // both min and max bounds
-        throw new ParameterError(`Length must be between ${min} and ${max}`);
-    }
-    return inString;
-};
-
-
-types.Date = input => {
-    input = new Date(input);
-    if (isNaN(input.valueOf())) {
-        throw GENERIC_ERROR;
-    }
-    return input;
-};
-
-types.Array = async (input, params=[]) => {
+defineType('Array', async (input, params=[]) => {
     const [typeParam, min=0, max=Infinity] = params;
     const innerType = getTypeParser(typeParam);
 
@@ -142,30 +116,10 @@ types.Array = async (input, params=[]) => {
     if (input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
     if (input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
     return input;
-};
-
-types.Latitude = input => {
-    input = parseFloat(input);
-    if (isNaN(input)) {
-        throw GENERIC_ERROR;
-    } else if (input < -90 || input > 90) {
-        throw new InputTypeError('Latitude must be between -90 and 90.');
-    }
-    return input;
-};
-
-types.Longitude = input => {
-    input = parseFloat(input);
-    if (isNaN(input)) {
-        throw GENERIC_ERROR;
-    } else if (input < -180 || input > 180) {
-        throw new InputTypeError('Longitude must be between -180 and 180.');
-    }
-    return input;
-};
+}, 'Any');
 
 // all Object types are going to be structured data (simplified json for snap environment)
-types.Object = async (input, params=[], ctx) => {
+defineType('Object', async (input, params=[], ctx) => {
     // check if it has the form of structured data
     let isArray = Array.isArray(input);
     if (!isArray || !input.every(pair => pair.length === 2 || pair.length === 1)) {
@@ -197,9 +151,9 @@ types.Object = async (input, params=[], ctx) => {
         throw new ParameterError(`It contains extra fields: ${extraFields.join(', ')}`);
     }
     return res;
-};
+}, 'Any'); // arguably base type is Array, but that's only for NetsBlox itself (not e.g. the python service wrapper)
 
-types.Function = async (blockXml, _params, ctx) => {
+defineType('Function', async (blockXml, _params, ctx) => {
     let roleName = '';
     let roleNames = [''];
 
@@ -225,66 +179,96 @@ types.Function = async (blockXml, _params, ctx) => {
         env.doYield = doYield.bind(null, Date.now());
         return fn.apply(this, arguments);
     };
-};
+}, 'Any');
 
-types.SerializedFunction = async (blockXml, _params, ctx) => {
+defineType('SerializedFunction', async (blockXml, _params, ctx) => {
     await types.Function(blockXml, _params, ctx);  // check that it compiles
     return blockXml;
-};
+}, 'Function');
 
-class EnumError extends ParameterError {
-    constructor(name, variants) {
-        const message = name ? `${name} must be one of ${variants.join(', ')}` :
-            `It must be one of ${variants.join(', ')}`;
-        super(message);
-    }
-}
-
-types.Enum = (input, variants, _ctx, name) => {
-    const lower = input.toString().toLowerCase();
-    const variantDict = Array.isArray(variants) ?
-        _.fromPairs(variants.map(name => [name, name])) :
-        variants;
-
-    for (const variant in variantDict) {
-        if (lower === variant.toLowerCase()) return variantDict[variant];
+defineType('BoundedNumber', (input, params) => {
+    const [min, max] = params.map(num => parseInt(num));
+    const number = types.Number(input);
+    if (isNaN(max)) {  // only minimum specified
+        if (number < min) {
+            throw new ParameterError(`Number must be greater than ${min}`);
+        }
+        return number;
     }
 
-    throw new EnumError(name, Object.keys(variantDict));
-};
-
-types.Boolean = input => types.Enum(input, ['true', 'false'], undefined, 'Boolean') === 'true';
-
-types.String = input => input.toString();
-types.Any = input => input;
-
-const baseTypes = {};
-for (const t in types) {
-    baseTypes[t] = t;
-}
-
-function defineType(name, parser, baseType) {
-    if (types[name]) {
-        throw new Error(`Defining duplicate type: ${name}`);
-    }
-    if (!baseType) {
-        throw new Error('Base type is required for complete type info. If the new type is truly stand-alone, you can use \'Any\' as the base type');
-    }
-    const baseTypeName = baseType.name || baseType;
-    if (!baseTypes[baseTypeName]) {
-        throw new Error(`Base type ${baseTypeName} does not exist`);
+    if (isNaN(min)) {  // only maximum specified
+        if (max < number) {
+            throw new ParameterError(`Number must be less than ${max}`);
+        }
+        return number;
     }
 
-    types[name] = parser;
-    baseTypes[name] = baseType;
-    return parser;
-}
-function defineEnum(name, variants) {
-    const parser = input => types.Enum(input, variants, undefined, name);
-    const variantOptions = Array.isArray(variants) ? variants : Object.keys(variants);
-    const baseType = { 'name': 'Enum', params: variantOptions };
-    return defineType(name, parser, baseType);
-}
+    if (number < min || max < number) {  // both min and max bounds
+        throw new ParameterError(`Number must be between ${min} and ${max}`);
+    }
+    return number;
+}, 'Number');
+
+defineType('BoundedString', (input, params) => {
+    const [min, max] = params.map(num => parseInt(num));
+    const inString = input.toString();
+
+    if(max == min)
+    {
+        if (inString.length != min) {
+            throw new ParameterError(`Length must be ${min}`);
+        }
+        return inString;
+    }
+
+    if (isNaN(max)) {  // only minimum specified
+        if (inString.length < min) {
+            throw new ParameterError(`Length must be greater than ${min}`);
+        }
+        return inString;
+    }
+
+
+    if (isNaN(min)) {  // only maximum specified
+        if (max < inString.length) {
+            throw new ParameterError(`Length must be less than ${max}`);
+        }
+        return inString;
+    }
+
+    if (inString.length < min || max < inString.length) {  // both min and max bounds
+        throw new ParameterError(`Length must be between ${min} and ${max}`);
+    }
+    return inString;
+}, 'String');
+
+defineType('Date', input => {
+    input = new Date(input);
+    if (isNaN(input.valueOf())) {
+        throw GENERIC_ERROR;
+    }
+    return input;
+}, 'String');
+
+defineType('Latitude', input => {
+    input = parseFloat(input);
+    if (isNaN(input)) {
+        throw GENERIC_ERROR;
+    } else if (input < -90 || input > 90) {
+        throw new InputTypeError('Latitude must be between -90 and 90.');
+    }
+    return input;
+}, 'BoundedNumber'); // we don't actually refer to BoundedNumber, but only because it'd give a different error message
+
+defineType('Longitude', input => {
+    input = parseFloat(input);
+    if (isNaN(input)) {
+        throw GENERIC_ERROR;
+    } else if (input < -180 || input > 180) {
+        throw new InputTypeError('Longitude must be between -180 and 180.');
+    }
+    return input; 
+}, 'BoundedNumber'); // we don't actually refer to BoundedNumber, but only because it'd give a different error message
 
 module.exports = {
     parse: types,

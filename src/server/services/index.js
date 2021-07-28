@@ -38,8 +38,10 @@ async function listen(port) {
         middleware.isLoggedIn,
         ApiKeys.router()
     );
-    app.use('/input-types/base-types', async (_, res) => {
-        res.status(200).json(types.baseTypes);
+    app.use('/input-types', async (_, res) => {
+        res.status(200).json({
+            baseTypes: types.baseTypes
+        });
     });
     app.use('/', ServicesAPI.router());
     const RPC_ROOT = path.join(__dirname, 'libs');
