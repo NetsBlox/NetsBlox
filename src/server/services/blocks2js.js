@@ -3,6 +3,7 @@ const Q = require('q');
 const snap2js = require('snap2js');
 const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
+const {EXPRESSION_TYPES} = require('snap2js/src/ast');
 const Logger = require('../logger');
 const logger = new Logger('netsblox:rpc:blocks2js');
 const BugReporter = require('../bug-reporter');
@@ -37,8 +38,19 @@ backend.reportLatitude =
 backend.reportLongitude =
 backend.reportStageHeight =
 backend.reportStageWidth = function(node) {
-    return helpers.callStatementWithArgs(node.type);
+    return helpers.callFnWithArgs(node.type);
 };
+
+EXPRESSION_TYPES.push(
+    'reportUsername',
+    'reportRPCError',
+    'getProjectId',
+    'getProjectIds',
+    'reportLatitude',
+    'reportLongitude',
+    'reportStageWidth',
+    'reportStageHeight',
+);
 
 blocks2js.setBackend(backend);
 
