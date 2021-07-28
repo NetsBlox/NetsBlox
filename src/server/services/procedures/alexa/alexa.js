@@ -199,6 +199,7 @@ Alexa.getSkillCategories = function() {
 
 /**
  * Get a list of all valid slot types that can be added to an intent.
+ * For more information, check out https://developer.amazon.com/en-US/docs/alexa/custom-skills/slot-type-reference.html
  */
 Alexa.getSlotTypes = function() {
     return SlotTypes;

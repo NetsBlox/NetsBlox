@@ -63,6 +63,17 @@ const SkillCategories = [
 ];
 
 const SlotTypes = [
+    // Numbers, Dates, and Times
+    'AMAZON.DATE',
+    'AMAZON.DURATION',
+    'AMAZON.FOUR_DIGIT_NUMBER',
+    'AMAZON.NUMBER',
+    'AMAZON.Ordinal',
+    'AMAZON.PhoneNumber',
+    'AMAZON.TIME',
+    // Phrases
+    'AMAZON.SearchQuery',
+    // List types
     'AMAZON.Actor',
     'AMAZON.AdministrativeArea',
     'AMAZON.AggregateRating',
