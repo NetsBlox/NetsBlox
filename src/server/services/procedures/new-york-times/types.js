@@ -51,10 +51,10 @@ const ConceptTypes = {
     Topic: 'nytd_topic',
 };
 
-types.defineType('ArticleSection', input => types.parse.Enum(input, ArticleSections, undefined, 'ArticleSection'));
-types.defineType('BestSellerList', input => types.parse.Enum(input, BestSellerLists, undefined, 'BestSellerList'));
-types.defineType('ConceptType', input => types.parse.Enum(input, ConceptTypes, undefined, 'ConceptType'));
-types.defineType('DayWeekOrMonth', input => types.parse.Enum(input, {day: 1, week: 7, month: 30}, undefined, 'DayWeekOrMonth'));
+types.defineEnum('ArticleSection', ArticleSections);
+types.defineEnum('BestSellerList', BestSellerLists);
+types.defineEnum('ConceptType', ConceptTypes);
+types.defineEnum('DayWeekOrMonth', {day: 1, week: 7, month: 30});
 
 const ArticleCodeToName = _.invert(ArticleSections);
 
