@@ -87,17 +87,21 @@ Server.prototype.configureRoutes = async function(servicesURL) {
                 data: req.body,
                 maxRedirects: 0,
             };
+            const passResponse = proxyResp => {
+                const {status, data, headers} = proxyResp;
+                Object.entries(headers).forEach(header => {
+                    const [field, value] = header;
+                    res.set(field, value);
+                });
+                res.status(status);
+                return data.pipe(res);
+            };
+
             return axios(opts)
-                .then(proxyResponse => proxyResponse.data.pipe(res))
+                .then(passResponse)
                 .catch(err => {
                     if (err.response) {
-                        const {status, data, headers} = err.response;
-                        Object.entries(headers).forEach(header => {
-                            const [field, value] = header;
-                            res.set(field, value);
-                        });
-                        res.status(status);
-                        return data.pipe(res);
+                        passResponse(err.response);
                     } else {
                         this._logger.warn(`Error occurred on call to ${url}: ${err}`);
                         return res.sendStatus(500);
