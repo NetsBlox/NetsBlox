@@ -214,7 +214,7 @@ Battleship.prototype.fire = function(row, column) {
 /**
  * Get number of remaining ships of a role
  * @param {String} roleID Name of role to use
- * @returns {Number} Number of remaining ships
+ * @returns {Integer} Number of remaining ships
  */
 Battleship.prototype.remainingShips = function(roleId) {
     if (roleId) {  // resolve the provided role name to a role ID
@@ -254,7 +254,7 @@ Battleship.prototype.allShips = function() {
 /**
  * Get length of a ship type
  * @param {String} ship Type of ship
- * @returns {Number} Length of ship type
+ * @returns {Integer} Length of ship type
  */
 Battleship.prototype.shipLength = function(ship) {
     ship = (ship || '').toLowerCase();
