@@ -74,19 +74,12 @@ context.doSocketMessage = function() {
     let msgTypeName = args.shift();
 
     args.pop();  // remove the execution context
-    let dstId = args.pop();
+    const target = args.pop();
 
     const msgType = messageTypes.find(type => type.name === msgTypeName) || DEFAULT_MSG_TYPE;
-    const message = {
-        type: 'message',
-        dstId: dstId,
-        msgType: msgType.name,
-        content: {}
-    };
-
-    msgType.fields.forEach((name, i) => message.content[name] = args[i]);
-
-    this.project.ctx.socket.onMessage(message);  // TODO: Could this be updated to `sendMessage`
+    const contents = {};
+    msgType.fields.forEach((name, i) => contents[name] = args[i]);
+    this.project.ctx.socket.sendMessageTo(target, msgType.name, contents);
 };
 
 context.reportStageWidth = function() {
@@ -256,6 +249,14 @@ blocks2js.parseMessageTypes = function(model) {
     });
 };
 
+blocks2js.parseSprite = function(model) {
+    const sprite = snap2js.parseSprite(model);
+    const messageTypes = model.childNamed('messageTypes');
+    if (messageTypes) {
+        sprite.messageTypes = blocks2js.parseMessageTypes(model.childNamed('messageTypes'));
+    }
+    return sprite;
+};
 blocks2js.parseStage = function(model) {
     let stage = snap2js.parseStage(model);
     stage.messageTypes = blocks2js.parseMessageTypes(model.childNamed('messageTypes'));
@@ -263,10 +264,10 @@ blocks2js.parseStage = function(model) {
 };
 
 blocks2js.generateCodeFromState = function(state) {
-    state.stage.messageTypes = state.stage.messageTypes || [];
-    state.initCode += 'project.stage.messageTypes = [];\n' +
-        state.stage.messageTypes
-            .map(type => `project.stage.messageTypes.push(${JSON.stringify(type)})`).join(';\n');
+    const messageTypes = state.sprites.concat(state.stage)
+        .flatMap(sprite => sprite.messageTypes || []);
+    state.stage.messageTypes = messageTypes;
+    state.initCode += `project.stage.messageTypes = [${messageTypes.map(JSON.stringify).join(',')}];`;
 
     return snap2js.generateCodeFromState.call(this, state);
 };
@@ -274,7 +275,7 @@ blocks2js.generateCodeFromState = function(state) {
 blocks2js.compile = function(src) {
     const options = {allowWarp: false};
     try {
-        return snap2js.compile(src, options);
+        return snap2js.compile.call(this, src, options);
     } catch(e) {
         BugReporter.reportPotentialCompilerBug(e, src);
         throw new Error(`Unable to compile blocks: ${e.message}`);
