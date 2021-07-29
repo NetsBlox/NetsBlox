@@ -1,4 +1,5 @@
 const InputTypes = require('../../input-types');
+const RemoteClient = require('../../remote-client');
 
 class AlexaSkill {
     constructor(skillData) {
@@ -17,12 +18,18 @@ class AlexaSkill {
             .find(intentConfig => intentConfig.name === name);
 
         const handlerXML = intentConfig.handler;
-        const {context} = this.skillData;
+        const context = this.skillData.context;
         if (username) {
             context.username = username;
         }
+        const socket = new RemoteClient(
+            context.projectId,
+            context.roleId,
+            null,
+            username
+        );
 
-        const handler = await InputTypes.parse.Function(handlerXML, null, {caller: context});
+        const handler = await InputTypes.parse.Function(handlerXML, null, {caller: context, socket});
 
         const {slots=[]} = intentConfig;
         const slotNames = slots.map(slot => slot.name);
