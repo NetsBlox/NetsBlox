@@ -5,7 +5,7 @@
  * PhoneIoT also allows you to control a customizable interactive display, enabling you to use your device as a custom remote control, or even create and run distributed (multiplayer) applications.
  * The limits are up to your imagination!
  * 
- * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`__ and iOS (*coming soon*), and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`__.
+ * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`__ and iOS, and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`__.
  * In the top left of the editor, you should see a grid of several colored tabs.
  * Under the ``Network`` tab, grab a ``call`` block and place it in the center script area.
  * Click the first dropdown on the ``call`` block and select the ``PhoneIoT`` service.
@@ -283,7 +283,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {String=} text text to display on the button (default empty)
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``.
      * @param {ButtonStyle=} options.style The display style of the button on the screen. This can be ``rectangle`` (default), ``ellipse``, ``square``, or ``circle``. If ``square`` or ``circle`` is used, the height of the control is ignored (height equals width).
      * @param {Color=} options.color The background color of the button.
      * @param {Color=} options.textColor The text color of the button.
@@ -316,7 +316,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the image display (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``.
      * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
      * @param {Boolean=} options.landscape If set to ``true``, rotates the image display ``90`` degrees around its top left corner.
      * @param {Fit=} options.fit The technique used to fit the image into the display, in case the image and the display have different aspect ratios. This can be ``fit`` (default), ``zoom``, or ``stretch``.
@@ -346,7 +346,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the text field (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``text``.
+     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``text``.
      * @param {String=} options.text This can be used to set the initial text of the text field once created. Defaults to empty if not specified.
      * @param {Color=} options.color The color of the text field border.
      * @param {Color=} options.textColor The text color of the text field.
@@ -383,7 +383,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} width Width of the joystick (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``x``, ``y``, ``tag``.
      * @param {Color=} options.color The color of the joystick.
      * @param {Boolean=} options.landscape If set to ``true``, the ``x`` and ``y`` values of the joystick are altered so that it acts correctly when in landscape mode. Unlike other controls, this option does not affect where the control is displayed on the screen (no rotation).
      * @returns {String} id of the created control
@@ -414,7 +414,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the touchpad (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``x``, ``y``, ``tag``.
      * @param {Color=} options.color The color of the touchpad.
      * @param {TouchpadStyle=} options.style Controls the appearance of the touchpad. These are the same as for :func:`PhoneIoT.addButton` except that only ``rectangle`` and ``square`` are allowed.
      * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
@@ -444,7 +444,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} width Width (length) of the slider (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the slider. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``level``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the slider. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``level``, ``tag``.
      * @param {Color=} options.color The color of the slider.
      * @param {BoundedNumber<0,1>=} options.value The initial value of the slider (default ``0.0``).
      * @param {SliderStyle=} options.style Controls the appearance of the slider. Allowed values are ``slider`` (default) or ``progress``.
@@ -513,7 +513,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Object=} options Additional options
      * @param {String=} options.group The name of the group to associate this radio button with. You do not need this value to access the control later. If not specified, defaults to ``main``.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``state``.
+     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``state``.
      * @param {Boolean=} options.checked Defaults to ``false``. If set to ``true``, the radio button will be initially checked. Note that, while the user cannot check multiple radio buttons, you are free to do so programmatically.
      * @param {Color=} options.color The color of the radio button itself.
      * @param {Color=} options.textColor The text color of the radio button.
