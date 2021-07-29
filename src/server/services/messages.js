@@ -21,6 +21,17 @@ class Message {
 }
 
 class SendMessage extends Message {
+    constructor(projectId, roleId, target, type, contents) {
+        super(...arguments);
+        this.projectId = projectId;
+        this.roleId = roleId;
+        this.target = target;
+        this.type = type;
+        this.contents = contents;
+    }
+}
+
+class SendMessageToClient extends Message {
     constructor(projectId, roleId, clientId, type, contents) {
         super(...arguments);
         this.projectId = projectId;
@@ -52,6 +63,7 @@ class SendMessageToRole extends Message {
 
 Messages.parse = Message.parse;
 Messages.SendMessage = SendMessage;
+Messages.SendMessageToClient = SendMessageToClient;
 Messages.SendMessageToRoom = SendMessageToRoom;
 Messages.SendMessageToRole = SendMessageToRole;
 module.exports = Messages;
