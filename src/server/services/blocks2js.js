@@ -130,8 +130,8 @@ context.getJSFromRPC = function(rpc, params) {
     }
 
     const [service, name] = rpc.split('/');
-    const RPCManager = require('./rpc-manager');
-    const argNames = RPCManager.getArgumentsFor(service, name);
+    const {services} = require('./api');
+    const argNames = services.getArgumentsFor(service, name);
 
     if (!argNames) return 'unrecognized action';
 
@@ -160,7 +160,7 @@ context.getJSFromRPCDropdown = function(rpc, action, params) {
 };
 
 context.doRunRPC =
-context.getJSFromRPCStruct = function(service, name) {
+context.getJSFromRPCStruct = async function(service, name) {
     const args = Array.prototype.slice.call(arguments, 2);
     args.pop();
 
@@ -169,29 +169,16 @@ context.getJSFromRPCStruct = function(service, name) {
     // Call the rpc...
     // Update the context so it doesn't share a response as the original
     // Create a new context for this
-    const RPCManager = require('./rpc-manager');
+    const {services} = require('./api');
+    const context = Object.assign({}, this.project.ctx);
+    context.response = new ServerResponse();
 
-    const rpc = RPCManager.getServiceInstance(service, this.project.ctx.caller.projectId);
-    const subCtx = Object.create(rpc);
-
-    // Copy over the parameters of the original context
-    const params = Object.keys(this.project.ctx);
-    params.forEach(param => subCtx[param] = this.project.ctx[param]);
-
-    subCtx.response = new ServerResponse();
-
-    return Q(RPCManager.callRPC(name, subCtx, args))
-        .then(() => subCtx.response.promise)
-        .then(text => {  // received response
-            if (subCtx.response._status > 299) {
-                this.project.rpcError = text;
-            }
-            return text;
-        })
-        .catch(err => {
-            logger.error(`rpc invocation failed: ${err}`);
-            throw err;
-        });
+    await services.invoke(context, service, name, args);
+    const text = await context.response.promise;
+    if (context.response._status > 299) {
+        this.project.rpcError = text;
+    }
+    return text;
 };
 
 context.reportRPCError = function() {
