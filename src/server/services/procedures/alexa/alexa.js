@@ -61,6 +61,9 @@ Alexa.createSkill = async function(configuration) {
         );
         await smapiClient.updateAccountLinkingInfoV1(skillId, stage, {accountLinkingRequest});
     } catch (err) {
+        if (skillId) {
+            await smapiClient.deleteSkillV1(skillId);
+        }
         throw h.clarifyError(err);
     }
 
