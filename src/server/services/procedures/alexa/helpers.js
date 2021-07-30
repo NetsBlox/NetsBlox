@@ -109,7 +109,10 @@ async function retryWhile(fn, testFn) {
             return await fn();
         } catch (err) {
             const duration = Date.now() - startTime;
-            retry = testFn(err) && duration < maxWait;
+            if (!testFn(err)) {
+                throw err;
+            }
+            retry = duration < maxWait;
             await sleep(.5 * seconds);
         }
     } while (retry);
