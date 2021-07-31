@@ -13,7 +13,6 @@
  * intent.
  *
  * @service
- * @alpha
  */
 const Alexa = {};
 const AlexaSkill = require('./skill');
