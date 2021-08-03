@@ -40,7 +40,7 @@ async function listen(port) {
     );
     app.use('/input-types', async (_, res) => {
         res.status(200).json({
-            baseTypes: types.baseTypes
+            types: types.typesMeta,
         });
     });
     app.use('/', ServicesAPI.router());

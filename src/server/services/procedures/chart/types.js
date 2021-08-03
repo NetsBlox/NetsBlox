@@ -18,5 +18,10 @@ const LineTypes = [
 ];
 
 module.exports = function registerTypes() {
-    types.defineEnum('LineType', LineTypes);
+    types.defineType({
+        name: 'LineType',
+        description: 'The style of line to use for Chart plots.',
+        baseType: 'Enum',
+        baseParams: LineTypes
+    });
 };

@@ -159,7 +159,11 @@ const SlotTypes = [
     'AMAZON.WrittenCreativeWorkType',
 ];
 
+let _registeredTypes = false;
 function registerTypes() {
+    if (_registeredTypes) return;
+    _registeredTypes = true;
+
     const intentParams = [
         {
             name: 'name',
@@ -180,16 +184,26 @@ function registerTypes() {
             type: {name: 'SerializedFunction'}
         },
     ];
-    types.defineType('Intent', async input => {
-        const intent = await types.parse.Object(input, intentParams);
-        const isCustomIntent = !intent.name.startsWith('AMAZON.');
-        if (isCustomIntent && !intent.utterances) {
-            throw new Error('Custom intents must contain utterances.');
-        }
-        return intent;
-    }, 'Object');
+    types.defineType({
+        name: 'Intent',
+        description: 'An object that holds information about an Alexa intent.',
+        baseType: 'Object',
+        baseParams: intentParams,
+        parser: intent => {
+            const isCustomIntent = !intent.name.startsWith('AMAZON.');
+            if (isCustomIntent && !intent.utterances) {
+                throw new Error('Custom intents must contain utterances.');
+            }
+            return intent;
+        },
+    });
 
-    types.defineEnum('SlotType', SlotTypes);
+    types.defineType({
+        name: 'SlotType',
+        description: 'The type of slot to use in an Alexa skill.',
+        baseType: 'Enum',
+        baseParams: SlotTypes,
+    });
     const slotParams = [
         {
             name: 'name',
@@ -200,8 +214,18 @@ function registerTypes() {
             type: {name: 'SlotType'},
         }
     ];
-    types.defineType('Slot', input => types.parse.Object(input, slotParams, undefined), 'Object');
-    types.defineEnum('SkillCategory', SkillCategories);
+    types.defineType({
+        name: 'Slot',
+        description: 'Structured data about a slot in an Alexa skill.',
+        baseType: 'Object',
+        baseParams: slotParams,
+    });
+    types.defineType({
+        name: 'SkillCategory',
+        description: 'A category description for an Alexa skill.',
+        baseType: 'Enum',
+        baseParams: SkillCategories,
+    });
 }
 
 module.exports = {
