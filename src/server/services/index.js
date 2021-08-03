@@ -39,9 +39,7 @@ async function listen(port) {
         ApiKeys.router()
     );
     app.use('/input-types', async (_, res) => {
-        res.status(200).json({
-            types: types.typesMeta,
-        });
+        res.status(200).json(types.typesMeta);
     });
     app.use('/', ServicesAPI.router());
     const RPC_ROOT = path.join(__dirname, 'libs');
