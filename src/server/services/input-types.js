@@ -101,7 +101,7 @@ function defineType(info) {
     else throw Error('Base params must be an array, object, or function');
 
     const base = types[info.baseType];
-    if (!base) throw Error(`Base type ${baseType.name} does not exist. Avoid referencing types from external files (other than those defined in this file)`);
+    if (!base) throw Error(`Base type ${info.baseType} does not exist. Avoid referencing types from external files (other than those defined in this file)`);
 
     const derivedParser = async (input, params, ctx) => info.parser(await base(input, await getParams(params), ctx), params, ctx);
 
