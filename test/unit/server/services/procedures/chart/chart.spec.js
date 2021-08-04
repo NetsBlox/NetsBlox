@@ -59,53 +59,53 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('logscale', function() {
-        it('should allow empty axes', function(){
-            let options = Chart._parseDrawInputs([], {logscale: ''})[1];
+        it('should allow empty axes', async function(){
+            let options = (await Chart._parseDrawInputs([], {logscale: ''}))[1];
             assert.equal(options.logscale, undefined);
 
-            options = Chart._parseDrawInputs([], {logscale: ['']})[1];
+            options = (await Chart._parseDrawInputs([], {logscale: ['']}))[1];
             assert.equal(options.logscale.axes, '');
             assert.equal(options.logscale.base, 10);
         });
-        it('should parse string logscale (using implicit base 10)', function(){
-            let options = Chart._parseDrawInputs([], {logscale: 'x'})[1];
+        it('should parse string logscale (using implicit base 10)', async function(){
+            let options = (await Chart._parseDrawInputs([], {logscale: 'x'}))[1];
             assert.equal(options.logscale.axes, 'x');
             assert.equal(options.logscale.base, 10);
 
-            options = Chart._parseDrawInputs([], {logscale: ['z']})[1];
+            options = (await Chart._parseDrawInputs([], {logscale: ['z']}))[1];
             assert.equal(options.logscale.axes, 'z');
             assert.equal(options.logscale.base, 10);
         });
-        it('should parse string logscale (using explicit base)', function(){
-            let options = Chart._parseDrawInputs([], {logscale: ['cb', '2']})[1];
+        it('should parse string logscale (using explicit base)', async function(){
+            let options = (await Chart._parseDrawInputs([], {logscale: ['cb', '2']}))[1];
             assert.equal(options.logscale.axes, 'cb');
             assert.equal(options.logscale.base, 2);
 
-            options = Chart._parseDrawInputs([], {logscale: ['xyy2', 6]})[1];
+            options = (await Chart._parseDrawInputs([], {logscale: ['xyy2', 6]}))[1];
             assert.equal(options.logscale.axes, 'xyy2');
             assert.equal(options.logscale.base, 6);
         });
-        it('should reject bases that are not numbers >= 1', function(){
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', -4]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '-9']}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0']}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0.5']}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0.99']}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', 'h']}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', []]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyy2', ['hello']]}));
+        it('should reject bases that are not numbers >= 1', async function(){
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', -4]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '-9']}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0']}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0.5']}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', '0.99']}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', 'h']}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', []]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyy2', ['hello']]}));
         });
-        it('should reject invalid axes spec', function(){
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['xyz2', 5]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['h', 5]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: ['  ', 5]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: [[], 5]}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: [['x'], 5]})); // don't allow arrays
+        it('should reject invalid axes spec', async function(){
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['xyz2', 5]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['h', 5]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: ['  ', 5]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: [[], 5]}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: [['x'], 5]})); // don't allow arrays
 
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: 'xyz2'}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: 'h'}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: '  '}));
-            assert.throws(() => Chart._parseDrawInputs([], {logscale: []}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: 'xyz2'}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: 'h'}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: '  '}));
+            await assert.rejects(() => Chart._parseDrawInputs([], {logscale: []}));
         });
     });
 

@@ -40,7 +40,12 @@ const CATEGORIES = [
     'rate 85+',
     'rate total',
 ];
-types.defineType('MortalityCategory', input => types.parse.Enum(input, CATEGORIES));
+types.defineType({
+    name: 'MortalityCategory',
+    description: 'A specific category of data in the HumanMortality service.',
+    baseType: 'Enum',
+    baseParams: CATEGORIES
+});
 const GENDERS = [
     'male', 'female', 'both',
 ];

@@ -48,42 +48,94 @@ const types = require('../../input-types');
 const _ = require('lodash');
 
 // these types are used for communication with PhoneIoT
-const myTypes = {};
-myTypes.SliderStyle = input => types.parse.Enum(input, { slider: 0, progress: 1 }, undefined, 'Slider Style');
-myTypes.TouchpadStyle = input => types.parse.Enum(input, { rectangle: 0, square: 1 }, undefined, 'Touchpad Style');
-myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
-myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
-myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
-myTypes.Fit = input => types.parse.Enum(input, { fit: 0, zoom: 1, stretch: 2 }, undefined, 'Fit');
-myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
-myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
-myTypes.Color = input => types.parse.Number(input);
-myTypes.Intensity = input => types.parse.BoundedNumber(input, [0, 255]);
-myTypes.Position = input => types.parse.BoundedNumber(input, [0, 100]);
-myTypes.Size = input => types.parse.BoundedNumber(input, [0, 100]);
-myTypes.Device = async (input, params, ctx) => {
-    const deviceId = await types.parse.BoundedString(input, [4, 12]);
-    let device;
-
-    if (deviceId.length === 12) {
-        device = PhoneIoT.prototype._devices[deviceId];
-    } else { // try to guess the rest of the id
-        for (const mac_addr in this._devices) { // pick the first match
-            if (mac_addr.endsWith(deviceId)) {
-                const deviceId = mac_addr;
-                device = PhoneIoT.prototype._devices[deviceId];
+types.defineType({
+    name: 'SliderStyle',
+    description: 'The style to use for displaying PhoneIoT slider.',
+    baseType: 'Enum',
+    baseParams: { slider: 0, progress: 1 },
+});
+types.defineType({
+    name: 'TouchpadStyle', 
+    description: 'The style to use for displaying a PhoneIoT touchpad.',
+    baseType: 'Enum',
+    baseParams: { rectangle: 0, square: 1 },
+});
+types.defineType({
+    name: 'ButtonStyle',
+    description: 'The style to use for displaying a PhoneIoT button.',
+    baseType: 'Enum',
+    baseParams: { rectangle: 0, ellipse: 1, square: 2, circle: 3 },
+});
+types.defineType({
+    name: 'ToggleStyle',
+    description: 'The style to use for displaying a PhoneIoT toggle control.',
+    baseType: 'Enum',
+    baseParams: { switch: 0, checkbox: 1 },
+});
+types.defineType({
+    name: 'Align',
+    description: 'The strategy for aligning text in a PhoneIoT control.',
+    baseType: 'Enum',
+    baseParams: { left: 0, center: 1, right: 2 },
+});
+types.defineType({
+    name: 'Fit',
+    description: 'The strategy for positioning an image in a PhoneIoT image display.',
+    baseType: 'Enum',
+    baseParams: { fit: 0, zoom: 1, stretch: 2 },
+});
+types.defineType({
+    name: 'FontSize',
+    description: 'The font size of text in a PhoneIoT control.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0.1', '10.0'],
+});
+types.defineType({
+    name: 'SensorPeriod',
+    description: 'An update period (interval) for PhoneIoT sensors.',
+    baseType: 'BoundedNumber',
+    baesParams: ['100'],
+});
+types.defineType({
+    name: 'Color',
+    description: 'A color code used by PhoneIoT. You can create color codes with PhoneIoT.getColor().',
+    baseType: 'Integer',
+});
+types.defineType({
+    name: 'Position',
+    description: 'The position of a PhoneIoT control as a percentage of the screen from the top left corner.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0', '100'],
+});
+types.defineType({
+    name: 'Size',
+    description: 'The size of a PhoneIoT control as a percentage of the screen.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0', '100'],
+});
+types.defineType({
+    name: 'Device',
+    description: 'A PhoneIoT device id. The device must be connected to be valid.',
+    baseType: 'BoundedString',
+    baseParams: ['4', '12'],
+    parser: async (deviceId, params, ctx) => {
+        let device;
+        if (deviceId.length === 12) {
+            device = PhoneIoT.prototype._devices[deviceId];
+        } else { // try to guess the rest of the id
+            for (const mac_addr in this._devices) { // pick the first match
+                if (mac_addr.endsWith(deviceId)) {
+                    const deviceId = mac_addr;
+                    device = PhoneIoT.prototype._devices[deviceId];
+                }
             }
         }
-    }
 
-    if (!device) throw Error('Device not found.');
-    await acl.ensureAuthorized(ctx.caller.username, deviceId);
-    return device;
-};
-
-for (const type in myTypes) {
-    types.defineType(type, myTypes[type]);
-}
+        if (!device) throw Error('Device not found.');
+        await acl.ensureAuthorized(ctx.caller.username, deviceId);
+        return device;
+    },
+});
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -182,10 +234,10 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
  * If not specified, ``alpha`` will default to ``255``.
  * 
  * @category Utility
- * @param {Intensity} red red level (0-255)
- * @param {Intensity} green green level (0-255)
- * @param {Intensity} blue blue level (0-255)
- * @param {Intensity=} alpha alpha level (0-255)
+ * @param {BoundedInteger<0,255>} red red level (0-255)
+ * @param {BoundedInteger<0,255>} green green level (0-255)
+ * @param {BoundedInteger<0,255>} blue blue level (0-255)
+ * @param {BoundedInteger<0,255>=} alpha alpha level (0-255)
  * @returns {Color} Constructed color code (an integer)
  */
 PhoneIoT.prototype.getColor = function (red, green, blue, alpha = 255) {

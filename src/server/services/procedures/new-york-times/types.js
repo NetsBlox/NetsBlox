@@ -51,10 +51,30 @@ const ConceptTypes = {
     Topic: 'nytd_topic',
 };
 
-types.defineType('ArticleSection', input => types.parse.Enum(input, ArticleSections, undefined, 'ArticleSection'));
-types.defineType('BestSellerList', input => types.parse.Enum(input, BestSellerLists, undefined, 'BestSellerList'));
-types.defineType('ConceptType', input => types.parse.Enum(input, ConceptTypes, undefined, 'ConceptType'));
-types.defineType('DayWeekOrMonth', input => types.parse.Enum(input, {day: 1, week: 7, month: 30}, undefined, 'DayWeekOrMonth'));
+types.defineType({
+    name: 'ArticleSection',
+    description: 'The type of article to retrieve from the NewYorkTimes service.',
+    baseType: 'Enum',
+    baseParams: ArticleSections,
+});
+types.defineType({
+    name: 'BestSellerList',
+    description: 'An item from the NewYorkTimes best sellers list.',
+    baseType: 'Enum',
+    baseParams: BestSellerLists,
+});
+types.defineType({
+    name: 'ConceptType',
+    description: 'They type of information to retrieve from the NewYorkTimes service.',
+    baseType: 'Enum',
+    baseParams: ConceptTypes,
+});
+types.defineType({
+    name: 'DayWeekOrMonth',
+    description: 'A time period used by the NewYorkTimes service.',
+    baseType: 'Enum',
+    baseParams: {day: 1, week: 7, month: 30},
+});
 
 const ArticleCodeToName = _.invert(ArticleSections);
 
