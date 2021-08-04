@@ -46,7 +46,6 @@ const typesMeta = { // must be the same format produced by defineType()
         displayName: 'Any',
         description: 'A value of any type.',
         baseType: null,
-        baseParams: null,
     },
 };
 const dispToType = { Any: 'Any' }; // maps display name to internal name
@@ -109,8 +108,10 @@ function defineType(info) {
     typesMeta[info.name] = {
         displayName: info.displayName,
         description: info.description,
-        baseType: info.baseType,
-        baseParams: baseParamsMeta,
+        baseType: {
+            name: info.baseType,
+            params: baseParamsMeta,
+        },
     };
     dispToType[info.displayName] = info.name;
 
