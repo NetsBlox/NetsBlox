@@ -6,6 +6,7 @@ const Logger = require('../logger');
 const ApiKeys = require('./api-keys');
 const fs = require('fs');
 const path = require('path');
+const routeUtils = require('./procedures/utils/router-utils');
 
 class ServicesAPI {
     constructor() {
@@ -76,6 +77,8 @@ class ServicesAPI {
 
     router() {
         const router = express.Router({mergeParams: true});
+
+        router.use(...routeUtils.allDefaults());
 
         this.addServiceRoutes(router);
 

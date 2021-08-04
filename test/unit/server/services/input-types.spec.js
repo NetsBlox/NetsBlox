@@ -6,9 +6,9 @@ describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
 
     describe('String', function() {
-        it('should convert to a string', () => {
+        it('should convert to a string', async () => {
             let rawInput = 0;
-            let parsedInput = typesParser.String(rawInput);
+            let parsedInput = await typesParser.String(rawInput);
             assert.strictEqual(typeof parsedInput, 'string');
         });
     });
@@ -22,30 +22,83 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('Number', function() {
-        it('should parse into JS numbers', () => {
+        it('should parse into JS numbers', async () => {
             let rawInput = '4.253';
-            let parsedInput = typesParser.Number(rawInput);
+            let parsedInput = await typesParser.Number(rawInput);
             assert.deepStrictEqual(parsedInput, 4.253);
         });
     });
 
+    describe('Integer', function() {
+        it('should parse into JS numbers', async () => {
+            let rawInput = '54';
+            let parsedInput = await typesParser.Integer(rawInput);
+            assert.deepStrictEqual(parsedInput, 54);
+
+            rawInput = '-4';
+            parsedInput = await typesParser.Integer(rawInput);
+            assert.deepStrictEqual(parsedInput, -4);
+        });
+        it('should not allow fractional values', async () => {
+            await assert.rejects(() => typesParser.Integer('7.5'));
+        });
+        it('should not allow non-numbers', async () => {
+            await assert.rejects(() => typesParser.Integer('hello'));
+        });
+    });
+    describe('BoundedInteger', function() {
+        const params = [7, 21]; // min, max
+        it('should not allow fractional values', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('7.5', params));
+        });
+        it('should not allow non-numbers', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('hello', params));
+        });
+        it('should allow numbers between min and max', async () => {
+            let rawInput = '12';
+            let parsedInput = await typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 12);
+
+            rawInput = '20';
+            parsedInput = await typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 20);
+        });
+        it('should allow numbers equal to min and max', async () => {
+            let rawInput = '7';
+            let parsedInput = await typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 7);
+
+            rawInput = '21';
+            parsedInput = await typesParser.BoundedInteger(rawInput, params);
+            assert.deepStrictEqual(parsedInput, 21);
+        });
+        it('should not allow numbers below min', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('6', params));
+            await utils.shouldThrow(() => typesParser.BoundedInteger('-3', params));
+        });
+        it('should not allow numbers above max', async () => {
+            await utils.shouldThrow(() => typesParser.BoundedInteger('22', params));
+            await utils.shouldThrow(() => typesParser.BoundedInteger('87', params));
+        });
+    });
+
     describe('Array', function() {
-        it('should throw error w/ numeric input', () => {
+        it('should throw error w/ numeric input', async () => {
             let rawInput = '181',
                 type = 'Array';
 
-            assert.throws(() => typesParser[type](rawInput));
+            await utils.shouldThrow(() => typesParser[type](rawInput));
         });
 
-        it('should throw error w/ string input', () => {
+        it('should throw error w/ string input', async () => {
             let rawInput = 'cat',
                 type = 'Array';
 
-            assert.throws(() => typesParser[type](rawInput));
+            await utils.shouldThrow(() => typesParser[type](rawInput));
         });
 
-        it('should throw invalid nested types', () => {
-            assert.throws(() => typesParser.Array(['text'], ['Number']));
+        it('should throw invalid nested types', async () => {
+            await utils.shouldThrow(() => typesParser.Array(['text'], ['Number']));
         });
 
         it('should support nested types', () => {
@@ -55,37 +108,39 @@ describe(utils.suiteName(__filename), function() {
             typesParser.Array([1, 2], [{ name: 'BoundedNumber', params: [1, 2] }]);
         });
 
-        it('should enforce bounded lengths', () => {
-            assert.throws(() => typesParser.Array([], [undefined, 2]));
-            assert.throws(() => typesParser.Array([1], [undefined, 2]));
+        it('should enforce bounded lengths', async () => {
+            await utils.shouldThrow(() => typesParser.Array([], [undefined, 2]));
+            await utils.shouldThrow(() => typesParser.Array([1], [undefined, 2]));
             typesParser.Array([1, 2], [undefined, 2]);
             typesParser.Array([1, 2, 3], [undefined, 2]);
 
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5, 6], [undefined, undefined, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, undefined, 4]));
             typesParser.Array([1, 2, 3, 4], [undefined, undefined, 4]);
             typesParser.Array([1, 2, 3], [undefined, undefined, 4]);
 
-            assert.throws(() => typesParser.Array([], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1, 2], [undefined, 3, 4]));
-            assert.throws(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2], [undefined, 3, 4]));
+            await utils.shouldThrow(() => typesParser.Array([1, 2, 3, 4, 5], [undefined, 3, 4]));
             typesParser.Array([1, 2, 3, 4], [undefined, 3, 4]);
             typesParser.Array([1, 2, 3], [undefined, 3, 4]);
         });
     });
 
     describe('Object', function() {
-        it('should throw error if input has a pair of size 0', () => {
+        it('should throw error if input has a pair of size 0', async () => {
             let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];
             let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput));
+            assert(/It should be a list of/.test(err.message));
         });
 
-        it('should throw error if input has a pair of length more than 2', () => {
+        it('should throw error if input has a pair of length more than 2', async () => {
             let rawInput = [['a', 234],['name', 'Hamid', 'Z'], ['connections', ['b','c','d']]];
             let type = 'Object';
-            assert.throws(() => typesParser[type](rawInput), /It should be a list of/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput));
+            assert(/It should be a list of/.test(err.message));
         });
 
         it('should not throw if input has a pair of length 1', () => {
@@ -94,9 +149,9 @@ describe(utils.suiteName(__filename), function() {
             assert(typesParser[type](rawInput));
         });
 
-        it('should parse structured data to json', () => {
+        it('should parse structured data to json', async () => {
             let rawInput = [['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']], ['children']];
-            let parsedInput = typesParser['Object'](rawInput);
+            let parsedInput = await typesParser.Object(rawInput);
             assert.deepStrictEqual(parsedInput.name, 'Hamid');
         });
 
@@ -111,44 +166,44 @@ describe(utils.suiteName(__filename), function() {
                 };
             }
 
-            it('should not support additional fields', function() {
+            it('should not support additional fields', async function() {
                 const input = [['name', 'Donald Duck'], ['age', 50]];
-                assert.throws(
+                const err = await utils.shouldThrow(
                     () => typesParser.Object(input, [param('name', 'String')]),
-                    /extra fields/
                 );
+                assert(/extra fields/.test(err.message));
             });
 
-            it('should support optional fields', function() {
+            it('should support optional fields', async function() {
                 const input = [];
-                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                const parsedInput = await typesParser.Object(input, [param('name', 'String', true)]);
                 assert.deepEqual(parsedInput, {});
             });
 
-            it('should treat null values as unset', function() {
+            it('should treat null values as unset', async function() {
                 const input = [['name', null]];
-                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                const parsedInput = await typesParser.Object(input, [param('name', 'String', true)]);
                 assert.deepEqual(parsedInput, {});
             });
 
-            it('should treat undefined values as unset', function() {
+            it('should treat undefined values as unset', async function() {
                 const input = [['name', undefined]];
-                const parsedInput = typesParser.Object(input, [param('name', 'String', true)]);
+                const parsedInput = await typesParser.Object(input, [param('name', 'String', true)]);
                 assert.deepEqual(parsedInput, {});
             });
 
-            it('should parse fields', function() {
+            it('should parse fields', async function() {
                 const input = [['age', '50']];
-                const parsedInput = typesParser.Object(input, [param('age', 'Number')]);
+                const parsedInput = await typesParser.Object(input, [param('age', 'Number')]);
                 assert.deepEqual(parsedInput.age, 50);
             });
 
-            it('should support required fields', function() {
+            it('should support required fields', async function() {
                 const input = [['name', 'Donald Duck']];
-                assert.throws(
+                const err = await utils.shouldThrow(
                     () => typesParser.Object(input, [param('name', 'String'), param('age', 'Number')]),
-                    /must contain/
                 );
+                assert(/must contain/.test(err.message));
             });
 
             it('should be optional if no params', function() {
@@ -161,14 +216,14 @@ describe(utils.suiteName(__filename), function() {
     describe('Latitude', function() {
         const type = 'Latitude';
 
-        it('should throw on latitudes less than -90', () => {
+        it('should throw on latitudes less than -90', async () => {
             let rawInput = '-91';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            await assert.rejects(() => typesParser[type](rawInput));
         });
 
-        it('should throw on latitudes more than 90', () => {
+        it('should throw on latitudes more than 90', async () => {
             let rawInput = '91';
-            assert.throws(() => typesParser[type](rawInput), /Latitude/);
+            await assert.rejects(() => typesParser[type](rawInput));
         });
 
     });
@@ -176,14 +231,14 @@ describe(utils.suiteName(__filename), function() {
     describe('Longitude', function() {
         const type = 'Longitude';
 
-        it('should throw on longitude less than -180', () => {
+        it('should throw on longitude less than -180', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            await assert.rejects(() => typesParser[type](rawInput));
         });
 
-        it('should throw on longitude more than 180', () => {
+        it('should throw on longitude more than 180', async () => {
             let rawInput = '181';
-            assert.throws(() => typesParser[type](rawInput), /Longitude/);
+            await assert.rejects(() => typesParser[type](rawInput));
         });
 
     });
@@ -191,35 +246,38 @@ describe(utils.suiteName(__filename), function() {
     describe('BoundedNumber', function() {
         const type = 'BoundedNumber';
 
-        it('should include minimum value', () => {
+        it('should include minimum value', async () => {
             let rawInput = '10';
-            typesParser[type](rawInput, [10, 180]);
+            await typesParser[type](rawInput, [10, 180]);
         });
 
-        it('should not throw if within range', () => {
+        it('should not throw if within range', async () => {
             let rawInput = '-151';
-            typesParser[type](rawInput, [-180, 180]);
+            await typesParser[type](rawInput, [-180, 180]);
         });
 
-        it('should return Number (not string)', () => {
+        it('should return Number (not string)', async () => {
             const input = '10';
-            const value = typesParser[type](input, [0, 21]);
+            const value = await typesParser[type](input, [0, 21]);
             assert.strictEqual(typeof value, 'number');
         });
 
-        it('should throw if less than min', () => {
+        it('should throw if less than min', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, [-180, 180]), /-180/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, [-180, 180]));
+            assert(/-180/.test(err.message));
         });
 
-        it('should throw if more than max', () => {
+        it('should throw if more than max', async () => {
             let rawInput = '181';
-            assert.throws(() => typesParser[type](rawInput, ['-180', '180']), /180/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, ['-180', '180']));
+            assert(/180/.test(err.message));
         });
 
-        it('should throw if below minimum (w/o max)', () => {
+        it('should throw if below minimum (w/o max)', async () => {
             let rawInput = '-181';
-            assert.throws(() => typesParser[type](rawInput, ['-180']), /180/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, ['-180']));
+            assert(/180/.test(err.message));
         });
 
         it('should not print NaN in error if below minimum (w/o max)', () => {
@@ -240,29 +298,32 @@ describe(utils.suiteName(__filename), function() {
     describe('BoundedString', function() {
         const type = 'BoundedString';
 
-        it('should include minimum length', () => {
+        it('should include minimum length', async () => {
             let rawInput = 'a';
-            typesParser[type](rawInput, [1, 180]);
+            await typesParser[type](rawInput, [1, 180]);
         });
 
-        it('should not throw if within range', () => {
+        it('should not throw if within range', async () => {
             let rawInput = 'abc';
-            typesParser[type](rawInput, [2, 180]);
+            await typesParser[type](rawInput, [2, 180]);
         });
 
-        it('should throw if less than min', () => {
+        it('should throw if less than min', async () => {
             let rawInput = 'a';
-            assert.throws(() => typesParser[type](rawInput, [4, 180]), /4/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, [4, 180]));
+            assert(/4/.test(err.message));
         });
 
-        it('should throw if more than max', () => {
+        it('should throw if more than max', async () => {
             let rawInput = 'abcdefg';
-            assert.throws(() => typesParser[type](rawInput, [2, 4]), /4/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, [2, 4]));
+            assert(/4/.test(err.message));
         });
 
-        it('should throw if below minimum (w/o max)', () => {
+        it('should throw if below minimum (w/o max)', async () => {
             let rawInput = 'abc';
-            assert.throws(() => typesParser[type](rawInput, [5]), /5/);
+            const err = await utils.shouldThrow(() => typesParser[type](rawInput, [5]));
+            assert(/5/.test(err.message));
         });
 
         it('should accept if above minimum (w/o max)', () => {
@@ -274,50 +335,72 @@ describe(utils.suiteName(__filename), function() {
     describe('Enum', function() {
         const type = 'Enum';
 
-        it('should take an array of variants and return variant', () => {
+        it('should take an array of variants and return variant', async () => {
             const vars = ['dog', 'Cat', 'puPPy', 'KITTEN'];
-            assert.deepEqual(typesParser[type]('dog', vars), 'dog');
-            assert.deepEqual(typesParser[type]('dOg', vars), 'dog');
-            assert.deepEqual(typesParser[type]('Cat', vars), 'Cat');
-            assert.deepEqual(typesParser[type]('cat', vars), 'Cat');
-            assert.deepEqual(typesParser[type]('puPPy', vars), 'puPPy');
-            assert.deepEqual(typesParser[type]('pupPY', vars), 'puPPy');
-            assert.deepEqual(typesParser[type]('KITTEN', vars), 'KITTEN');
-            assert.deepEqual(typesParser[type]('kitten', vars), 'KITTEN');
+            assert.deepEqual(await typesParser[type]('dog', vars), 'dog');
+            assert.deepEqual(await typesParser[type]('dOg', vars), 'dog');
+            assert.deepEqual(await typesParser[type]('Cat', vars), 'Cat');
+            assert.deepEqual(await typesParser[type]('cat', vars), 'Cat');
+            assert.deepEqual(await typesParser[type]('puPPy', vars), 'puPPy');
+            assert.deepEqual(await typesParser[type]('pupPY', vars), 'puPPy');
+            assert.deepEqual(await typesParser[type]('KITTEN', vars), 'KITTEN');
+            assert.deepEqual(await typesParser[type]('kitten', vars), 'KITTEN');
         });
-        it('should take an object of variant key value pairs and return mapped value', () => {
+        it('should take an object of variant key value pairs and return mapped value', async () => {
             const vars = { dog: 5, Cat: -6, puPPy: 3, KITTEN: ['hello', 'world'] };
-            assert.deepEqual(typesParser[type]('dog', vars), 5);
-            assert.deepEqual(typesParser[type]('dOG', vars), 5);
-            assert.deepEqual(typesParser[type]('Cat', vars), -6);
-            assert.deepEqual(typesParser[type]('CAT', vars), -6);
-            assert.deepEqual(typesParser[type]('puPPy', vars), 3);
-            assert.deepEqual(typesParser[type]('puppy', vars), 3);
-            assert.deepEqual(typesParser[type]('KITTEN', vars), ['hello', 'world']);
-            assert.deepEqual(typesParser[type]('kitteN', vars), ['hello', 'world']);
+            assert.deepEqual(await typesParser[type]('dog', vars), 5);
+            assert.deepEqual(await typesParser[type]('dOG', vars), 5);
+            assert.deepEqual(await typesParser[type]('Cat', vars), -6);
+            assert.deepEqual(await typesParser[type]('CAT', vars), -6);
+            assert.deepEqual(await typesParser[type]('puPPy', vars), 3);
+            assert.deepEqual(await typesParser[type]('puppy', vars), 3);
+            assert.deepEqual(await typesParser[type]('KITTEN', vars), ['hello', 'world']);
+            assert.deepEqual(await typesParser[type]('kitteN', vars), ['hello', 'world']);
         });
     });
 
     describe('Boolean', function() {
         const type = 'Boolean';
 
-        it('should accept true and false (actual bool values)', () => {
-            assert.strictEqual(typesParser[type](true), true);
-            assert.strictEqual(typesParser[type](false), false);
+        it('should accept true and false (actual bool values)', async () => {
+            assert.strictEqual(await typesParser[type](true), true);
+            assert.strictEqual(await typesParser[type](false), false);
         });
-        it('should accept true and false (case insensitive)', () => {
-            assert.strictEqual(typesParser[type]('true'), true);
-            assert.strictEqual(typesParser[type]('TrUe'), true);
-            assert.strictEqual(typesParser[type]('false'), false);
-            assert.strictEqual(typesParser[type]('faLSe'), false);
+        it('should accept true and false (case insensitive)', async () => {
+            assert.strictEqual(await typesParser[type]('true'), true);
+            assert.strictEqual(await typesParser[type]('TrUe'), true);
+            assert.strictEqual(await typesParser[type]('false'), false);
+            assert.strictEqual(await typesParser[type]('faLSe'), false);
+        });
+    });
+
+    describe('SerializedFunction', function() {
+        it('should throw an error if doesnt compile', async function() {
+            await utils.shouldThrow(() => typesParser.SerializedFunction('thisIsNotXml'));
+        });
+
+        it('should return an xml string', async function() {
+            const reportStopping = '<context id="1"><inputs></inputs><variables></variables><script><block collabId="item_204" s="doReport"><l>Stopping!</l></block></script><receiver><sprite name="Sprite" collabId="item_-1" idx="1" x="-450.67597895992844" y="-174.19822319735795" heading="90" scale="1" rotation="1" draggable="true" costume="1" color="80,80,80" pen="tip" id="6"><costumes><list struct="atomic" id="7"></list></costumes><sounds><list struct="atomic" id="8"></list></sounds><variables></variables><blocks></blocks><scripts></scripts></sprite></receiver><origin><ref id="6"></ref></origin><context id="11"><inputs></inputs><variables></variables><receiver><ref id="6"></ref></receiver><origin><ref id="6"></ref></origin></context></context>';
+            const xml = await typesParser.SerializedFunction(reportStopping);
+            assert.equal(typeof xml, 'string');
         });
     });
 
     describe('defineType', function() {
-        before(() => InputTypes.defineType('NewType', input => Math.pow(+input, 2)));
+        before(() => InputTypes.defineType({
+            name: 'NewType',
+            description: 'test',
+            baseType: 'Any',
+            parser: input => Math.pow(+input, 2),
+        }));
 
-        it('should not be able to define the same type twice', function() {
-            assert.throws(() => InputTypes.defineType('NewType', input => input));
+        it('should not be able to define the same type twice', async function() {
+            await utils.shouldThrow(() => InputTypes.defineType({
+                name: 'NewType',
+                description: 'test',
+                baseType: 'Any',
+                parser: input => input,
+            }));
         });
     });
 });

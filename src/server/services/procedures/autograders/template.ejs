@@ -427,6 +427,8 @@
         const {threads} = ide.stage;
 
         return new Promise((resolve, reject) => {
+            CustomBlockHelpers.removeProcess(block);
+
             const process = threads.startProcess(
                 block,
                 ide.stage,
@@ -441,9 +443,26 @@
             const handleError = process.handleError;
             process.handleError = function(error) {
                 reject(error);
-                return handleError.call(this, ...args);
+                return handleError.call(this, ...arguments);
             };
+            setTimeout(() => {
+                const isRunning = threads.processes.includes(process);
+                if (isRunning) {
+                    const {topBlock} = process;
+                    process.handleError(new Error('Timeout Exceeded'), topBlock);
+                }
+            }, 2000);
         });
+    };
+
+    CustomBlockHelpers.removeProcess = block => {
+        const {threads} = ide.stage;
+        const oldProcess = threads.findProcess(block.topBlock(), ide.stage);
+        if (oldProcess) {
+            oldProcess.stop();
+            const index = threads.processes.indexOf(oldProcess);
+            threads.processes.splice(index, 1);
+        }
     };
 
     class SimpleCustomBlockTestCase extends TestCase {

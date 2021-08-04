@@ -88,6 +88,8 @@ const Device = function (mac_addr, ip4_addr, ip4_port, aServer) {
     this.sensorPacketTimestamp = -1; // timestamp of last sensor packet
 
     this.controlCount = 0; // counter used to generate unique custom control ids
+
+    this.requestDisconnect = false; // when set to true, _heartbeat will delete us (in phone-iot.js)
 };
 
 Device.prototype.getPassword = function (clientId) {
@@ -680,7 +682,7 @@ Device.prototype.getOrientation = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getCompassHeading = async function (device, args, clientId) {
     return (await this.getOrientation(device, args, clientId))[0];
@@ -736,7 +738,7 @@ Device.prototype.getGyroscope = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
     
-    return common.scale(throwIfErr(await response).vals, 180 / Math.PI);
+    return throwIfErr(await response).vals;
 };
 Device.prototype.getRotation = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('rotation', clientId);
@@ -1018,10 +1020,21 @@ Device.prototype.onMessage = function (message) {
             this.setEncryptionKey([]);
             this.resetRates();
         }
-        if (message.length > 11) {
-            const rsp = Buffer.alloc(1);
-            rsp.write('I', 0, 1);
-            this.sendToDevice(rsp);
+        if (message.length === 12) {
+            if (message[11] === 0) { // send conn ack
+                const rsp = Buffer.alloc(2);
+                rsp.write('I', 0, 1);
+                rsp[1] = 1;
+                this.sendToDevice(rsp);
+            }
+            else if (message[11] === 86) { // disconnect (and send disconn ack)
+                this.requestDisconnect = true;
+
+                const rsp = Buffer.alloc(2);
+                rsp.write('I', 0, 1);
+                rsp[1] = 87;
+                this.sendToDevice(rsp);
+            }
         }
     }
     else if (command === 'Q') {

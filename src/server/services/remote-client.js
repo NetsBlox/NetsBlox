@@ -1,4 +1,4 @@
-const {SendMessage, SendMessageToRoom, SendMessageToRole} = require('./messages');
+const {SendMessageToClient, SendMessage, SendMessageToRoom, SendMessageToRole} = require('./messages');
 const {Dealer} = require('zeromq');
 const sender = new Dealer();
 sender.connect('tcp://127.0.0.1:' + (process.env.NETSBLOX_API_PORT || '1357'));
@@ -37,13 +37,17 @@ class RemoteClient {
     }
 
     async sendMessage(type, contents={}) {
-        await channel.trySend(new SendMessage(
+        await channel.trySend(new SendMessageToClient(
             this.projectId,
             this.roleId,
             this.clientId,
             type,
             contents
         ));
+    }
+
+    async sendMessageTo(address, type, contents={}) {
+        await channel.trySend(new SendMessage(this.projectId, this.roleId, address, type, contents));
     }
 
     async sendMessageToRole(roleId, type, contents={}) {
