@@ -9,6 +9,7 @@ const LineTypes = [
     'steps',
     'fsteps',
     'boxes',
+    'boxplot',
     // The following gnuplot types are unsupported:
     // histeps, errorbars, labels, xerrorbars, yerrorbars,
     // xyerrorbars, errorlines, xerrorlines, yerrorlines, xyerrorlines,
