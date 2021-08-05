@@ -11,7 +11,7 @@
 const types = require('../../input-types');
 
 const OFFENSE_Data_Controller_OPTIONS = {
-    'aggravated-assault': 'aggravated-assault',
+    'aggravated assault': 'aggravated-assault',
     'all other larceny': 'all-other-larceny',
     'all other offenses': 'all-other-offenses',
     'animal cruelty': 'animal-cruelty',
@@ -91,7 +91,7 @@ const OFFENSE_Data_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseData',
-    description: 'Type of information to get offense.',
+    description: 'NIBRS Offense Count Endpoint',
     baseType: 'Enum',
     baseParams: OFFENSE_Data_Controller_OPTIONS,
 });
@@ -106,7 +106,7 @@ const OFFENSE_Supp_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseSupplemental',
-    description: 'Type of information to get offense.',
+    description: 'Supplemental Data Count Endpoint',
     baseType: 'Enum',
     baseParams: OFFENSE_Supp_Controller_OPTIONS,
 });
@@ -163,7 +163,7 @@ const OFFENSE_Arrest_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseArrest',
-    description: 'Type of information to get offense.',
+    description: 'Arrest Demographic Data',
     baseType: 'Enum',
     baseParams: OFFENSE_Arrest_Controller_OPTIONS,
 });
@@ -183,7 +183,7 @@ const OFFENSE_Victim_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseVictim',
-    description: 'Type of information to get offense.',
+    description: 'NIBRS Victim Demographic Count Endpoint',
     baseType: 'Enum',
     baseParams: OFFENSE_Victim_Controller_OPTIONS,
 });
@@ -201,9 +201,23 @@ const OFFENSE_Data_Variable_OPTIONS={
 
 types.defineType({
     name: 'OffenseDataOpt',
-    description: 'Type of information to get offense.',
+    description: 'Type of information to get options for offense data.',
     baseType: 'Enum',
     baseParams: OFFENSE_Data_Variable_OPTIONS,
+});
+
+const Supplemental_Data_OPTIONS={
+    'MVT Recovered': 'MVT_RECOVERED',
+    'Offense':'OFFENSE',
+    'Offense Sub Category':'OFFENSE_SUB_CATEGORY',
+    'Larceny Type': 'LARCENY_TYPE'
+};
+
+types.defineType({
+    name: 'SuppDataOpt',
+    description: 'Type of information to get options for supplemental data.',
+    baseType: 'Enum',
+    baseParams: Supplemental_Data_OPTIONS,
 });
 
 const ApiConsumer = require('../utils/api-consumer');
@@ -215,7 +229,7 @@ ApiConsumer.setRequiredApiKey(Crime, DataDotGovKey);
  * Gets the number of offenses for a specific instance
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {OffenseDataOpt}category variable affecting crimes including examples: count, weapons, etc. 
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to national offense count
  */
 Crime.nationalOffenseCount = async function (offense,category) {
     return await this._requestData({path:`api/data/nibrs/${offense}/offense/national/${category}`, queryString:`api_key=${this.apiKey.value}`});
@@ -226,7 +240,7 @@ Crime.nationalOffenseCount = async function (offense,category) {
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {String} regionName indicates in which region the crime has occurred
  * @param {OffenseDataOpt} category variable affecting crimes including examples: count, weapons, etc.
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to the regional offense count
  */
 Crime.regionalOffenseCount = async function (offense,regionName, category) {
     return await this._requestData({path:`api/data/nibrs/${offense}/offense/regions/${regionName}/${category}`, queryString:`api_key=${this.apiKey.value}`});
@@ -237,7 +251,7 @@ Crime.regionalOffenseCount = async function (offense,regionName, category) {
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {String} stateAbbr location of the crime in which state
  * @param {OffenseDataOpt} variable variable affecting crimes including examples: count, weapons, etc
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to the state offense count
  */
 Crime.stateOffenseCount = async function (offense, stateAbbr, variable) {
     return await this._requestData({path:`api/data/nibrs/${offense}/offense/states/${stateAbbr}/${variable}`, queryString:`api_key=${this.apiKey.value}`});
@@ -246,10 +260,10 @@ Crime.stateOffenseCount = async function (offense, stateAbbr, variable) {
 /**
  * Gets the number of supplemental offenses nationwise
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
- * @param {Enum<'MVT_RECOVERED','OFFENSE','OFFENSE_SUB_CATEGORY','LARCENY_TYPE'>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {SuppDataOpt} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to national supplemental count
  */
 Crime.nationalSupplementalCount = async function (offense, category, startYear, endYear) {
     if (endYear<=startYear) {
@@ -263,10 +277,10 @@ Crime.nationalSupplementalCount = async function (offense, category, startYear, 
  * Gets the number of supplemental offenses for a state
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
  * @param {String} stateAbbr location of the crime in a state
- * @param {Enum<'MVT_RECOVERED','OFFENSE','OFFENSE_SUB_CATEGORY','LARCENY_TYPE'>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {SuppDataOpt>} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to state supplemental count
  */
 Crime.stateSupplementalCount = async function (offense, stateAbbr, category, startYear, endYear) {
     if (endYear<=startYear) {
@@ -283,7 +297,7 @@ Crime.stateSupplementalCount = async function (offense, stateAbbr, category, sta
  * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to national arrest count
  */
 Crime.nationalArrestCount = async function (offense, category, startYear, endYear) {
     if (endYear<=startYear) {
@@ -301,7 +315,7 @@ Crime.nationalArrestCount = async function (offense, category, startYear, endYea
  * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to region arrest count
  */
 Crime.regionArrestCount = async function (regionName, offense, category, startYear, endYear) {
     if (endYear<=startYear) {
@@ -315,10 +329,10 @@ Crime.regionArrestCount = async function (regionName, offense, category, startYe
 /**
  * Gets the number of arrests(for a particular offense) for the state in a certain time period
  * @param {String} stateAbbr location of the state the crime occurred
- * @param {Enum<violent_crime,propery_crime,drug,human_trafficking,gambling,juvenile,society,all>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to state arrest count
  */
 Crime.stateArrestCount = async function (stateAbbr, category, startYear, endYear) {
     if (endYear<=startYear) {
@@ -333,7 +347,7 @@ Crime.stateArrestCount = async function (stateAbbr, category, startYear, endYear
  * Gets the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to national victim count
  */
 Crime.nationalVictimCount = async function (offense, category) {
     return await this._requestData({path:`api/nibrs/${offense}/victim/national/${category}`, queryString:`api_key=${this.apiKey.value}`});
@@ -344,7 +358,7 @@ Crime.nationalVictimCount = async function (offense, category) {
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} regionName location of the region the crime occurred
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to regional victim count
  */
 Crime.regionalVictimCount = async function (offense, regionName, category) {
     return await this._requestData({path:`api/nibrs/${offense}/victim/regions/${regionName}/${category}`, queryString:`api_key=${this.apiKey.value}`});
@@ -355,7 +369,7 @@ Crime.regionalVictimCount = async function (offense, regionName, category) {
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} stateAbbr state the crime occurred
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
- * @returns {Object} structured data representing the location of the address
+ * @returns {Object} data related to state victim count
  */
  Crime.stateVictimCount = async function (offense, stateAbbr, category) {
     return await this._requestData({path:`api/nibrs/${offense}/victim/states/${stateAbbr}/${category}`, queryString:`api_key=${this.apiKey.value}`});
