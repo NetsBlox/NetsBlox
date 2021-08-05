@@ -39,9 +39,10 @@ const TurnBased = require('../utils/turn-based');
 const BattleshipConstants = require('./constants');
 const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
 const SHIPS = BattleshipConstants.SHIPS;
-const DIRS = BattleshipConstants.DIRS;
 const Utils = require('../utils');
 const Projects = require('../../../storage/projects');
+const {registerTypes} = require('./types');
+registerTypes();
 
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
@@ -100,10 +101,10 @@ Battleship.prototype.start = function() {
 
 /**
  * Place a ship on the board
- * @param {String} ship Ship type to place
+ * @param {Ship} ship Ship type to place
  * @param {BoundedNumber<1,100>} row Row to place ship in
  * @param {BoundedNumber<1,100>} column Column to place ship in
- * @param {String} facing Direction to face
+ * @param {Direction} facing Direction to face
  * @returns {Boolean} If piece was placed
  */
 Battleship.prototype.placeShip = function(ship, row, column, facing) {
@@ -114,25 +115,17 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     column--;
 
     if (this._state._STATE !== BattleshipConstants.PLACING) {
-        return 'Cannot move ships after game has started';
-    }
-
-    if (!DIRS[facing]) {
-        return `Invalid direction "${facing}"`;
-    }
-
-    if (!len) {  // no ship found
-        return `Invalid ship "${ship}"`;
+        throw new Error('Cannot move ships after game has started');
     }
 
     // correct for 1 indexing
-    var dr = isHorizontal(facing) ? 0 : DIRS[facing]*len-1,
-        dc = !isHorizontal(facing) ? 0 : DIRS[facing]*len-1,
+    var dr = isHorizontal(facing) ? 0 : facing*len-1,
+        dc = !isHorizontal(facing) ? 0 : facing*len-1,
         endRow = row + dr,
         endCol = column + dc;
 
     if (!checkRowCol(row, column) || !checkRowCol(endRow, endCol)) {
-        return `Invalid position (${row}, ${column}) to (${endRow},${endCol})`;
+        throw new Error(`Invalid position (${row}, ${column}) to (${endRow},${endCol})`);
     }
 
     // Create a board if none exists
@@ -142,8 +135,11 @@ Battleship.prototype.placeShip = function(ship, row, column, facing) {
     }
 
     // Place the ship
-    var result = this._state._boards[role].placeShip(ship, row, column, endRow, endCol);
-    return result || 'Could not place ship - colliding with another ship!';
+    const result = this._state._boards[role].placeShip(ship, row, column, endRow, endCol);
+    if (!result) {
+        throw new Error('Could not place ship - colliding with another ship!');
+    }
+    return result;
 };
 
 /**
@@ -245,7 +241,7 @@ Battleship.prototype.remainingShips = function(roleId) {
 
 /**
  * Get list of ship types
- * @returns {Array<String>} Types of ships
+ * @returns {Array<Ship>} Types of ships
  */
 Battleship.prototype.allShips = function() {
     return Object.keys(SHIPS);
@@ -253,7 +249,7 @@ Battleship.prototype.allShips = function() {
 
 /**
  * Get length of a ship type
- * @param {String} ship Type of ship
+ * @param {Ship} ship Type of ship
  * @returns {Integer} Length of ship type
  */
 Battleship.prototype.shipLength = function(ship) {
