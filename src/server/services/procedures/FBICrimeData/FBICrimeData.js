@@ -91,7 +91,7 @@ const OFFENSE_Data_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseData',
-    description: 'NIBRS Offense Count Endpoint',
+    description: 'NIBRS Offense Count',
     baseType: 'Enum',
     baseParams: OFFENSE_Data_Controller_OPTIONS,
 });
@@ -106,7 +106,7 @@ const OFFENSE_Supp_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseSupplemental',
-    description: 'Supplemental Data Count Endpoint',
+    description: 'Supplemental Data Count',
     baseType: 'Enum',
     baseParams: OFFENSE_Supp_Controller_OPTIONS,
 });
@@ -183,7 +183,7 @@ const OFFENSE_Victim_Controller_OPTIONS = {
 
 types.defineType({
     name: 'OffenseVictim',
-    description: 'NIBRS Victim Demographic Count Endpoint',
+    description: 'NIBRS Victim Demographic Count',
     baseType: 'Enum',
     baseParams: OFFENSE_Victim_Controller_OPTIONS,
 });
@@ -294,7 +294,7 @@ Crime.stateSupplementalCount = async function (offense, stateAbbr, category, sta
 /**
  * Gets the number of arrests for the nation in a certain time period
  * @param {OffenseArrest} offense the type of breach of a law or rule
- * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
  * @returns {Object} data related to national arrest count
@@ -312,7 +312,7 @@ Crime.nationalArrestCount = async function (offense, category, startYear, endYea
  * Gets the number of arrests for the nation in a certain time period
  * @param {String} regionName location of the region the crime occurred
  * @param {OffenseArrest} offense the type of breach of a law or rule
- * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
  * @returns {Object} data related to region arrest count
@@ -329,7 +329,7 @@ Crime.regionArrestCount = async function (regionName, offense, category, startYe
 /**
  * Gets the number of arrests(for a particular offense) for the state in a certain time period
  * @param {String} stateAbbr location of the state the crime occurred
- * @param {Enum<male,female,offense,race,monthly>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
  * @returns {Object} data related to state arrest count
@@ -346,7 +346,7 @@ Crime.stateArrestCount = async function (stateAbbr, category, startYear, endYear
 /**
  * Gets the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
- * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
  * @returns {Object} data related to national victim count
  */
 Crime.nationalVictimCount = async function (offense, category) {
@@ -357,7 +357,7 @@ Crime.nationalVictimCount = async function (offense, category) {
  * Gets the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} regionName location of the region the crime occurred
- * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
  * @returns {Object} data related to regional victim count
  */
 Crime.regionalVictimCount = async function (offense, regionName, category) {
@@ -368,7 +368,7 @@ Crime.regionalVictimCount = async function (offense, regionName, category) {
  * Gets the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} stateAbbr state the crime occurred
- * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable affecting crimes including examples: count, weapons, etc.
+ * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
  * @returns {Object} data related to state victim count
  */
  Crime.stateVictimCount = async function (offense, stateAbbr, category) {
