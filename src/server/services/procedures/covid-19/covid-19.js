@@ -1,8 +1,10 @@
 /**
  * The COVID-19 Service provides access to the 2019-nCoV dataset compiled by Johns Hopkins University.
  * This dataset includes deaths, confirmed cases, and recoveries related to the COVID-19 pandemic.
+ * Vaccination data is provided by Our World in Data.
  *
  * For more information, check out https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases
+ * and https://github.com/owid/covid-19-data/tree/master/public/data/vaccinations.
  *
  * @service
  * @category Science
@@ -10,7 +12,7 @@
 const _ = require('lodash');
 const getServiceStorage = require('../../advancedStorage');
 const vaccination = require('./vaccination/vaccination-data-source');
-const VACCINE_CATEGORIES = require('./vaccination/vaccine-categories');
+const {registerTypes, VaccineCategories} = require('./types');
 const schema = {
     date: Date,
     country: String,
@@ -29,6 +31,7 @@ const Data = require('./data');
 const logger = require('../utils/logger')('covid-19');
 COVID19._data = new Data(logger, COVID19Storage);
 const {DEATH, CONFIRMED, RECOVERED} = COVID19._data.types;
+registerTypes();
 
 /**
  * Get number of confirmed cases of COVID-19 by date for a specific country and state.
@@ -118,7 +121,7 @@ COVID19.getVaccinationCountries = async function() {
  * @returns {Array<String>}
  */
 COVID19.getVaccinationCategories = function() {
-    return VACCINE_CATEGORIES;
+    return VaccineCategories;
 };
 
 COVID19._getVaccineData = async function(country, state, category) {
@@ -152,9 +155,9 @@ COVID19._getVaccineData = async function(country, state, category) {
  * You can further filter your data by specifying ``startDate`` and ``endDate``.
  *
  * @category Vaccination
- * @param {String} country name of the country to get data for
+ * @param {String} country name of the country for which to get data
  * @param {String=} state name of the state to get data for (if the country is ``United States``)
- * @param {String=} category the category of data to pull (see ``getVaccinationCategories``), or nothing to get all data
+ * @param {VaccineCategory=} category the category of data to pull (see ``getVaccinationCategories``), or nothing to get all data
  * @param {String=} startDate earliest date to include in result (mm/dd/yyyy)
  * @param {String=} endDate latest date to include in result (mm/dd/yyyy)
  * @returns {Array} the requested data
