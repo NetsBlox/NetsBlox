@@ -6,7 +6,7 @@ describe(utils.suiteName(__filename), function() {
         ['getCO2Trend', ['startyear', 'endyear']],
     ]);
     const assert = require('assert');
-    const service = require('../../../../../src/server/services/procedures/mauna-loa-co2-data/mauna-loa-co2-data');
+    const service = utils.reqSrc('services/procedures/mauna-loa-co2-data/mauna-loa-co2-data');
 
     function checkResult(res) {
         assert(Array.isArray(res));
