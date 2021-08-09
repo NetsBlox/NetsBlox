@@ -5,7 +5,7 @@ const axios = require('axios');
 const qs = require('qs');
 const {handleErrors, setUsername} = require('../../../api/rest/utils');
 const {LoginRequired, RequestError} = require('../../../api/core/errors');
-const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
+const {LOGIN_URL} = process.env;
 const GetStorage = require('./storage');
 const _ = require('lodash');
 const fs = require('fs');
@@ -14,6 +14,7 @@ const AmazonLoginTemplate = _.template(fs.readFileSync(path.join(__dirname, 'log
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const h = require('./helpers');
+const logger = require('../utils/logger')('alexa:routes');
 
 const router = express();
 const parseCookies = cookieParser();
@@ -24,8 +25,8 @@ router.get('/login.html', bodyParser.json(), parseCookies, setUsername, handleEr
     const isLoggedIn = !!username;
     if (!isLoggedIn) {
         if (LOGIN_URL) {
-            const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-            const url = baseUrl + req.originalUrl;
+            const baseUrl = h.getServerURL();
+            const url = `${baseUrl}/services/routes/alexa/login.html`;
             res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
             return;
         } else {
@@ -98,9 +99,8 @@ router.put('/tokens', bodyParser.json(), parseCookies, setUsername,
     })
 );
 router.post('/',
-    bodyParser.text({type: '*/*'}),
     handleErrorsInAlexa(async (req, res) => {
-        const reqData = JSON.parse(req.body);
+        const reqData = req.body;
         const {accessToken} = reqData.session.user;
         const token = await OAuth.getToken(accessToken);
         const {username} = token;
@@ -112,6 +112,7 @@ router.post('/',
             const skillData = await h.getSkillData(skillId);
             const skill = new AlexaSkill(skillData);
             if (!skill.hasIntent(intent.name)) {
+                logger.warn(`Missing "${intent.name}" intent: ${skillId}`);
                 return res.json(speak(`Could not find ${intent.name}. Perhaps you need to update the Alexa Skill.`));
             }
 
@@ -162,7 +163,9 @@ function handleErrorsInAlexa(fn) {
             await fn(...arguments);
         } catch (err) {
             if (err instanceof RequestError) {
-                res.json(speak(`An error occurred. ${err.message}`));
+                return res.json(speak(`An error occurred. ${err.message}`));
+            } else {
+                logger.error(err);
             }
             throw err;
         }

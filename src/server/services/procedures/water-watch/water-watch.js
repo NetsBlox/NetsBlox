@@ -124,7 +124,7 @@ waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLong
 
 /**
  * Stop sending messages from this service.
- * @returns {Number} Number of messages stopped.
+ * @returns {Integer} Number of messages stopped.
  */
 waterwatch.stop = function(){
     return this._stopMsgs();

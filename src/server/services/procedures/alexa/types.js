@@ -63,6 +63,17 @@ const SkillCategories = [
 ];
 
 const SlotTypes = [
+    // Numbers, Dates, and Times
+    'AMAZON.DATE',
+    'AMAZON.DURATION',
+    'AMAZON.FOUR_DIGIT_NUMBER',
+    'AMAZON.NUMBER',
+    'AMAZON.Ordinal',
+    'AMAZON.PhoneNumber',
+    'AMAZON.TIME',
+    // Phrases
+    'AMAZON.SearchQuery',
+    // List types
     'AMAZON.Actor',
     'AMAZON.AdministrativeArea',
     'AMAZON.AggregateRating',
@@ -159,7 +170,11 @@ const SlotTypes = [
     'AMAZON.WrittenCreativeWorkType',
 ];
 
+let _registeredTypes = false;
 function registerTypes() {
+    if (_registeredTypes) return;
+    _registeredTypes = true;
+
     const intentParams = [
         {
             name: 'name',
@@ -180,16 +195,26 @@ function registerTypes() {
             type: {name: 'SerializedFunction'}
         },
     ];
-    types.defineType('Intent', async input => {
-        const intent = await types.parse.Object(input, intentParams);
-        const isCustomIntent = !intent.name.startsWith('AMAZON.');
-        if (isCustomIntent && !intent.utterances) {
-            throw new Error('Custom intents must contain utterances.');
-        }
-        return intent;
+    types.defineType({
+        name: 'Intent',
+        description: 'An object that holds information about an Alexa intent.',
+        baseType: 'Object',
+        baseParams: intentParams,
+        parser: intent => {
+            const isCustomIntent = !intent.name.startsWith('AMAZON.');
+            if (isCustomIntent && !intent.utterances) {
+                throw new Error('Custom intents must contain utterances.');
+            }
+            return intent;
+        },
     });
 
-    types.defineType('SlotType', input => types.parse.Enum(input, SlotTypes, undefined, 'SlotType'));
+    types.defineType({
+        name: 'SlotType',
+        description: 'The type of slot to use in an Alexa skill.',
+        baseType: 'Enum',
+        baseParams: SlotTypes,
+    });
     const slotParams = [
         {
             name: 'name',
@@ -200,8 +225,18 @@ function registerTypes() {
             type: {name: 'SlotType'},
         }
     ];
-    types.defineType('Slot', input => types.parse.Object(input, slotParams, undefined));
-    types.defineType('SkillCategory', input => types.parse.Enum(input, SkillCategories, undefined, 'SkillCategory'));
+    types.defineType({
+        name: 'Slot',
+        description: 'Structured data about a slot in an Alexa skill.',
+        baseType: 'Object',
+        baseParams: slotParams,
+    });
+    types.defineType({
+        name: 'SkillCategory',
+        description: 'A category description for an Alexa skill.',
+        baseType: 'Enum',
+        baseParams: SkillCategories,
+    });
 }
 
 module.exports = {

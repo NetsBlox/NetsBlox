@@ -77,7 +77,7 @@ Hangman.prototype.isWordGuessed = function() {
 
 /**
  * Get number of wrong guesses made
- * @returns {Number} Number of wrong guesses
+ * @returns {Integer} Number of wrong guesses
  */
 Hangman.prototype.getWrongCount = function() {
     logger.trace('wrong count is '+this._state.wrongGuesses);

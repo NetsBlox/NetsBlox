@@ -1,5 +1,5 @@
 /**
- * The Twitter Service provides access to real-time and historical stock price data.
+ * The Twitter Service provides access to posts and profile information from Twitter.
  * For more information, check out https://twitter.com.
  *
  * Terms of use: https://twitter.com/en/tos
@@ -27,7 +27,7 @@ function rateCheck(response, res) {
 /**
  * Get tweets from a user
  * @param {String} screenName Name of user
- * @param {Number} count Number of tweets to retrieve
+ * @param {Integer} count Number of tweets to retrieve
  * @returns {Array} Tweets from user
  */
 TwitterConsumer.recentTweets = function (screenName, count) {
@@ -53,7 +53,7 @@ TwitterConsumer.recentTweets = function (screenName, count) {
 /**
  * Get the number of users following someone on Twitter
  * @param {String} screenName Name of user
- * @returns {Number} Number of followers user has
+ * @returns {Integer} Number of followers user has
  */
 TwitterConsumer.followers = function (screenName) {
     return this._sendAnswer({
@@ -75,7 +75,7 @@ TwitterConsumer.followers = function (screenName) {
 /**
  * Get the number of tweets someone has made on Twitter
  * @param {String} screenName Name of user
- * @returns {Number} Number of tweets user has
+ * @returns {Integer} Number of tweets user has
  */
 TwitterConsumer.tweets = function (screenName) {
     return this._sendAnswer({
@@ -99,7 +99,7 @@ TwitterConsumer.tweets = function (screenName) {
 /**
  * Searches the most recent tweets
  * @param {String} keyword Keyword to search for
- * @param {Number} count Number of tweets to retrieve
+ * @param {Integer} count Number of tweets to retrieve
  * @returns {Array} Most recent tweets matching keyword
  */
 TwitterConsumer.search = function (keyword, count) {
@@ -155,7 +155,7 @@ TwitterConsumer.tweetsPerDay = function (screenName) {
 /**
  * Get the most recent tweets that a user has favorited
  * @param {String} screenName Name of user
- * @param {Number} count Number of tweets to retrieve
+ * @param {Integer} count Number of tweets to retrieve
  * @returns {Array} Most recent tweets that a user has favorited
  */
 TwitterConsumer.favorites = function (screenName, count) {
@@ -182,7 +182,7 @@ TwitterConsumer.favorites = function (screenName, count) {
 /**
  * Get the number of favorites someone has on Twitter
  * @param {String} screenName Name of user
- * @returns {Number} Number of favorites user has
+ * @returns {Integer} Number of favorites user has
  */
 TwitterConsumer.favoritesCount = function (screenName) {
     return this._sendAnswer({

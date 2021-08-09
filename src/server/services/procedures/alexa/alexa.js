@@ -13,7 +13,6 @@
  * intent.
  *
  * @service
- * @alpha
  */
 const Alexa = {};
 const AlexaSkill = require('./skill');
@@ -46,8 +45,7 @@ Alexa.createSkill = async function(configuration) {
     configuration = h.getConfigWithDefaults(configuration);
     const stage = 'development';
 
-    const {vendors} = (await smapiClient.getVendorListV1());
-    const vendorId = vendors[0].id;
+    const vendorId = await h.getVendorID(smapiClient);
 
     const manifest = schemas.manifest(this.caller.username, configuration);
     const interactionModel = schemas.interactionModel(configuration);
@@ -62,6 +60,9 @@ Alexa.createSkill = async function(configuration) {
         );
         await smapiClient.updateAccountLinkingInfoV1(skillId, stage, {accountLinkingRequest});
     } catch (err) {
+        if (skillId) {
+            await smapiClient.deleteSkillV1(skillId);
+        }
         throw h.clarifyError(err);
     }
 
@@ -94,6 +95,9 @@ Alexa.invokeSkill = async function(id, utterance) {
     const smapiClient = await h.getAPIClient(this.caller);
     try {
         const {selectedIntent} = await smapiClient.profileNluV1({utterance}, id, stage, locale);
+        if (!selectedIntent) {
+            throw new Error('No matching intent found. Please try again later as the model may still be building.');
+        }
         const {name, slots} = selectedIntent;
 
         return await skill.invokeIntent(name, slots);
@@ -166,9 +170,7 @@ Alexa.updateSkill = async function(id, configuration) {
     const smapiClient = await h.getAPIClient(this.caller);
     configuration = h.getConfigWithDefaults(configuration);
 
-    const {vendors} = (await smapiClient.getVendorListV1());
-    const vendorId = vendors[0].id;
-
+    const vendorId = await h.getVendorID(smapiClient);
     const manifest = schemas.manifest(vendorId, configuration);
     const interactionModel = schemas.interactionModel(configuration);
     try {
@@ -199,6 +201,7 @@ Alexa.getSkillCategories = function() {
 
 /**
  * Get a list of all valid slot types that can be added to an intent.
+ * For more information, check out https://developer.amazon.com/en-US/docs/alexa/custom-skills/slot-type-reference.html
  */
 Alexa.getSlotTypes = function() {
     return SlotTypes;

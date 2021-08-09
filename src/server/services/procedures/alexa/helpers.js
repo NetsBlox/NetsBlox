@@ -6,6 +6,7 @@ const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 const GetStorage = require('./storage');
 const OAuth = require('../../../api/core/oauth');
 const OAUTH_CLIENT_NAME = 'Amazon Alexa';
+const assert = require('assert');
 
 let alexaClientID;
 async function registerOAuthClient() {
@@ -60,6 +61,12 @@ const getAPIClient = async function(caller) {
         .client();
 };
 
+const getVendorID = async function (smapiClient) {
+    const {vendors} = (await smapiClient.getVendorListV1());
+    assert(vendors.length, 'Developer account required.');
+    return vendors[0].id;
+};
+
 function sleep(duration) {
     return new Promise(resolve => setTimeout(resolve, duration));
 }
@@ -102,7 +109,10 @@ async function retryWhile(fn, testFn) {
             return await fn();
         } catch (err) {
             const duration = Date.now() - startTime;
-            retry = testFn(err) && duration < maxWait;
+            if (!testFn(err)) {
+                throw err;
+            }
+            retry = duration < maxWait;
             await sleep(.5 * seconds);
         }
     } while (retry);
@@ -134,4 +144,5 @@ module.exports = {
     retryWhile,
     getImageFromCostumeXml,
     textBtwn,
+    getVendorID,
 };

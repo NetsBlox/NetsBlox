@@ -156,7 +156,7 @@ const AXES_REGEX = /(x2|y2|x|y|z|cb)/g;
 function isValidAxesString(axes) {
     return (axes.match(AXES_REGEX) || []).reduce((a, v) => a + v.length, 0) === axes.length;
 }
-function parseLogscale(options) {
+async function parseLogscale(options) {
     const val = options.logscale;
     if (!val) return undefined;
 
@@ -168,7 +168,7 @@ function parseLogscale(options) {
         if (typeof axes !== 'string') throw Error('logscale axes was not a string (text)');
         if (base !== undefined) {
             try {
-                base = InputTypes.parse.BoundedNumber(base, [1]);
+                base = await InputTypes.parse.BoundedNumber(base, [1]);
             } catch (err) {
                 throw Error(`Invalid logscale value: ${err.message}`);
             }
@@ -181,7 +181,7 @@ function parseLogscale(options) {
     return res;
 }
 
-chart._parseDrawInputs = function(lines, options){
+chart._parseDrawInputs = async function(lines, options){
     options = processOptions(options, defaults);
 
     // prepare and check for errors in data
@@ -218,7 +218,7 @@ chart._parseDrawInputs = function(lines, options){
     const grid = GRID_TYPES[options.grid];
     if (grid !== undefined) opts.grid = grid;
 
-    const logscale = parseLogscale(options);
+    const logscale = await parseLogscale(options);
     if (logscale !== undefined) opts.logscale = logscale;
 
     // if a specific number of ticks are requested
@@ -258,8 +258,8 @@ chart._parseDrawInputs = function(lines, options){
  * 
  * @returns {Image} the generated chart
  */
-chart.draw = function(lines, options={}){
-    const [data, parsedOptions] = this._parseDrawInputs(lines, options);
+chart.draw = async function(lines, options={}){
+    const [data, parsedOptions] = await this._parseDrawInputs(lines, options);
     try {
         var chartStream = gnuPlot.draw(data, parsedOptions);
     } catch (e) {

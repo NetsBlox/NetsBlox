@@ -9,6 +9,7 @@ const LineTypes = [
     'steps',
     'fsteps',
     'boxes',
+    'boxplot',
     // The following gnuplot types are unsupported:
     // histeps, errorbars, labels, xerrorbars, yerrorbars,
     // xyerrorbars, errorlines, xerrorlines, yerrorlines, xyerrorlines,
@@ -18,5 +19,10 @@ const LineTypes = [
 ];
 
 module.exports = function registerTypes() {
-    types.defineType('LineType', input => types.parse.Enum(input, LineTypes, undefined, 'LineType'));
+    types.defineType({
+        name: 'LineType',
+        description: 'The style of line to use for Chart plots.',
+        baseType: 'Enum',
+        baseParams: LineTypes
+    });
 };

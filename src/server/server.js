@@ -37,6 +37,7 @@ const assert = require('assert');
 const axios = require('axios');
 const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
+const NetsBloxAddress = require('./netsblox-address');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -87,17 +88,21 @@ Server.prototype.configureRoutes = async function(servicesURL) {
                 data: req.body,
                 maxRedirects: 0,
             };
+            const passResponse = proxyResp => {
+                const {status, data, headers} = proxyResp;
+                Object.entries(headers).forEach(header => {
+                    const [field, value] = header;
+                    res.set(field, value);
+                });
+                res.status(status);
+                return data.pipe(res);
+            };
+
             return axios(opts)
-                .then(proxyResponse => proxyResponse.data.pipe(res))
+                .then(passResponse)
                 .catch(err => {
                     if (err.response) {
-                        const {status, data, headers} = err.response;
-                        Object.entries(headers).forEach(header => {
-                            const [field, value] = header;
-                            res.set(field, value);
-                        });
-                        res.status(status);
-                        return data.pipe(res);
+                        passResponse(err.response);
                     } else {
                         this._logger.warn(`Error occurred on call to ${url}: ${err}`);
                         return res.sendStatus(500);
@@ -437,7 +442,19 @@ class ServicesPrivateAPI {
         this.messageHandlers = {};
         this.logger = logger.fork('services');
 
-        this.on(Messages.SendMessage, message => {
+        this.on(Messages.SendMessage, async message => {
+            const {target, projectId, roleId} = message;
+            const address = await NetsBloxAddress.new(target, projectId, roleId);
+            const states = address.resolve();
+            const clients = states
+                .flatMap(state => {
+                    const [projectId, roleId] = state;
+                    return NetworkTopology.getClientsAt(projectId, roleId);
+                });
+
+            clients.forEach(client => client.sendMessage(message.type, message.contents));
+        });
+        this.on(Messages.SendMessageToClient, message => {
             const client = NetworkTopology.getClient(message.clientId);
             if (client) {
                 const hasChangedSituation = message.projectId !== client.projectId ||
