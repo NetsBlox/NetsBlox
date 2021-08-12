@@ -1,6 +1,8 @@
 /**
  * The FBICrimeData Service provides access to the FBI database,
  * containing catalogued information on crime statistics.
+ *
+ * For more information, check out https://crime-data-explorer.fr.cloud.gov/pages/docApi
  * 
  * @alpha
  * @service
@@ -12,11 +14,13 @@ const {registerTypes} = require('./types');
 const ApiConsumer = require('../utils/api-consumer');
 const {DataDotGovKey} = require('../utils/api-key');
 const Crime = new ApiConsumer('FBICrimeData', 'https://api.usa.gov/crime/fbi/sapi/', {cache: {ttl: 24*60*60}});
+const _ = require('lodash');
 ApiConsumer.setRequiredApiKey(Crime, DataDotGovKey);
 registerTypes();
 
+// TODO: We are going to need to clean up the results...
 function assertValidYearRange(startYear, endYear) {
-    if (endYear < startYear) {  // TODO: can these be equal?
+    if (endYear < startYear) {
         throw Error('End year should not be less than start year.');
     }
 }
@@ -149,7 +153,29 @@ Crime.regionalVictimCount = async function (offense, regionName, category) {
  * @returns {Object} data related to state victim count
  */
 Crime.stateVictimCount = async function (offense, stateAbbr, category) {
-    return await this._requestData({path:`api/nibrs/${offense}/victim/states/${stateAbbr}/${category}`, queryString:`api_key=${this.apiKey.value}`});
+    const results = await this._requestData({path:`api/nibrs/${offense}/victim/states/${stateAbbr}/${category}`, queryString:`api_key=${this.apiKey.value}`});
+    const byYear = (a, b) => a.data_year < b.data_year ? -1 : 1;
+    const countsByCategory = _.groupBy(results.data, datum => datum.key);
+    const aggregateCounts = _.mapValues(
+        countsByCategory,
+        data => data
+            .sort(byYear)
+            .reduce((yearCounts, datum) => {
+                let yearCount = yearCounts[yearCounts.length - 1];
+                if (!yearCount || datum.data_year !== yearCount[0]) {
+                    yearCount = [datum.data_year, 0];
+                    yearCounts.push(yearCount);
+                }
+                yearCount[1] += datum.value;
+                return yearCounts;
+            }, [])
+    );
+
+    if (category == 'count') {
+        return Object.values(aggregateCounts).pop();
+    }
+
+    return aggregateCounts;
 };
 
 module.exports = Crime;
