@@ -8,10 +8,12 @@
  */
 'use strict';
 
+const {registerTypes} = require('./types');
 const ApiConsumer = require('../utils/api-consumer');
 const {DataDotGovKey} = require('../utils/api-key');
 const Crime = new ApiConsumer('FBICrimeData', 'https://api.usa.gov/crime/fbi/sapi/', {cache: {ttl: 24*60*60}});
 ApiConsumer.setRequiredApiKey(Crime, DataDotGovKey);
+registerTypes();
 
 /** 
  * Gets the number of offenses for a specific instance
