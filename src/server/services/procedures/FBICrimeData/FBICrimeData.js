@@ -15,8 +15,14 @@ const Crime = new ApiConsumer('FBICrimeData', 'https://api.usa.gov/crime/fbi/sap
 ApiConsumer.setRequiredApiKey(Crime, DataDotGovKey);
 registerTypes();
 
+function assertValidYearRange(startYear, endYear) {
+    if (endYear < startYear) {  // TODO: can these be equal?
+        throw Error('End year should not be less than start year.');
+    }
+}
+
 /** 
- * Gets the number of offenses for a specific instance
+ * Get the number of offenses for a specific instance
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {OffenseDataOpt} category variable affecting crimes including examples: count, weapons, etc. 
  * @returns {Object} data related to national offense count
@@ -26,7 +32,7 @@ Crime.nationalOffenseCount = async function (offense,category) {
 };
 
 /**
- * Gets the number of offenses for a specific region
+ * Get the number of offenses for a specific region
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {String} regionName indicates in which region the crime has occurred
  * @param {OffenseDataOpt} category variable affecting crimes including examples: count, weapons, etc.
@@ -37,7 +43,7 @@ Crime.regionalOffenseCount = async function (offense,regionName, category) {
 };
 
 /**
- * Gets the number of offenses for a specific region
+ * Get the number of offenses for a specific region
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {String} stateAbbr location of the crime in which state
  * @param {OffenseDataOpt} variable variable affecting crimes including examples: count, weapons, etc
@@ -48,7 +54,7 @@ Crime.stateOffenseCount = async function (offense, stateAbbr, variable) {
 };
 
 /**
- * Gets the number of supplemental offenses nationwise
+ * Get the number of supplemental offenses nationwise
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
  * @param {SuppDataOpt} category variable affecting crimes including examples: count, weapons, etc.
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
@@ -56,15 +62,12 @@ Crime.stateOffenseCount = async function (offense, stateAbbr, variable) {
  * @returns {Object} data related to national supplemental count
  */
 Crime.nationalSupplementalCount = async function (offense, category, startYear, endYear) {
-    if (endYear<=startYear) {
-        throw Error('End year should not be less than Start year');
-    } else {
-        return await this._requestData({path:`api/data/supplemental/${offense}/national/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
-    }
+    assertValidYearRange(startYear, endYear);
+    return await this._requestData({path:`api/data/supplemental/${offense}/national/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
 };
 
 /**
- * Gets the number of supplemental offenses for a state
+ * Get the number of supplemental offenses for a state
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
  * @param {String} stateAbbr location of the crime in a state
  * @param {SuppDataOpt>} category variable affecting crimes including examples: count, weapons, etc.
@@ -73,16 +76,12 @@ Crime.nationalSupplementalCount = async function (offense, category, startYear, 
  * @returns {Object} data related to state supplemental count
  */
 Crime.stateSupplementalCount = async function (offense, stateAbbr, category, startYear, endYear) {
-    if (endYear<=startYear) {
-        throw Error('End year should not be less than or equal to Start year');
-    } 
-    else {
-        return await this._requestData({path:`api/data/supplemental/${offense}/states/${stateAbbr}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
-    }
+    assertValidYearRange(startYear, endYear);
+    return await this._requestData({path:`api/data/supplemental/${offense}/states/${stateAbbr}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
 };
 
 /**
- * Gets the number of arrests for the nation in a certain time period
+ * Get the number of arrests for the nation in a certain time period
  * @param {OffenseArrest} offense the type of breach of a law or rule
  * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
@@ -90,16 +89,12 @@ Crime.stateSupplementalCount = async function (offense, stateAbbr, category, sta
  * @returns {Object} data related to national arrest count
  */
 Crime.nationalArrestCount = async function (offense, category, startYear, endYear) {
-    if (endYear<=startYear) {
-        throw Error('End year should not be less than or equal to Start year');
-    } 
-    else {
-        return await this._requestData({path:`api/arrest/national/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
-    }
+    assertValidYearRange(startYear, endYear);
+    return await this._requestData({path:`api/arrest/national/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
 };
 
 /**
- * Gets the number of arrests for the nation in a certain time period
+ * Get the number of arrests for the nation in a certain time period
  * @param {String} regionName location of the region the crime occurred
  * @param {OffenseArrest} offense the type of breach of a law or rule
  * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
@@ -108,16 +103,12 @@ Crime.nationalArrestCount = async function (offense, category, startYear, endYea
  * @returns {Object} data related to region arrest count
  */
 Crime.regionArrestCount = async function (regionName, offense, category, startYear, endYear) {
-    if (endYear<=startYear) {
-        throw Error('End year should not be less than or equal to Start year');
-    } 
-    else {
-        return await this._requestData({path:`api/arrest/regions/${regionName}/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
-    }
+    assertValidYearRange(startYear, endYear);
+    return await this._requestData({path:`api/arrest/regions/${regionName}/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
 };
 
 /**
- * Gets the number of arrests(for a particular offense) for the state in a certain time period
+ * Get the number of arrests(for a particular offense) for the state in a certain time period
  * @param {String} stateAbbr location of the state the crime occurred
  * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
@@ -125,16 +116,12 @@ Crime.regionArrestCount = async function (regionName, offense, category, startYe
  * @returns {Object} data related to state arrest count
  */
 Crime.stateArrestCount = async function (stateAbbr, category, startYear, endYear) {
-    if (endYear<=startYear) {
-        throw Error('End year should not be less than or equal to Start year');
-    } 
-    else {
-        return await this._requestData({path:`api/arrest/states/offense/${stateAbbr}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
-    }
+    assertValidYearRange(startYear, endYear);
+    return await this._requestData({path:`api/arrest/states/offense/${stateAbbr}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
 };
 
 /**
- * Gets the number of victims for the nation based on the offense and variable
+ * Get the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
  * @returns {Object} data related to national victim count
@@ -144,7 +131,7 @@ Crime.nationalVictimCount = async function (offense, category) {
 };
 
 /**
- * Gets the number of victims for the nation based on the offense and variable
+ * Get the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} regionName location of the region the crime occurred
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
@@ -155,7 +142,7 @@ Crime.regionalVictimCount = async function (offense, regionName, category) {
 };
 
 /**
- * Gets the number of victims for the nation based on the offense and variable
+ * Get the number of victims for the nation based on the offense and variable
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {String} stateAbbr state the crime occurred
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
