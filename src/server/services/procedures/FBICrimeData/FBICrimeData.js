@@ -25,6 +25,27 @@ function assertValidYearRange(startYear, endYear) {
     }
 }
 
+function createCategoryDict(data) {
+    const byYear = (a, b) => a.data_year < b.data_year ? -1 : 1;
+    const countsByCategory = _.groupBy(data, datum => datum.key);
+    const aggregateCounts = _.mapValues(
+        countsByCategory,
+        data => data
+            .sort(byYear)
+            .reduce((yearCounts, datum) => {
+                let yearCount = yearCounts[yearCounts.length - 1];
+                if (!yearCount || datum.data_year !== yearCount[0]) {
+                    yearCount = [datum.data_year, 0];
+                    yearCounts.push(yearCount);
+                }
+                yearCount[1] += datum.value;
+                return yearCounts;
+            }, [])
+    );
+    return aggregateCounts;
+}
+
+
 /** 
  * Get the number of offenses for a specific instance
  * @param {OffenseData} offense the type of breach of a law or rule
@@ -87,14 +108,19 @@ Crime.stateSupplementalCount = async function (offense, stateAbbr, category, sta
 /**
  * Get the number of arrests for the nation in a certain time period
  * @param {OffenseArrest} offense the type of breach of a law or rule
- * @param {Enum<male,female,offense,race,monthly>} category variable that describes the individual who committed the crime
+ * @param {Enum<male,female,offense,race>} category variable that describes the individual or crime committed
  * @param {BoundedInteger<1985, 2019>} startYear beginning year
  * @param {BoundedInteger<1985, 2019>} endYear ending year
  * @returns {Object} data related to national arrest count
  */
 Crime.nationalArrestCount = async function (offense, category, startYear, endYear) {
     assertValidYearRange(startYear, endYear);
-    return await this._requestData({path:`api/arrest/national/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
+    // TODO: why is male/female by age??
+    // TODO: offense doesn't make sense here...
+    const results = await this._requestData({path:`api/arrest/national/${offense}/${category}/${startYear}/${endYear}`, queryString:`api_key=${this.apiKey.value}`});
+    const aggregateCounts = createCategoryDict(results.data);
+    console.log({results});
+    return aggregateCounts;
 };
 
 /**
@@ -154,22 +180,7 @@ Crime.regionalVictimCount = async function (offense, regionName, category) {
  */
 Crime.stateVictimCount = async function (offense, stateAbbr, category) {
     const results = await this._requestData({path:`api/nibrs/${offense}/victim/states/${stateAbbr}/${category}`, queryString:`api_key=${this.apiKey.value}`});
-    const byYear = (a, b) => a.data_year < b.data_year ? -1 : 1;
-    const countsByCategory = _.groupBy(results.data, datum => datum.key);
-    const aggregateCounts = _.mapValues(
-        countsByCategory,
-        data => data
-            .sort(byYear)
-            .reduce((yearCounts, datum) => {
-                let yearCount = yearCounts[yearCounts.length - 1];
-                if (!yearCount || datum.data_year !== yearCount[0]) {
-                    yearCount = [datum.data_year, 0];
-                    yearCounts.push(yearCount);
-                }
-                yearCount[1] += datum.value;
-                return yearCounts;
-            }, [])
-    );
+    const aggregateCounts = createCategoryDict(results.data);
 
     if (category == 'count') {
         return Object.values(aggregateCounts).pop();
