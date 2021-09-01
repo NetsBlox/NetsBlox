@@ -15,9 +15,11 @@ const axios = require('axios');
 process.chdir(srcPath);
 utils.runWithStorage(build).catch(err => console.error(err));
 
+let INPUT_TYPES = undefined;
 async function build() {
     const services = new ServicesWorker(new Logger('netsblox:build-docs'));
     await services.load(); // needed for docs
+    INPUT_TYPES = await getLoadedTypes(); // needed for other functions
     await compileDocs(services);
 }
 
@@ -31,18 +33,20 @@ function isObject(type) {
 function getTypeString(type) {
     if (type.name === undefined || type.params === undefined) return type.toString();
     if (isObject(type)) return 'Object';
-    return type.params.length ? `${type.name}<${type.params.map(getTypeString).join(', ')}>` : type.name;
+    const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
+    return type.params.length ? `${name}<${type.params.map(getTypeString).join(', ')}>` : name;
 }
 function getParamString(param) {
     const str = param.type ? `${param.name}: ${getTypeString(param.type)}` : param.name;
     return param.optional ? `${str}?` : str;
 }
 
-async function getLoadedServices() {
+async function loadSubservice(path) {
     try {
-        const res = await axios.get(process.env.SERVICES_URL || 'http://127.0.0.1:8080/services');
-        return res.data.map(s => s.name);
-    } catch (err) {
+        const root = process.env.SERVICES_URL || 'http://127.0.0.1:8080/services';
+        return await axios.get(`${root}${path}`);
+    }
+    catch (err) {
         if (err.errno === 'ECONNREFUSED') {
             const msg = process.env.SERVICES_URL ? `Unable to connect to ${process.env.SERVICES_URL}. Is this the correct address?` :
                 'Unable to connect to services server. Please set the SERVICES_URL environment variable and retry.';
@@ -55,6 +59,14 @@ async function getLoadedServices() {
         }
         throw err;
     }
+}
+async function getLoadedTypes() {
+    const res = await loadSubservice('/input-types');
+    return res.data;
+}
+async function getLoadedServices() {
+    const res = await loadSubservice('/');
+    return res.data.map(s => s.name);
 }
 
 const SERVICE_FILTERS = {
@@ -254,7 +266,8 @@ async function compileDocs(services) {
             + categories.filter(s => s !== 'index').map(s => `    ${s}.rst\n`).join('') + '\n\n';
         for (const categoryName of categories) {
             const category = service.rpcs.categories[categoryName];
-            const rpcsString = '\n\nRPCS\n----\n\n' + category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s])).join('\n') + '\n\n';
+            const rpcsPieces = category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s]));
+            const rpcsString = rpcsPieces.length ? '\n\nRPCS\n----\n\n' + rpcsPieces.join('\n') + '\n\n' : '\n\n';
             const name = categoryName === 'index' ? serviceName : categoryName;
 
             let content = _.template(await loadCategoryContent(path.join(SERVICES_PATH, serviceName), categoryName, false)) ({
@@ -285,6 +298,7 @@ async function compileDocs(services) {
     const resolveVars = {
         services: servicesString,
         apiKeys: meta.apiKeys,
+        inputTypes: INPUT_TYPES,
     };
     await Promise.all(Array.from(rootDocs).map(file => {
         return recursiveResolveCopy(path.join(DOCS_PATH, file), path.join(GENERATED_PATH, file), resolveVars);
