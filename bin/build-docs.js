@@ -30,13 +30,18 @@ async function hasDirectory(dir, subdir) {
 function isObject(type) {
     return type && type.name && type.name.toLowerCase() === 'object';
 }
-function getTypeString(type) {
+function getTypeString(type, link = false) {
     if (type.name === undefined || type.params === undefined) return type.toString();
-    if (isObject(type)) return 'Object';
     const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
+    
+    if (link) return INPUT_TYPES[type.name] ? `\`(ref) </docs/fundamentals/input-types.html#${name}>\`__` : '';
+    if (isObject(type)) return 'Object';
+
     return type.params.length ? `${name}<${type.params.map(getTypeString).join(', ')}>` : name;
 }
-function getParamString(param) {
+function getParamString(param, link = false) {
+    if (link) return param.type ? getTypeString(param.type, true) : '';
+
     const str = param.type ? `${param.name}: ${getTypeString(param.type)}` : param.name;
     return param.optional ? `${str}?` : str;
 }
@@ -120,15 +125,21 @@ function getRPCsMeta(service) {
         rpcs[rpcName] = {
             description: trimText(rpc.rawDescription),
             args: (rpc.args || []).map(arg => { return {
-                decl: getParamString(arg),
+                decl: getParamString(arg, false),
+                declLink: getParamString(arg, true),
                 description: trimText(arg.rawDescription),
                 fields: !isObject(arg.type) || !(arg.type.params || []).length ? undefined : arg.type.params
                     .filter(f => !f.tags.includes('deprecated')).map(field => { return {
-                        decl: getParamString(field),
+                        decl: getParamString(field, false),
+                        declLink: getParamString(field, true),
                         description: trimText(field.rawDescription),
                     }; }),
             }; }),
-            returns: rpc.returns ? { type: getTypeString(rpc.returns.type), description: trimText(rpc.returns.rawDescription) } : undefined,
+            returns: rpc.returns ? {
+                type: getTypeString(rpc.returns.type, false),
+                typeLink: getTypeString(rpc.returns.type, true),
+                description: trimText(rpc.returns.rawDescription)
+            } : undefined,
         };
     }
     sortCategories(categories);
@@ -195,14 +206,14 @@ function buildRPCString(serviceName, rpcName, rpc) {
     if (rpc.args.length) {
         str += '    **Arguments:**\n\n';
         for (const arg of rpc.args) {
-            const desc = arg.description ? ` - ${arg.description}` : '';
-            str += `    - \`\`${arg.decl}\`\`${desc}\n`;
+            const desc = arg.description ? `- ${arg.description}` : '';
+            str += `    - \`\`${arg.decl}\`\` ${arg.declLink} ${desc}\n`;
             if (!arg.fields) continue;
 
             str += '\n';
             for (const field of arg.fields) {
-                const desc = field.description ? ` - ${field.description}` : '';
-                str += `        - \`\`${field.decl}\`\`${desc}\n`;
+                const desc = field.description ? `- ${field.description}` : '';
+                str += `        - \`\`${field.decl}\`\` ${field.declLink} ${desc}\n`;
             }
             str += '\n';
         }
@@ -210,8 +221,8 @@ function buildRPCString(serviceName, rpcName, rpc) {
     }
 
     if (rpc.returns) {
-        const desc = rpc.returns.description ? ` - ${rpc.returns.description}` : '';
-        str += `    **Returns:** \`\`${rpc.returns.type}\`\`${desc}\n\n`;
+        const desc = rpc.returns.description ? `- ${rpc.returns.description}` : '';
+        str += `    **Returns:** \`\`${rpc.returns.type}\`\` ${rpc.returns.typeLink} ${desc}\n\n`;
     }
 
     return str;
