@@ -403,4 +403,24 @@ describe(utils.suiteName(__filename), function() {
             }));
         });
     });
+
+    describe('withTypeTape', function() {
+        it('should return newly defined types', function() {
+            const [types,] = InputTypes.withTypeTape(() => {
+                InputTypes.defineType({
+                    name: 'NewType2',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+                InputTypes.defineType({
+                    name: 'NewType3',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+            });
+            assert.deepEqual(types.map(t => t.displayName), ['NewType2', 'NewType3']);
+        });
+    });
 });
