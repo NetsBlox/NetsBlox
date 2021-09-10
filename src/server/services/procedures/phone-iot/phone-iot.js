@@ -115,7 +115,7 @@ types.defineType({
 });
 types.defineType({
     name: 'Device',
-    description: 'A :doc:`/services/PhoneIoT/index` device id. The device must be connected to be valid.',
+    description: 'A :doc:`/services/PhoneIoT/index` device ID. The device must be connected to be valid.',
     baseType: 'BoundedString',
     baseParams: ['4', '12'],
     parser: async (deviceId, params, ctx) => {
