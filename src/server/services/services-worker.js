@@ -74,9 +74,9 @@ class ServicesWorker {
         return fs.readdirSync(PROCEDURES_DIR)
             .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
             .filter(pair => fs.existsSync(pair[1]))
-            .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
             .map(pair => {
-                let [name, path, service] = pair;
+                const [name, path] = pair;
+                const [types, service] = InputTypes.withTypeTape(() => require(path));
 
                 service._docs = new Docs(path);
                 if (service.init) {
@@ -109,6 +109,7 @@ class ServicesWorker {
                     service.isSupported = () => false;
                 }
 
+                types.forEach(typeMeta => typeMeta.service = service.serviceName);
                 return service;
             });
     }
