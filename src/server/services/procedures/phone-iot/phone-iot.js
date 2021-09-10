@@ -94,7 +94,7 @@ types.defineType({
     name: 'SensorPeriod',
     description: 'An update period (interval) for PhoneIoT sensors.',
     baseType: 'BoundedNumber',
-    baesParams: ['100'],
+    baseParams: ['100'],
 });
 types.defineType({
     name: 'Color',
