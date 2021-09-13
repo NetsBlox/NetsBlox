@@ -330,7 +330,7 @@ defineType({
 
 defineType({
     name: 'BoundedInteger',
-    description: 'An Integer with a minimum and/or maximum value.',
+    description: 'An integer with a minimum and/or maximum value.',
     baseType: 'BoundedNumber',
     baseParams: p => p, // pass our params to the base type parser
     parser: input => {
@@ -341,7 +341,7 @@ defineType({
 
 defineType({
     name: 'BoundedString',
-    description: 'A string with a minimum and/or maximum length.',
+    description: 'A string (text) with a minimum and/or maximum length.',
     baseType: 'String',
     parser: (str, params) => {
         const [min, max] = params.map(num => parseInt(num));
