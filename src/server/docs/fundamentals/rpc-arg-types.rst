@@ -1,5 +1,5 @@
-Input Types
-===========
+RPC Argument Types
+==================
 
 <%
 function getParamName(param) { return typeof(param) === 'object' ? param.name || param : param; }
@@ -14,6 +14,7 @@ function formatType(type) {
 
 <% for (const typeName of Object.keys(inputTypes).sort()) { %>
     <% const type = inputTypes[typeName]; %>
+    <% if (type.hidden) continue; %>
 .. class:: <%= type.displayName %><% if (type.baseType) { %>(<%= formatType(type.baseType) %>)<% } %>
 
 <%= type.rawDescription %>

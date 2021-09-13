@@ -44,6 +44,7 @@ function getErrorMessage(arg, err) {
 const types = { Any: input => input };
 const typesMeta = { // must be the same format produced by defineType()
     Any: { // Any should be the only type not introduced by defineType()
+        hidden:         false,
         displayName:    'Any',
         description:    'A value of any type.',
         rawDescription: 'A value of any type.',
@@ -58,13 +59,16 @@ function getTypeParser(type) {
 }
 
 const DEFINE_TYPE_FIELDS = [
-    'name', 'displayName', 'description',
+    'hidden', 'name', 'displayName', 'description',
     'baseType', 'baseParams', 'parser',
 ];
 
 // introduces a new type to the services type system. settings are specified by info fields, which are defined below:
-// name: string - the (internal) name of the type to introduce
-// displayName: string? - the user-level name of the type shown in documentation. if omitted, defaults to (internal) name.
+// hidden: bool - denotes if the type should be hidden from users in documentation
+// name: string - the (internal) name of the type to introduce. two types with the same name is forbidden.
+// displayName: string?
+//         - the user-level name of the type shown in documentation. if omitted, defaults to (internal) name.
+//         - two non-hidden types with the same display name is forbidden.
 // description: string - a description for the type, which is visible in the documentation.
 // baseType: string - the (internal) name of the base type. if there is no appropriate base type, you can use 'Any', which is a no-op.
 // baseParams: (any[] | dict<string,any> | params => params)?
@@ -84,13 +88,16 @@ function defineType(info) {
     for (const expected of DEFINE_TYPE_FIELDS) extra_fields.delete(expected);
     if (extra_fields.size) throw Error(`Unrecognized defineType fields: [${Array.from(extra_fields).join(", ")}]`);
 
+    if (!info.hidden) info.hidden = false;
+    else if (typeof(info.hidden) !== 'boolean') throw Error('Type hidden flag must be a boolean');
+
     if (!info.name) throw Error('A type name is required');
     if (typeof(info.name) !== 'string') throw Error('Type name must be a string');
     if (types[info.name]) throw Error(`Attempt to redefine existing type: ${info.name}`);
 
     if (!info.displayName) info.displayName = info.name;
     else if (typeof(info.displayName) !== 'string') throw Error('Display name must be a string');
-    else if (dispToType[info.displayname]) throw Error(`A type (${dispToType[info.displayname]}) with display name ${info.displayName} already exists.`);
+    else if (!info.hidden && dispToType[info.displayname]) throw Error(`A type (${dispToType[info.displayname]}) with display name ${info.displayName} already exists.`);
 
     if (!info.description) throw Error('To enforce good documentation, a type description is required');
     if (typeof(info.description) !== 'string') throw Error('Type description must be a string');
@@ -117,6 +124,7 @@ function defineType(info) {
 
     types[info.name] = derivedParser;
     typesMeta[info.name] = {
+        hidden: info.hidden,
         displayName: info.displayName,
         description: cleanMarkup(info.description),
         rawDescription: info.description,
@@ -125,7 +133,7 @@ function defineType(info) {
             params: baseParamsMeta,
         },
     };
-    dispToType[info.displayName] = info.name;
+    if (!info.hidden) dispToType[info.displayName] = info.name;
 
     return derivedParser;
 }
@@ -273,6 +281,8 @@ defineType({
 
 defineType({
     name: 'SerializedFunction',
+    displayName: 'Function',
+    hidden: true, // required because display name 'Function' is already used
     description: FUNC_DESC,
     baseType: 'Any',
     parser: async (blockXml, _params, ctx) => {

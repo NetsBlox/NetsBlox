@@ -34,7 +34,7 @@ function getTypeString(type, link = false) {
     if (type.name === undefined || type.params === undefined) return type.toString();
     const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
     
-    if (link) return INPUT_TYPES[type.name] ? `\`(ref) </docs/fundamentals/input-types.html#${name}>\`__` : '';
+    if (link) return INPUT_TYPES[type.name] ? `\`info </docs/fundamentals/rpc-arg-types.html#${name}>\`__` : '';
     if (isObject(type)) return 'Object';
 
     return type.params.length ? `${name}<${type.params.map(getTypeString).join(', ')}>` : name;
