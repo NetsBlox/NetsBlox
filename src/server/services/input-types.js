@@ -57,6 +57,11 @@ function getTypeParser(type) {
     return types[type] || (input => types[type.name](input, type.params));
 }
 
+const DEFINE_TYPE_FIELDS = [
+    'name', 'displayName', 'description',
+    'baseType', 'baseParams', 'parser',
+];
+
 // introduces a new type to the services type system. settings are specified by info fields, which are defined below:
 // name: string - the (internal) name of the type to introduce
 // displayName: string? - the user-level name of the type shown in documentation. if omitted, defaults to (internal) name.
@@ -74,6 +79,10 @@ function getTypeParser(type) {
 // returns: a derived parser function of form (input, params, ctx) => T
 function defineType(info) {
     if (typeof(info) !== 'object') throw Error('Type info must be an object');
+
+    const extra_fields = new Set(Object.keys(info));
+    for (const expected of DEFINE_TYPE_FIELDS) extra_fields.delete(expected);
+    if (extra_fields.size) throw Error(`Unrecognized defineType fields: [${Array.from(extra_fields).join(", ")}]`);
 
     if (!info.name) throw Error('A type name is required');
     if (typeof(info.name) !== 'string') throw Error('Type name must be a string');

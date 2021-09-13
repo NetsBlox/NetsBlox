@@ -94,7 +94,7 @@ types.defineType({
     name: 'SensorPeriod',
     description: 'An update period (interval) for :doc:`/services/PhoneIoT/index` sensors. This is used by :func:`PhoneIoT.listenToSensors` to start receiving a stream of periodic update messages.',
     baseType: 'BoundedNumber',
-    baesParams: ['100'],
+    baseParams: ['100'],
 });
 types.defineType({
     name: 'Color',
