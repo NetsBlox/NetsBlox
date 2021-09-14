@@ -15,9 +15,11 @@ const axios = require('axios');
 process.chdir(srcPath);
 utils.runWithStorage(build).catch(err => console.error(err));
 
+let INPUT_TYPES = undefined;
 async function build() {
     const services = new ServicesWorker(new Logger('netsblox:build-docs'));
     await services.load(); // needed for docs
+    INPUT_TYPES = await getLoadedTypes(); // needed for other functions
     await compileDocs(services);
 }
 
@@ -28,21 +30,28 @@ async function hasDirectory(dir, subdir) {
 function isObject(type) {
     return type && type.name && type.name.toLowerCase() === 'object';
 }
-function getTypeString(type) {
+function getTypeString(type, link = false) {
     if (type.name === undefined || type.params === undefined) return type.toString();
+    const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
+    
+    if (link) return INPUT_TYPES[type.name] ? `\`info </docs/fundamentals/rpc-arg-types.html#${name}>\`__` : '';
     if (isObject(type)) return 'Object';
-    return type.params.length ? `${type.name}<${type.params.map(getTypeString).join(', ')}>` : type.name;
+
+    return type.params.length ? `${name}<${type.params.map(getTypeString).join(', ')}>` : name;
 }
-function getParamString(param) {
+function getParamString(param, link = false) {
+    if (link) return param.type ? getTypeString(param.type, true) : '';
+
     const str = param.type ? `${param.name}: ${getTypeString(param.type)}` : param.name;
     return param.optional ? `${str}?` : str;
 }
 
-async function getLoadedServices() {
+async function loadSubservice(path) {
     try {
-        const res = await axios.get(process.env.SERVICES_URL || 'http://127.0.0.1:8080/services');
-        return res.data.map(s => s.name);
-    } catch (err) {
+        const root = process.env.SERVICES_URL || 'http://127.0.0.1:8080/services';
+        return await axios.get(`${root}${path}`);
+    }
+    catch (err) {
         if (err.errno === 'ECONNREFUSED') {
             const msg = process.env.SERVICES_URL ? `Unable to connect to ${process.env.SERVICES_URL}. Is this the correct address?` :
                 'Unable to connect to services server. Please set the SERVICES_URL environment variable and retry.';
@@ -55,6 +64,14 @@ async function getLoadedServices() {
         }
         throw err;
     }
+}
+async function getLoadedTypes() {
+    const res = await loadSubservice('/input-types');
+    return res.data;
+}
+async function getLoadedServices() {
+    const res = await loadSubservice('/');
+    return res.data.map(s => s.name);
 }
 
 const SERVICE_FILTERS = {
@@ -108,15 +125,21 @@ function getRPCsMeta(service) {
         rpcs[rpcName] = {
             description: trimText(rpc.rawDescription),
             args: (rpc.args || []).map(arg => { return {
-                decl: getParamString(arg),
+                decl: getParamString(arg, false),
+                declLink: getParamString(arg, true),
                 description: trimText(arg.rawDescription),
                 fields: !isObject(arg.type) || !(arg.type.params || []).length ? undefined : arg.type.params
                     .filter(f => !f.tags.includes('deprecated')).map(field => { return {
-                        decl: getParamString(field),
+                        decl: getParamString(field, false),
+                        declLink: getParamString(field, true),
                         description: trimText(field.rawDescription),
                     }; }),
             }; }),
-            returns: rpc.returns ? { type: getTypeString(rpc.returns.type), description: trimText(rpc.returns.rawDescription) } : undefined,
+            returns: rpc.returns ? {
+                type: getTypeString(rpc.returns.type, false),
+                typeLink: getTypeString(rpc.returns.type, true),
+                description: trimText(rpc.returns.rawDescription)
+            } : undefined,
         };
     }
     sortCategories(categories);
@@ -183,14 +206,14 @@ function buildRPCString(serviceName, rpcName, rpc) {
     if (rpc.args.length) {
         str += '    **Arguments:**\n\n';
         for (const arg of rpc.args) {
-            const desc = arg.description ? ` - ${arg.description}` : '';
-            str += `    - \`\`${arg.decl}\`\`${desc}\n`;
+            const desc = arg.description ? `- ${arg.description}` : '';
+            str += `    - \`\`${arg.decl}\`\` ${arg.declLink} ${desc}\n`;
             if (!arg.fields) continue;
 
             str += '\n';
             for (const field of arg.fields) {
-                const desc = field.description ? ` - ${field.description}` : '';
-                str += `        - \`\`${field.decl}\`\`${desc}\n`;
+                const desc = field.description ? `- ${field.description}` : '';
+                str += `        - \`\`${field.decl}\`\` ${field.declLink} ${desc}\n`;
             }
             str += '\n';
         }
@@ -198,8 +221,8 @@ function buildRPCString(serviceName, rpcName, rpc) {
     }
 
     if (rpc.returns) {
-        const desc = rpc.returns.description ? ` - ${rpc.returns.description}` : '';
-        str += `    **Returns:** \`\`${rpc.returns.type}\`\`${desc}\n\n`;
+        const desc = rpc.returns.description ? `- ${rpc.returns.description}` : '';
+        str += `    **Returns:** \`\`${rpc.returns.type}\`\` ${rpc.returns.typeLink} ${desc}\n\n`;
     }
 
     return str;
@@ -254,7 +277,8 @@ async function compileDocs(services) {
             + categories.filter(s => s !== 'index').map(s => `    ${s}.rst\n`).join('') + '\n\n';
         for (const categoryName of categories) {
             const category = service.rpcs.categories[categoryName];
-            const rpcsString = '\n\nRPCS\n----\n\n' + category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s])).join('\n') + '\n\n';
+            const rpcsPieces = category.items.map(s => buildRPCString(serviceName, s, service.rpcs.rpcs[s]));
+            const rpcsString = rpcsPieces.length ? '\n\nRPCS\n----\n\n' + rpcsPieces.join('\n') + '\n\n' : '\n\n';
             const name = categoryName === 'index' ? serviceName : categoryName;
 
             let content = _.template(await loadCategoryContent(path.join(SERVICES_PATH, serviceName), categoryName, false)) ({
@@ -285,6 +309,7 @@ async function compileDocs(services) {
     const resolveVars = {
         services: servicesString,
         apiKeys: meta.apiKeys,
+        inputTypes: INPUT_TYPES,
     };
     await Promise.all(Array.from(rootDocs).map(file => {
         return recursiveResolveCopy(path.join(DOCS_PATH, file), path.join(GENERATED_PATH, file), resolveVars);

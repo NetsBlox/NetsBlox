@@ -2,6 +2,7 @@
 const _ = require('lodash');
 const blocks2js = require('./blocks2js');
 const Projects = require('../storage/projects');
+const {cleanMarkup} = require('../services/jsdoc-extractor');
 
 let typeTape = null;
 function withTypeTape(fn) {
@@ -54,9 +55,11 @@ function getErrorMessage(arg, err) {
 const types = { Any: input => input };
 const typesMeta = { // must be the same format produced by defineType()
     Any: { // Any should be the only type not introduced by defineType()
-        displayName: 'Any',
-        description: 'A value of any type.',
-        baseType: null,
+        hidden:         false,
+        displayName:    'Any',
+        description:    'A value of any type.',
+        rawDescription: 'A value of any type.',
+        baseType:        null,
     },
 };
 const dispToType = { Any: 'Any' }; // maps display name to internal name
@@ -67,13 +70,16 @@ function getTypeParser(type) {
 }
 
 const DEFINE_TYPE_FIELDS = [
-    'name', 'displayName', 'description',
+    'hidden', 'name', 'displayName', 'description',
     'baseType', 'baseParams', 'parser',
 ];
 
 // introduces a new type to the services type system. settings are specified by info fields, which are defined below:
-// name: string - the (internal) name of the type to introduce
-// displayName: string? - the user-level name of the type shown in documentation. if omitted, defaults to (internal) name.
+// hidden: bool - denotes if the type should be hidden from users in documentation
+// name: string - the (internal) name of the type to introduce. two types with the same name is forbidden.
+// displayName: string?
+//         - the user-level name of the type shown in documentation. if omitted, defaults to (internal) name.
+//         - two non-hidden types with the same display name is forbidden.
 // description: string - a description for the type, which is visible in the documentation.
 // baseType: string - the (internal) name of the base type. if there is no appropriate base type, you can use 'Any', which is a no-op.
 // baseParams: (any[] | dict<string,any> | params => params)?
@@ -93,12 +99,15 @@ function defineType(info) {
     for (const expected of DEFINE_TYPE_FIELDS) extra_fields.delete(expected);
     if (extra_fields.size) throw Error(`Unrecognized defineType fields: [${Array.from(extra_fields).join(", ")}]`);
 
+    if (!info.hidden) info.hidden = false;
+    else if (typeof(info.hidden) !== 'boolean') throw Error('Type hidden flag must be a boolean');
+
     if (!info.name) throw Error('A type name is required');
     if (typeof(info.name) !== 'string') throw Error('Type name must be a string');
 
     if (!info.displayName) info.displayName = info.name;
     else if (typeof(info.displayName) !== 'string') throw Error('Display name must be a string');
-    else if (dispToType[info.displayname]) throw Error(`A type (${dispToType[info.displayname]}) with display name ${info.displayName} already exists.`);
+    else if (!info.hidden && dispToType[info.displayname]) throw Error(`A type (${dispToType[info.displayname]}) with display name ${info.displayName} already exists.`);
 
     if (!info.description) throw Error('To enforce good documentation, a type description is required');
     if (typeof(info.description) !== 'string') throw Error('Type description must be a string');
@@ -119,9 +128,10 @@ function defineType(info) {
     else if (info.baseParams) throw Error('Base params must be an array, object, or function');
 
     const typeMeta = {
-        service: null,
+        hidden: info.hidden,
         displayName: info.displayName,
-        description: info.description,
+        description: cleanMarkup(info.description),
+        rawDescription: info.description,
         baseType: {
             name: info.baseType,
             params: baseParamsMeta,
@@ -157,7 +167,8 @@ function registerType(argType, serviceName) {
     meta.service = serviceName;
     types[name] = derivedParser;
     typesMeta[name] = meta;
-    dispToType[meta.displayName] = name;
+
+    if (!meta.hidden) dispToType[meta.displayName] = name;
 }
 
 defineType({
@@ -169,7 +180,7 @@ defineType({
 
 defineType({
     name: 'Enum',
-    description: 'A String with a restricted set of valid values.',
+    description: 'A string with a restricted set of valid values.',
     baseType: 'String',
     parser: (str, variants) => {
         const lower = str.toLowerCase();
@@ -204,7 +215,7 @@ defineType({
 defineType({
     name: 'Array',
     displayName: 'List',
-    description: 'A list of values.',
+    description: 'A list of (zero or more) values.',
     baseType: 'Any',
     parser: async (input, params=[]) => {
         const [typeParam, min=0, max=Infinity] = params;
@@ -303,6 +314,8 @@ defineType({
 
 defineType({
     name: 'SerializedFunction',
+    displayName: 'Function',
+    hidden: true, // required because display name 'Function' is already used
     description: FUNC_DESC,
     baseType: 'Any',
     parser: async (blockXml, _params, ctx) => {
@@ -313,7 +326,7 @@ defineType({
 
 defineType({
     name: 'BoundedNumber',
-    description: 'A Number with a minimum and/or maximum value.',
+    description: 'A number with a minimum and/or maximum value.',
     baseType: 'Number',
     parser: (number, params) => {
         const [min, max] = params.map(num => parseFloat(num));
@@ -350,7 +363,7 @@ defineType({
 
 defineType({
     name: 'BoundedInteger',
-    description: 'An Integer with a minimum and/or maximum value.',
+    description: 'An integer with a minimum and/or maximum value.',
     baseType: 'BoundedNumber',
     baseParams: p => p, // pass our params to the base type parser
     parser: input => {
@@ -361,7 +374,7 @@ defineType({
 
 defineType({
     name: 'BoundedString',
-    description: 'A String with a minimum and/or maximum length',
+    description: 'A string (text) with a minimum and/or maximum length.',
     baseType: 'String',
     parser: (str, params) => {
         const [min, max] = params.map(num => parseInt(num));
@@ -396,14 +409,14 @@ defineType({
 
 defineType({
     name: 'Latitude',
-    description: 'A latitude position in degrees [-90, 90]',
+    description: 'A latitude position in degrees ``[-90, 90]``.',
     baseType: 'BoundedNumber',
     baseParams: ['-90', '90'],
 });
 
 defineType({
     name: 'Longitude',
-    description: 'A longitude position in degrees [-180, 180].',
+    description: 'A longitude position in degrees ``[-180, 180]``.',
     baseType: 'BoundedNumber',
     baseParams: ['-180', '180'],
 });

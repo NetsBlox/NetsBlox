@@ -12,6 +12,7 @@ NetsBlox Documentation
     fundamentals/concepts.rst
     fundamentals/howto.rst
     fundamentals/handling-errors.rst
+    fundamentals/rpc-arg-types.rst
 
 <%= services %>
 

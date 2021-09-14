@@ -15,7 +15,7 @@ const VaccineCategories = [
 function registerTypes() {
     types.defineType({
         name: 'VaccineCategory',
-        description: 'The type of article to retrieve from the NewYorkTimes service.',
+        description: 'The category of vaccination data to retrieve from the :doc:`/services/COVID-19/index` service.',
         baseType: 'Enum',
         baseParams: VaccineCategories,
     });

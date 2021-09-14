@@ -402,4 +402,17 @@ describe(utils.suiteName(__filename), function() {
             assert(newProject.name.includes(name));
         });
     });
+
+    describe('_getProjectMetadata', function() {
+        it('should escape project/user names in thumbnail URL', function() {
+            const project = {
+                owner: 'hello?',
+                name: 'n/m',
+                roles: {},
+                getId: () => 'ID',
+            };
+            const metadata = ProjectsAPI._getProjectMetadata(project);
+            assert(!metadata.Thumbnail.includes('?'));
+        });
+    });
 });
