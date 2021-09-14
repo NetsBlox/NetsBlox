@@ -42,7 +42,7 @@ const CATEGORIES = [
 ];
 types.defineType({
     name: 'MortalityCategory',
-    description: 'A specific category of data in the HumanMortality service.',
+    description: 'A specific category of data in the :doc:`/services/HumanMortalityDatabase/index` service.',
     baseType: 'Enum',
     baseParams: CATEGORIES
 });

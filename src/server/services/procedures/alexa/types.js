@@ -197,7 +197,7 @@ function registerTypes() {
     ];
     types.defineType({
         name: 'Intent',
-        description: 'An object that holds information about an Alexa intent.',
+        description: 'An object that holds information about an :doc:`/services/Alexa/index` intent.',
         baseType: 'Object',
         baseParams: intentParams,
         parser: intent => {
@@ -211,7 +211,7 @@ function registerTypes() {
 
     types.defineType({
         name: 'SlotType',
-        description: 'The type of slot to use in an Alexa skill.',
+        description: 'The type of slot to use in an :doc:`/services/Alexa/index` skill.',
         baseType: 'Enum',
         baseParams: SlotTypes,
     });
@@ -227,13 +227,13 @@ function registerTypes() {
     ];
     types.defineType({
         name: 'Slot',
-        description: 'Structured data about a slot in an Alexa skill.',
+        description: 'Structured data about a slot in an :doc:`/services/Alexa/index` skill.',
         baseType: 'Object',
         baseParams: slotParams,
     });
     types.defineType({
         name: 'SkillCategory',
-        description: 'A category description for an Alexa skill.',
+        description: 'A category description for an :doc:`/services/Alexa/index` skill.',
         baseType: 'Enum',
         baseParams: SkillCategories,
     });

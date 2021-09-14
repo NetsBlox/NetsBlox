@@ -50,72 +50,72 @@ const _ = require('lodash');
 // these types are used for communication with PhoneIoT
 types.defineType({
     name: 'SliderStyle',
-    description: 'The style to use for displaying PhoneIoT slider.',
+    description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
     baseType: 'Enum',
     baseParams: { slider: 0, progress: 1 },
 });
 types.defineType({
     name: 'TouchpadStyle', 
-    description: 'The style to use for displaying a PhoneIoT touchpad.',
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` touchpad, as created by :func:`PhoneIoT.addTouchpad`.',
     baseType: 'Enum',
     baseParams: { rectangle: 0, square: 1 },
 });
 types.defineType({
     name: 'ButtonStyle',
-    description: 'The style to use for displaying a PhoneIoT button.',
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` button, as created by :func:`PhoneIoT.addButton`.',
     baseType: 'Enum',
     baseParams: { rectangle: 0, ellipse: 1, square: 2, circle: 3 },
 });
 types.defineType({
     name: 'ToggleStyle',
-    description: 'The style to use for displaying a PhoneIoT toggle control.',
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` toggle control, as created by :func:`PhoneIoT.addToggle`.',
     baseType: 'Enum',
     baseParams: { switch: 0, checkbox: 1 },
 });
 types.defineType({
     name: 'Align',
-    description: 'The strategy for aligning text in a PhoneIoT control.',
+    description: 'The strategy for aligning text in a :doc:`/services/PhoneIoT/index` control such as :func:`PhoneIoT.addLabel`.',
     baseType: 'Enum',
     baseParams: { left: 0, center: 1, right: 2 },
 });
 types.defineType({
     name: 'Fit',
-    description: 'The strategy for positioning an image in a PhoneIoT image display.',
+    description: 'The strategy for positioning an image in a :doc:`/services/PhoneIoT/index` image display, as created by :func:`PhoneIoT.addImageDisplay`.',
     baseType: 'Enum',
     baseParams: { fit: 0, zoom: 1, stretch: 2 },
 });
 types.defineType({
     name: 'FontSize',
-    description: 'The font size of text in a PhoneIoT control.',
+    description: 'The font size of text in a :doc:`/services/PhoneIoT/index` control.',
     baseType: 'BoundedNumber',
     baseParams: ['0.1', '10.0'],
 });
 types.defineType({
     name: 'SensorPeriod',
-    description: 'An update period (interval) for PhoneIoT sensors.',
+    description: 'An update period (interval) for :doc:`/services/PhoneIoT/index` sensors. This is used by :func:`PhoneIoT.listenToSensors` to start receiving a stream of periodic update messages.',
     baseType: 'BoundedNumber',
     baseParams: ['100'],
 });
 types.defineType({
     name: 'Color',
-    description: 'A color code used by PhoneIoT. You can create color codes with PhoneIoT.getColor().',
+    description: 'A color code used by :doc:`/services/PhoneIoT/index`. You can create color codes with :func:`PhoneIoT.getColor`.',
     baseType: 'Integer',
 });
 types.defineType({
     name: 'Position',
-    description: 'The position of a PhoneIoT control as a percentage of the screen from the top left corner.',
+    description: 'The position of a :doc:`/services/PhoneIoT/index` control as a percentage of the screen from the top left corner.',
     baseType: 'BoundedNumber',
     baseParams: ['0', '100'],
 });
 types.defineType({
     name: 'Size',
-    description: 'The size of a PhoneIoT control as a percentage of the screen.',
+    description: 'The size of a :doc:`/services/PhoneIoT/index` control as a percentage of the screen.',
     baseType: 'BoundedNumber',
     baseParams: ['0', '100'],
 });
 types.defineType({
     name: 'Device',
-    description: 'A PhoneIoT device id. The device must be connected to be valid.',
+    description: 'A :doc:`/services/PhoneIoT/index` device ID. The device must be connected to be valid.',
     baseType: 'BoundedString',
     baseParams: ['4', '12'],
     parser: async (deviceId, params, ctx) => {

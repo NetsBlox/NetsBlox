@@ -53,25 +53,25 @@ const ConceptTypes = {
 
 types.defineType({
     name: 'ArticleSection',
-    description: 'The type of article to retrieve from the NewYorkTimes service.',
+    description: 'The type of article to retrieve from the :doc:`/services/NewYorkTimes/index` service.',
     baseType: 'Enum',
     baseParams: ArticleSections,
 });
 types.defineType({
     name: 'BestSellerList',
-    description: 'An item from the NewYorkTimes best sellers list.',
+    description: 'An item from the :doc:`/services/NewYorkTimes/index` service\'s best sellers list.',
     baseType: 'Enum',
     baseParams: BestSellerLists,
 });
 types.defineType({
     name: 'ConceptType',
-    description: 'They type of information to retrieve from the NewYorkTimes service.',
+    description: 'They type of information to retrieve from the :doc:`/services/NewYorkTimes/index` service.',
     baseType: 'Enum',
     baseParams: ConceptTypes,
 });
 types.defineType({
     name: 'DayWeekOrMonth',
-    description: 'A time period used by the NewYorkTimes service.',
+    description: 'A time period used by the :doc:`/services/NewYorkTimes/index` service.',
     baseType: 'Enum',
     baseParams: {day: 1, week: 7, month: 30},
 });

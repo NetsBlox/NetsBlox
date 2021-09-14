@@ -354,5 +354,6 @@ module.exports = {
     _parseSource: parseSource,
     _simplify: simplify,
     parse: parseService,
-    Docs
+    Docs,
+    cleanMarkup,
 };
