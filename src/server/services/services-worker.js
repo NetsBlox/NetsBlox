@@ -109,7 +109,7 @@ class ServicesWorker {
                     service.isSupported = () => false;
                 }
 
-                types.forEach(typeMeta => typeMeta.service = service.serviceName);
+                types.forEach(argType => InputTypes.registerType(argType, service.serviceName));
                 return service;
             });
     }

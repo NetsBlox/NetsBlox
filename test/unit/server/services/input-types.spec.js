@@ -420,7 +420,58 @@ describe(utils.suiteName(__filename), function() {
                     parser: input => input,
                 });
             });
-            assert.deepEqual(types.map(t => t.displayName), ['NewType2', 'NewType3']);
+            assert.deepEqual(types.map(t => t.meta.displayName), ['NewType2', 'NewType3']);
+        });
+
+        it('should throw error if global type depends on service type', function() {
+            InputTypes.withTypeTape(() => {
+                InputTypes.defineType({
+                    name: 'BaseServiceType',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+            });
+
+            assert.throws(() => InputTypes.defineType({
+                name: 'DependentGlobalType',
+                description: 'test',
+                baseType: 'BaseServiceType',
+                parser: input => input,
+            }));
+        });
+
+        it('should not register types', function() {
+            InputTypes.withTypeTape(() => {
+                InputTypes.defineType({
+                    name: 'NewType',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+            });
+            assert.equal(InputTypes.parse.NewType, undefined);
+        });
+
+        it.skip('should allow name collisions from different services', function() {
+            let [types] = InputTypes.withTypeTape(() => {
+                InputTypes.defineType({
+                    name: 'ServiceType',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+            });
+            types.forEach(argType => InputTypes.registerType(argType, 'Service1'));
+            [types] = InputTypes.withTypeTape(() => {
+                InputTypes.defineType({
+                    name: 'ServiceType',
+                    description: 'test',
+                    baseType: 'Any',
+                    parser: input => input,
+                });
+            });
+            types.forEach(argType => InputTypes.registerType(argType, 'Service2'));
         });
     });
 });

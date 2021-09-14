@@ -95,7 +95,6 @@ function defineType(info) {
 
     if (!info.name) throw Error('A type name is required');
     if (typeof(info.name) !== 'string') throw Error('Type name must be a string');
-    if (types[info.name]) throw Error(`Attempt to redefine existing type: ${info.name}`);
 
     if (!info.displayName) info.displayName = info.name;
     else if (typeof(info.displayName) !== 'string') throw Error('Display name must be a string');
@@ -110,22 +109,16 @@ function defineType(info) {
     if (!info.parser) info.parser = v => v;
     else if (typeof(info.parser) !== 'function') throw Error('Type parser must be a function');
 
-    let getParams, baseParamsMeta = null;
-    if (!info.baseParams) getParams = () => undefined;
-    else if (typeof(info.baseParams) === 'object') {
+    let baseParamsMeta = null;
+    let getParams = () => undefined;
+    if (typeof(info.baseParams) === 'object') {
         getParams = () => info.baseParams;
         baseParamsMeta = Array.isArray(info.baseParams) ? info.baseParams : Object.keys(info.baseParams);
     }
     else if (typeof(info.baseParams) === 'function') getParams = info.baseParams;
-    else throw Error('Base params must be an array, object, or function');
+    else if (info.baseParams) throw Error('Base params must be an array, object, or function');
 
-    const base = types[info.baseType];
-    if (!base) throw Error(`Base type ${info.baseType} does not exist. Avoid referencing types from external files (other than those defined in this file)`);
-
-    const derivedParser = async (input, params, ctx) => info.parser(await base(input, await getParams(params), ctx), params, ctx);
-
-    types[info.name] = derivedParser;
-    typesMeta[info.name] = {
+    const typeMeta = {
         service: null,
         displayName: info.displayName,
         description: info.description,
@@ -134,13 +127,37 @@ function defineType(info) {
             params: baseParamsMeta,
         },
     };
-    dispToType[info.displayName] = info.name;
-
+    const argType = new RPCArgumentType(info.name, typeMeta, info.parser, getParams);
     if (typeTape) {
-        typeTape.push(typesMeta[info.name]);
+        typeTape.push(argType);
+    } else {
+        registerType(argType);
     }
+}
 
-    return derivedParser;
+class RPCArgumentType {
+    constructor(name, meta, parser, getBaseTypeParameters) {
+        this.name = name;
+        this.meta = meta;
+        this.parser = parser;
+        this.getBaseTypeParameters = getBaseTypeParameters;
+    }
+}
+
+function registerType(argType, serviceName) {
+    const {name, meta, parser} = argType;
+
+    if (types[name]) throw Error(`Attempt to redefine existing type: ${name}`);
+
+    const baseType = meta.baseType.name;
+    const base = types[baseType];
+    if (!base) throw Error(`Base type ${baseType} does not exist. Avoid referencing types from external files (other than those defined in this file)`);
+    const derivedParser = async (input, params, ctx) => parser(await base(input, await argType.getBaseTypeParameters(params), ctx), params, ctx);
+
+    meta.service = serviceName;
+    types[name] = derivedParser;
+    typesMeta[name] = meta;
+    dispToType[meta.displayName] = name;
 }
 
 defineType({
@@ -395,6 +412,7 @@ module.exports = {
     parse: types,
     getNBType,
     withTypeTape,
+    registerType,
     defineType,
     typesMeta,
     getErrorMessage,
