@@ -444,13 +444,13 @@ describe(utils.suiteName(__filename), function() {
         it('should not register types', function() {
             InputTypes.withTypeTape(() => {
                 InputTypes.defineType({
-                    name: 'NewType',
+                    name: 'NewUnregisteredType',
                     description: 'test',
                     baseType: 'Any',
                     parser: input => input,
                 });
             });
-            assert.equal(InputTypes.parse.NewType, undefined);
+            assert.equal(InputTypes.parse.NewUnregisteredType, undefined);
         });
 
         it.skip('should allow name collisions from different services', function() {
