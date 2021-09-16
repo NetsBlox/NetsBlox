@@ -248,7 +248,7 @@ const US_TERRITORIES = {
 };
 
 const US_REGIONS = {
-    'Territories': 'Territories',
+    'Territories': 'U.S. Territories',
     'Northeast': 'Northeast',
     'Midwest': 'Midwest',
     'South': 'South',
