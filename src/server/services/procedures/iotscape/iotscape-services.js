@@ -237,7 +237,14 @@ IoTScapeServices.start = function(socket){
 
     // Handle incoming responses
     IoTScapeServices.socket.on('message', function (message) {
-        const parsed = JSON.parse(message);
+        let parsed;
+
+        try {
+            parsed = JSON.parse(message);
+        } catch(err){
+            logger.log('Error parsing IoTScape message: ' + err);
+            return;
+        }
 
         // Ignore other messages
         if(!parsed.request){
