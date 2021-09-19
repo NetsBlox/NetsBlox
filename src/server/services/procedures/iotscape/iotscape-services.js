@@ -259,10 +259,14 @@ IoTScapeServices.start = function(socket){
                 const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
                 const responseType = methodInfo.returns.type;
 
-                if(responseType.length > 1) {
-                    IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
-                } else {
-                    IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                try {
+                    if(responseType.length > 1) {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                    } else {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                    }
+                } catch (error) {
+                    logger.log('IoTScape response invalid: ' + error);
                 }
 
                 delete IoTScapeServices._awaitingRequests[requestID];
