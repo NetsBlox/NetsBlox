@@ -237,7 +237,14 @@ IoTScapeServices.start = function(socket){
 
     // Handle incoming responses
     IoTScapeServices.socket.on('message', function (message) {
-        const parsed = JSON.parse(message);
+        let parsed;
+
+        try {
+            parsed = JSON.parse(message);
+        } catch(err){
+            logger.log('Error parsing IoTScape message: ' + err);
+            return;
+        }
 
         // Ignore other messages
         if(!parsed.request){
@@ -252,10 +259,14 @@ IoTScapeServices.start = function(socket){
                 const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
                 const responseType = methodInfo.returns.type;
 
-                if(responseType.length > 1) {
-                    IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
-                } else {
-                    IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                try {
+                    if(responseType.length > 1) {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                    } else {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                    }
+                } catch (error) {
+                    logger.log('IoTScape response invalid: ' + error);
                 }
 
                 delete IoTScapeServices._awaitingRequests[requestID];
