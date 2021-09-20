@@ -58,7 +58,7 @@ function createCategoryDict(data) {
 
 /** 
  * Get the number of offenses for a specific instance
- * @category national
+ * @category National
  * 
  * @param {OffenseData} offense the type of breach of a law or rule
  * @param {OffenseDataOpt} category variable affecting crimes including examples: count, weapons, etc. 
@@ -76,7 +76,7 @@ Crime.nationalOffenseCount = async function (offense, category) {
 
 /**
  * Get the number of offenses for a specific region
- * @category regional
+ * @category Regional
  * 
  * @param {USRegion} region indicates in which region the crime has occurred
  * @param {OffenseData} offense the type of breach of a law or rule
@@ -94,7 +94,7 @@ Crime.regionalOffenseCount = async function (region, offense, category) {
 
 /**
  * Get the number of offenses for a specific region
- * @category state
+ * @category State
  * 
  * @param {USTerritory} state location of the crime (abbreviated US state)
  * @param {OffenseData} offense the type of offense committed
@@ -112,7 +112,7 @@ Crime.stateOffenseCount = async function (state, offense, category) {
 
 /**
  * Get the number of supplemental offenses nationwise
- * @category national
+ * @category National
  * 
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
  * @param {SuppDataOpt} category variable affecting crimes including examples: count, weapons, etc.
@@ -134,7 +134,7 @@ Crime.nationalSupplementalCount = async function (offense, category, startYear, 
 
 /**
  * Get the number of supplemental offenses for a state
- * @category state
+ * @category State
  * 
  * @param {USTerritory} state location of the crime in a state
  * @param {OffenseSupplemental} offense the type of breach of a law or rule
@@ -157,7 +157,7 @@ Crime.stateSupplementalCount = async function (state, offense, category, startYe
 
 /**
  * Get the number of arrests for the nation in a certain time period
- * @category national
+ * @category National
  * 
  * @param {OffenseArrest} offense the type of breach of a law or rule
  * @param {Enum<male,female,race>} category variable that describes the individual or crime committed
@@ -184,7 +184,7 @@ Crime.nationalArrestCount = async function (offense, category, startYear, endYea
 
 /**
  * Get the number of arrests for the nation in a certain time period
- * @category regional
+ * @category Regional
  * 
  * @param {USRegion} region location of the region the crime occurred
  * @param {OffenseArrest} offense the type of breach of a law or rule
@@ -204,7 +204,7 @@ Crime.regionalArrestCount = async function (region, offense, category, startYear
 
 /**
  * Get the number of arrests(for a particular offense) for the state in a certain time period
- * @category state
+ * @category State
  * 
  * @param {USTerritory} state location of the state the crime occurred
  * @param {ArrestCategory} category a general value describing the type of crime or perpetrator
@@ -223,7 +223,7 @@ Crime.stateArrestCount = async function (state, category, startYear, endYear) {
 
 /**
  * Get the number of victims for the nation based on the offense and variable
- * @category national
+ * @category National
  * 
  * @param {OffenseVictim} offense the type of breach of a law or rule
  * @param {Enum<age,count,ethnicity,race,sex,relationship>} category variable that describes the individual who committed the crime
@@ -239,7 +239,7 @@ Crime.nationalVictimCount = async function (offense, category) {
 
 /**
  * Get the number of victims for the nation based on the offense and variable
- * @category regional
+ * @category Regional
  * 
  * @param {USRegion} region location of the region the crime occurred
  * @param {OffenseVictim} offense the type of breach of a law or rule
@@ -256,7 +256,7 @@ Crime.regionalVictimCount = async function (region, offense, category) {
 
 /**
  * Get the number of victims for the nation based on the offense and variable
- * @category state
+ * @category State
  * 
  * @param {USTerritory} state state the crime occurred
  * @param {OffenseVictim} offense the type of breach of a law or rule
