@@ -319,13 +319,13 @@ let isValidMember = async function(req, res, next) {
 // checks to see if the user had activity on the server (eg has a project)
 // requires a validmember
 let memberIsNew = async function(req, res, next) {
-    let userId = req.params.userId;
-    let user = await Storage.users.getById(userId);
+    const userId = req.params.userId;
+    const user = await Storage.users.getById(userId);
 
-    let rejections = await user.isNewWithRejections();
+    const rejections = await user.isNewWithRejections();
 
     if (rejections.length > 0) {
-        return res.status(403).send('this is a new/unused account.');
+        return res.status(403).json(rejections);
     }
     next();
 };
