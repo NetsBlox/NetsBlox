@@ -22,7 +22,7 @@ const FALLBACK_FILES = [
     'hurdat2-nepac-1949-2020-043021a.txt',
 ];
 
-const DATA_ROOT = 'https://www.nhc.noaa.gov/data/hurdat'
+const DATA_ROOT = 'https://www.nhc.noaa.gov/data/hurdat';
 
 // maximum lifetime of any given downloaded resource.
 // downloads are cached for fast reuse, but will be discarded after this amount of time (milliseconds).
