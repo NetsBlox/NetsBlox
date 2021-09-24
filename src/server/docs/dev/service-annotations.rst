@@ -70,7 +70,7 @@ For example, ``Array`` is used instead of ``List``.
 Here are some of the common parsers that are available (note that values inside angled brackets ``<...>`` are optional; if one is omitted, in general that constraint is not enforced):
 
 - ``Number``
-- ``BoudedNumber<min, max>`` - This limits the tange of a ``Number``. For example, ``BoundedNumber<0>`` guarantees a non-negative number.
+- ``BoudedNumber<min, max>`` - This limits the range of a ``Number``. For example, ``BoundedNumber<0>`` guarantees a non-negative number.
 - ``Latitude``
 - ``Longitude``
 - ``String``

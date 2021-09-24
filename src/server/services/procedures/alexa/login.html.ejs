@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <title>Login With Amazon</title>
+</head>
+<body>
+<div id="amazon-root"></div>
+<script type="text/javascript">
+    window.onAmazonLoginReady = function() {
+        amazon.Login.setClientId('<%= clientID %>');
+    };
+    (function(d) {
+        var a = d.createElement('script'); a.type = 'text/javascript';
+        a.async = true; a.id = 'amazon-login-sdk';
+        a.src = 'https://assets.loginwithamazon.com/sdk/na/login1.js';
+        d.getElementById('amazon-root').appendChild(a);
+    })(document);
+</script>
+<style>
+    body {
+        background-color: #CDCDCD;
+    }
+    .center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+
+<div class="center card text-white bg-dark mb-3" style="max-width: 30%;">
+    <div class="card-header" style="border-bottom-color: #CDCDCD"><img src="https://netsblox.org/images/full_logo.png" width="100px"></div>
+    <div class="card-body">
+        <h4 class="card-title">Please sign in with your Amazon account.</h4>
+        <p class="card-text">Click the button below.</p>
+        <a id="LoginWithAmazon">
+            <img border="0" alt="Login with Amazon"
+                 src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_156x32.png"
+                 width="156" height="32" />
+        </a>
+    </div>
+</div>
+<script type="text/javascript">
+    document.getElementById('LoginWithAmazon').onclick = function() {
+        options = {
+            scope: 'alexa::ask:skills:readwrite alexa::ask:models:readwrite alexa::ask:skills:test',
+            response_type: 'code',
+            redirect_uri: '<%= serverURL %>/services/routes/alexa/tokens'
+        };
+        amazon.Login.authorize(options, function(response) {
+            if ( response.error ) {
+                alert("Error. Please log in again.");
+                return;
+            }
+            sendResponse(response);
+            return;
+        });
+    };
+
+    async function sendResponse(response) {
+        if (response) {
+            await fetch("<%= serverURL %>/services/routes/alexa/tokens", {
+                method: "PUT",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(response)
+            });
+        }
+    }
+
+</script>
+</body>
+</html>

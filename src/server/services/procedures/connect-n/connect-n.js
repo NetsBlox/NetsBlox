@@ -54,8 +54,8 @@ ConnectN.prototype.newGame = function(row, column, numDotsToConnect) {
 
 /**
  * Play at the given row, column to occupy the location.
- * @param {Number} row The given row at which to move
- * @param {Number} column The given column at which to move
+ * @param {Integer} row The given row at which to move
+ * @param {Integer} column The given column at which to move
  */
 ConnectN.prototype.play = async function(row, column) {
     const {projectId, roleId} = this.caller;

@@ -142,9 +142,9 @@ GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, ma
  * Get a map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<1>} width Image width
- * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedInteger<1>} width Image width
+ * @param {BoundedInteger<1>} height Image height
+ * @param {BoundedInteger<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
@@ -156,9 +156,9 @@ GoogleMaps.getMap = function(latitude, longitude, width, height, zoom){
  * Get a satellite map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<1>} width Image width
- * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedInteger<1>} width Image width
+ * @param {BoundedInteger<1>} height Image height
+ * @param {BoundedInteger<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
@@ -170,9 +170,9 @@ GoogleMaps.getSatelliteMap = function(latitude, longitude, width, height, zoom){
  * Get a terrain map image of the given region.
  * @param {Latitude} latitude Latitude of center point
  * @param {Longitude} longitude Longitude of center point
- * @param {BoundedNumber<1>} width Image width
- * @param {BoundedNumber<1>} height Image height
- * @param {BoundedNumber<0,25>} zoom Zoom level of map image
+ * @param {BoundedInteger<1>} width Image width
+ * @param {BoundedInteger<1>} height Image height
+ * @param {BoundedInteger<1,25>} zoom Zoom level of map image
  * @returns {Image} Map image
  */
 GoogleMaps.getTerrainMap = function(latitude, longitude, width, height, zoom){

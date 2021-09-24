@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE rdf:RDF [
+  <!ENTITY pg  "Project Gutenberg">
+  <!ENTITY lic "http://www.gutenberg.org/license">
+  <!ENTITY f   "http://www.gutenberg.org/">
+]>
+
+<!-- 
+
+The Project Gutenberg Catalog in RDF/XML Format
+
+  Copyright (C) 2004-present by 
+
+  Project Gutenberg Literary Archive Foundation
+  4557 Melan Drive S.
+  Fairbanks AK 99712
+  U.S.A.
+
+
+LICENSE TERMS
+
+
+This file ("work") is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License (GPL)
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This work is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+Please become familiar with the GNU GPL before using this file.
+
+You can get a full copy of the GNU General Public License online at:
+
+  http://www.gnu.org/licenses/gpl.html
+
+The GNU General Public License is explained in human language at:
+
+  http://creativecommons.org/licenses/GPL/2.0/
+
+If you are uncertain about the terms of the license or whether your
+intended use is legitimate, please email gbnewby@pglaf.org for
+clarification.
+
+Thank you for your interest in Project Gutenberg.  For more
+information about Project Gutenberg and its goals, visit
+the Official Project Gutenberg Web site at 
+
+  http://www.gutenberg.org
+
+-->
+
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:dcterms="http://purl.org/dc/terms/"
+         xmlns:dcmitype="http://purl.org/dc/dcmitype/"
+         xmlns:cc="http://web.resource.org/cc/"
+         xmlns:pgterms="http://www.gutenberg.org/rdfterms/"
+         xml:base="http://www.gutenberg.org/feeds/catalog.rdf">
+
+<cc:Work rdf:about="">
+   <cc:license  rdf:resource="http://creativecommons.org/licenses/GPL/2.0/" />
+</cc:Work>
+
+<cc:License rdf:about="http://creativecommons.org/licenses/GPL/2.0/">
+   <cc:permits  rdf:resource="http://web.resource.org/cc/Reproduction" />
+   <cc:permits  rdf:resource="http://web.resource.org/cc/Distribution" />
+   <cc:requires rdf:resource="http://web.resource.org/cc/Notice" />
+   <cc:permits  rdf:resource="http://web.resource.org/cc/DerivativeWorks" />
+   <cc:requires rdf:resource="http://web.resource.org/cc/ShareAlike" />
+   <cc:requires rdf:resource="http://web.resource.org/cc/SourceCode" />
+</cc:License>
+
+<rdf:Description rdf:about="">
+  <dc:created><dcterms:W3CDTF><rdf:value>2014-04-15</rdf:value></dcterms:W3CDTF></dc:created>
+</rdf:Description>
+
+<pgterms:etext rdf:ID="etext14600">
+  <dc:publisher>&pg;</dc:publisher>
+  <dc:title rdf:parseType="Literal">Theory of Silk Weaving
+A Treatise on the Construction and Application of Weaves, and the Decomposition and Calculation of Broad and Narrow, Plain, Novelty and Jacquard Silk Fabrics</dc:title>
+  <dc:creator rdf:parseType="Literal">Wolfensberger, Arnold</dc:creator>
+  <pgterms:friendlytitle rdf:parseType="Literal">Theory of Silk Weaving by Arnold Wolfensberger</pgterms:friendlytitle>
+  <dc:language><dcterms:ISO639-2><rdf:value>en</rdf:value></dcterms:ISO639-2></dc:language>
+  <dc:subject>
+    <rdf:Bag>
+      <rdf:li><dcterms:LCSH><rdf:value>Weaving</rdf:value></dcterms:LCSH></rdf:li>
+      <rdf:li><dcterms:LCSH><rdf:value>Silk industry</rdf:value></dcterms:LCSH></rdf:li>
+    </rdf:Bag>
+  </dc:subject>
+  <dc:subject><dcterms:LCC><rdf:value>TS</rdf:value></dcterms:LCC></dc:subject>
+  <dc:created><dcterms:W3CDTF><rdf:value>2005-01-05</rdf:value></dcterms:W3CDTF></dc:created>
+  <pgterms:downloads><xsd:nonNegativeInteger><rdf:value>146</rdf:value></xsd:nonNegativeInteger></pgterms:downloads>
+  <dc:rights rdf:resource="&lic;" />
+</pgterms:etext>
+
+<pgterms:etext rdf:ID="etext33941">
+  <dc:publisher>&pg;</dc:publisher>
+  <dc:title rdf:parseType="Literal">The Methods of Glass Blowing and of Working Silica in the Oxy-Gas Flame
+For the use of chemical and physical students</dc:title>
+  <dc:creator rdf:parseType="Literal">Shenstone, W. A.</dc:creator>
+  <pgterms:friendlytitle rdf:parseType="Literal">The Methods of Glass Blowing and of Working Silica</pgterms:friendlytitle>
+  <dc:language><dcterms:ISO639-2><rdf:value>en</rdf:value></dcterms:ISO639-2></dc:language>
+  <dc:created><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dc:created>
+  <pgterms:downloads><xsd:nonNegativeInteger><rdf:value>108</rdf:value></xsd:nonNegativeInteger></pgterms:downloads>
+  <dc:rights rdf:resource="&lic;" />
+</pgterms:etext>
+
+<pgterms:etext rdf:ID="etext27137">
+  <dc:publisher>&pg;</dc:publisher>
+  <dc:title rdf:parseType="Literal">The Scholfield Wool-Carding Machines</dc:title>
+  <dc:creator rdf:parseType="Literal">Cooper, Grace Rogers</dc:creator>
+  <pgterms:friendlytitle rdf:parseType="Literal">The Scholfield Wool-Carding Machines by Cooper</pgterms:friendlytitle>
+  <dc:language><dcterms:ISO639-2><rdf:value>en</rdf:value></dcterms:ISO639-2></dc:language>
+  <dc:subject><dcterms:LCSH><rdf:value>Wool-carding</rdf:value></dcterms:LCSH></dc:subject>
+  <dc:subject><dcterms:LCC><rdf:value>TS</rdf:value></dcterms:LCC></dc:subject>
+  <dc:created><dcterms:W3CDTF><rdf:value>2008-11-03</rdf:value></dcterms:W3CDTF></dc:created>
+  <pgterms:downloads><xsd:nonNegativeInteger><rdf:value>145</rdf:value></xsd:nonNegativeInteger></pgterms:downloads>
+  <dc:rights rdf:resource="&lic;" />
+</pgterms:etext>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941-8.txt">
+  <dc:format><dcterms:IMT><rdf:value>text/plain; charset="iso-8859-1"</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>191096</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941-8.zip">
+  <dc:format><dcterms:IMT><rdf:value>text/plain; charset="iso-8859-1"</rdf:value></dcterms:IMT></dc:format>
+  <dc:format><dcterms:IMT><rdf:value>application/zip</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>64712</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941-h/33941-h.htm">
+  <dc:format><dcterms:IMT><rdf:value>text/html; charset="iso-8859-1"</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>241742</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941-h.zip">
+  <dc:format><dcterms:IMT><rdf:value>text/html; charset="iso-8859-1"</rdf:value></dcterms:IMT></dc:format>
+  <dc:format><dcterms:IMT><rdf:value>application/zip</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>696292</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941.txt">
+  <dc:format><dcterms:IMT><rdf:value>text/plain; charset="us-ascii"</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>191149</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;dirs/3/3/9/4/33941/33941.zip">
+  <dc:format><dcterms:IMT><rdf:value>text/plain; charset="us-ascii"</rdf:value></dcterms:IMT></dc:format>
+  <dc:format><dcterms:IMT><rdf:value>application/zip</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>64686</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-06</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941.epub">
+  <dc:format><dcterms:IMT><rdf:value>application/epub+zip</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>96628</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941-images.epub">
+  <dc:format><dcterms:IMT><rdf:value>application/epub+zip</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>699077</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941-images.mobi">
+  <dc:format><dcterms:IMT><rdf:value>application/x-mobipocket-ebook</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>570640</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941.mobi">
+  <dc:format><dcterms:IMT><rdf:value>application/x-mobipocket-ebook</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>151796</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941.plucker.pdb">
+  <dc:format><dcterms:IMT><rdf:value>application/prs.plucker</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>107342</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941.qioo.jar">
+  <dc:format><dcterms:IMT><rdf:value>application/x-qioo-ebook</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>126656</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+<pgterms:file rdf:about="&f;cache/epub/33941/pg33941.txt.utf8">
+  <dc:format><dcterms:IMT><rdf:value>text/plain; charset="utf-8"</rdf:value></dcterms:IMT></dc:format>
+  <dcterms:extent>191098</dcterms:extent>
+  <dcterms:modified><dcterms:W3CDTF><rdf:value>2010-10-08</rdf:value></dcterms:W3CDTF></dcterms:modified>
+  <dcterms:isFormatOf rdf:resource="#etext33941" />
+</pgterms:file>
+
+</rdf:RDF>

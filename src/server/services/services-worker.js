@@ -51,8 +51,15 @@ class ServicesWorker {
         return !!service;
     }
 
-    async initialize() {
+    async load() {
         await this.loadRPCs();
+    }
+
+    async initialize() {
+        this.getServices()
+            .filter(service => service.isSupported() && service.initialize)
+            .forEach(service => service.initialize());
+
         this.checkStaleServices();
     }
 
@@ -67,9 +74,9 @@ class ServicesWorker {
         return fs.readdirSync(PROCEDURES_DIR)
             .map(name => [name, path.join(PROCEDURES_DIR, name, name+'.js')])
             .filter(pair => fs.existsSync(pair[1]))
-            .map(pair => [pair[0], pair[1], require(pair[1])])  // name, path, module
             .map(pair => {
-                let [name, path, service] = pair;
+                const [name, path] = pair;
+                const [types, service] = InputTypes.withTypeTape(() => require(path));
 
                 service._docs = new Docs(path);
                 if (service.init) {
@@ -87,7 +94,11 @@ class ServicesWorker {
                     service.serviceName = this.getDefaultServiceName(name);
                 }
 
-                if(service.isSupported && !service.isSupported()){
+                if (!service.isSupported) {
+                    service.isSupported = () => true;
+                }
+
+                if(!service.isSupported()){
                     /* eslint-disable no-console*/
                     console.error(`${service.serviceName} is not supported in this deployment.`);
                     /* eslint-enable no-console*/
@@ -98,6 +109,7 @@ class ServicesWorker {
                     service.isSupported = () => false;
                 }
 
+                types.forEach(argType => InputTypes.registerType(argType, service.serviceName));
                 return service;
             });
     }

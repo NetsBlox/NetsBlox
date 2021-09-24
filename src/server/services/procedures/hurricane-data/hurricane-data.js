@@ -12,6 +12,14 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
 
+// UPDATE INFO
+// data files are available at https://www.nhc.noaa.gov/data/ under "Best Track Data (HURDAT2)"
+// grab both the "Atlantic hurricane database" and "Northeast and North Central Pacific hurricane database" files
+const dataFiles = [
+    'hurdat2-1851-2020-052921.txt',
+    'hurdat2-nepac-1949-2020-043021a.txt',
+];
+
 const HurricaneData = {};
 HurricaneData._data = [];
 
@@ -36,11 +44,6 @@ HurricaneData._data = [];
                 latitude, longitude, maxWind, minPressure});
         }
     };
-
-    const dataFiles = [
-        'hurdat2-1851-2018-051019.txt',
-        'hurdat2-nepac-1949-2017-050418.txt'
-    ];
 
     dataFiles.map(name => fs.readFileSync(path.join(__dirname, name), 'utf8'))
         .reduce((text1, text2) => text1 + text2)

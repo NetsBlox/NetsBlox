@@ -103,7 +103,14 @@ IoTScape.send = function (service, id, command){
  * @param {RemoteInfo} remote Remote host information
  */
 IoTScape._createService = async function(definition, remote) {    
-    let parsed = JSON.parse(definition);
+    let parsed;
+
+    try {
+        parsed = JSON.parse(definition);
+    } catch(err){
+        logger.log('Error parsing IoTScape service: ' + err);
+        return;
+    }
 
     // Ignore request messages sent to this method
     if(parsed.request){
@@ -267,14 +274,13 @@ server.on('message', function (message, remote) {
 IoTScapeServices.start(server);
 
 /* eslint no-console: off */
-if (process.env.IOTSCAPE_PORT) {
+IoTScape.initialize = function () {
     console.log('IOTSCAPE_PORT is ' + process.env.IOTSCAPE_PORT);
-    
     // Clear old devices
     IoTScape._getDatabase().deleteMany({type: 'DeviceService'});
 
     server.bind(process.env.IOTSCAPE_PORT || 1975);
-}
+};
 
 IoTScape.isSupported = function () {
     if (!process.env.IOTSCAPE_PORT) {

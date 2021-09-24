@@ -4,7 +4,7 @@ module.exports = {
     EVERYONE: 'everyone in room',
     RPC: {
         RESERVED_FN_NAMES: [
-            'init',
+            'initialize',
             'serviceName',
             'isSupported',
             'onDelete',

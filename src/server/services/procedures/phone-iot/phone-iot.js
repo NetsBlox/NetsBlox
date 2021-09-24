@@ -5,7 +5,7 @@
  * PhoneIoT also allows you to control a customizable interactive display, enabling you to use your device as a custom remote control, or even create and run distributed (multiplayer) applications.
  * The limits are up to your imagination!
  * 
- * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`__ and iOS (*coming soon*), and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`__.
+ * To get started using PhoneIoT, download the PhoneIoT app on your mobile device, available for `Android <https://play.google.com/store/apps/details?id=org.netsblox.phoneiot>`__ and iOS, and then go to the `NetsBlox editor <https://editor.NetsBlox.org>`__.
  * In the top left of the editor, you should see a grid of several colored tabs.
  * Under the ``Network`` tab, grab a ``call`` block and place it in the center script area.
  * Click the first dropdown on the ``call`` block and select the ``PhoneIoT`` service.
@@ -48,42 +48,94 @@ const types = require('../../input-types');
 const _ = require('lodash');
 
 // these types are used for communication with PhoneIoT
-const myTypes = {};
-myTypes.SliderStyle = input => types.parse.Enum(input, { slider: 0, progress: 1 }, undefined, 'Slider Style');
-myTypes.TouchpadStyle = input => types.parse.Enum(input, { rectangle: 0, square: 1 }, undefined, 'Touchpad Style');
-myTypes.ButtonStyle = input => types.parse.Enum(input, { rectangle: 0, ellipse: 1, square: 2, circle: 3 }, undefined, 'Button Style');
-myTypes.ToggleStyle = input => types.parse.Enum(input, { switch: 0, checkbox: 1 }, undefined, 'Toggle Style');
-myTypes.Align = input => types.parse.Enum(input, { left: 0, center: 1, right: 2 }, undefined, 'Align');
-myTypes.Fit = input => types.parse.Enum(input, { fit: 0, zoom: 1, stretch: 2 }, undefined, 'Fit');
-myTypes.FontSize = input => types.parse.BoundedNumber(input, [0.1, 10.0]);
-myTypes.SensorPeriod = input => types.parse.BoundedNumber(input, [100, undefined]);
-myTypes.Color = input => types.parse.Number(input);
-myTypes.Intensity = input => types.parse.BoundedNumber(input, [0, 255]);
-myTypes.Position = input => types.parse.BoundedNumber(input, [0, 100]);
-myTypes.Size = input => types.parse.BoundedNumber(input, [0, 100]);
-myTypes.Device = async (input, params, ctx) => {
-    const deviceId = await types.parse.BoundedString(input, [4, 12]);
-    let device;
-
-    if (deviceId.length === 12) {
-        device = PhoneIoT.prototype._devices[deviceId];
-    } else { // try to guess the rest of the id
-        for (const mac_addr in this._devices) { // pick the first match
-            if (mac_addr.endsWith(deviceId)) {
-                const deviceId = mac_addr;
-                device = PhoneIoT.prototype._devices[deviceId];
+types.defineType({
+    name: 'SliderStyle',
+    description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
+    baseType: 'Enum',
+    baseParams: { slider: 0, progress: 1 },
+});
+types.defineType({
+    name: 'TouchpadStyle', 
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` touchpad, as created by :func:`PhoneIoT.addTouchpad`.',
+    baseType: 'Enum',
+    baseParams: { rectangle: 0, square: 1 },
+});
+types.defineType({
+    name: 'ButtonStyle',
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` button, as created by :func:`PhoneIoT.addButton`.',
+    baseType: 'Enum',
+    baseParams: { rectangle: 0, ellipse: 1, square: 2, circle: 3 },
+});
+types.defineType({
+    name: 'ToggleStyle',
+    description: 'The style to use for displaying a :doc:`/services/PhoneIoT/index` toggle control, as created by :func:`PhoneIoT.addToggle`.',
+    baseType: 'Enum',
+    baseParams: { switch: 0, checkbox: 1 },
+});
+types.defineType({
+    name: 'Align',
+    description: 'The strategy for aligning text in a :doc:`/services/PhoneIoT/index` control such as :func:`PhoneIoT.addLabel`.',
+    baseType: 'Enum',
+    baseParams: { left: 0, center: 1, right: 2 },
+});
+types.defineType({
+    name: 'Fit',
+    description: 'The strategy for positioning an image in a :doc:`/services/PhoneIoT/index` image display, as created by :func:`PhoneIoT.addImageDisplay`.',
+    baseType: 'Enum',
+    baseParams: { fit: 0, zoom: 1, stretch: 2 },
+});
+types.defineType({
+    name: 'FontSize',
+    description: 'The font size of text in a :doc:`/services/PhoneIoT/index` control.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0.1', '10.0'],
+});
+types.defineType({
+    name: 'SensorPeriod',
+    description: 'An update period (interval) for :doc:`/services/PhoneIoT/index` sensors. This is used by :func:`PhoneIoT.listenToSensors` to start receiving a stream of periodic update messages.',
+    baseType: 'BoundedNumber',
+    baseParams: ['100'],
+});
+types.defineType({
+    name: 'Color',
+    description: 'A color code used by :doc:`/services/PhoneIoT/index`. You can create color codes with :func:`PhoneIoT.getColor`.',
+    baseType: 'Integer',
+});
+types.defineType({
+    name: 'Position',
+    description: 'The position of a :doc:`/services/PhoneIoT/index` control as a percentage of the screen from the top left corner.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0', '100'],
+});
+types.defineType({
+    name: 'Size',
+    description: 'The size of a :doc:`/services/PhoneIoT/index` control as a percentage of the screen.',
+    baseType: 'BoundedNumber',
+    baseParams: ['0', '100'],
+});
+types.defineType({
+    name: 'Device',
+    description: 'A :doc:`/services/PhoneIoT/index` device ID. The device must be connected to be valid.',
+    baseType: 'BoundedString',
+    baseParams: ['4', '12'],
+    parser: async (deviceId, params, ctx) => {
+        let device;
+        if (deviceId.length === 12) {
+            device = PhoneIoT.prototype._devices[deviceId];
+        } else { // try to guess the rest of the id
+            for (const mac_addr in this._devices) { // pick the first match
+                if (mac_addr.endsWith(deviceId)) {
+                    const deviceId = mac_addr;
+                    device = PhoneIoT.prototype._devices[deviceId];
+                }
             }
         }
-    }
 
-    if (!device) throw Error('Device not found.');
-    await acl.ensureAuthorized(ctx.caller.username, deviceId);
-    return device;
-};
-
-for (const type in myTypes) {
-    types.defineType(type, myTypes[type]);
-}
+        if (!device) throw Error('Device not found.');
+        await acl.ensureAuthorized(ctx.caller.username, deviceId);
+        return device;
+    },
+});
 
 /*
  * PhoneIoT - This constructor is called on the first
@@ -122,12 +174,12 @@ PhoneIoT.prototype._getOrCreateDevice = function (mac_addr, ip4_addr, ip4_port) 
 PhoneIoT.prototype._heartbeat = function () {
     for (const mac_addr in PhoneIoT.prototype._devices) {
         const device = PhoneIoT.prototype._devices[mac_addr];
-        if (!device.heartbeat()) {
+        if (device.requestDisconnect || !device.heartbeat()) {
             logger.log('forgetting ' + mac_addr);
             delete PhoneIoT.prototype._devices[mac_addr];
         }
     }
-    setTimeout(PhoneIoT.prototype._heartbeat, 1000);
+    setTimeout(PhoneIoT.prototype._heartbeat, 1000); // must be every second to preserve timing logic
 };
 
 /**
@@ -182,10 +234,10 @@ PhoneIoT.prototype._passToDevice = async function (fnName, args) {
  * If not specified, ``alpha`` will default to ``255``.
  * 
  * @category Utility
- * @param {Intensity} red red level (0-255)
- * @param {Intensity} green green level (0-255)
- * @param {Intensity} blue blue level (0-255)
- * @param {Intensity=} alpha alpha level (0-255)
+ * @param {BoundedInteger<0,255>} red red level (0-255)
+ * @param {BoundedInteger<0,255>} green green level (0-255)
+ * @param {BoundedInteger<0,255>} blue blue level (0-255)
+ * @param {BoundedInteger<0,255>=} alpha alpha level (0-255)
  * @returns {Color} Constructed color code (an integer)
  */
 PhoneIoT.prototype.getColor = function (red, green, blue, alpha = 255) {
@@ -283,7 +335,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {String=} text text to display on the button (default empty)
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {String=} options.event The name of a message type to be sent each time the button is pressed. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``.
      * @param {ButtonStyle=} options.style The display style of the button on the screen. This can be ``rectangle`` (default), ``ellipse``, ``square``, or ``circle``. If ``square`` or ``circle`` is used, the height of the control is ignored (height equals width).
      * @param {Color=} options.color The background color of the button.
      * @param {Color=} options.textColor The text color of the button.
@@ -316,7 +368,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the image display (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``.
+     * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``.
      * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
      * @param {Boolean=} options.landscape If set to ``true``, rotates the image display ``90`` degrees around its top left corner.
      * @param {Fit=} options.fit The technique used to fit the image into the display, in case the image and the display have different aspect ratios. This can be ``fit`` (default), ``zoom``, or ``stretch``.
@@ -346,7 +398,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the text field (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``text``.
+     * @param {String=} options.event The name of an event to send every time the user changes the text content (only possible if ``readonly = false``). Note that this event is only sent once the user clicks accept on the new content (you do not get an event for every key press). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``text``.
      * @param {String=} options.text This can be used to set the initial text of the text field once created. Defaults to empty if not specified.
      * @param {Color=} options.color The color of the text field border.
      * @param {Color=} options.textColor The text color of the text field.
@@ -383,7 +435,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} width Width of the joystick (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user moves the joystick. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``x``, ``y``, ``tag``.
      * @param {Color=} options.color The color of the joystick.
      * @param {Boolean=} options.landscape If set to ``true``, the ``x`` and ``y`` values of the joystick are altered so that it acts correctly when in landscape mode. Unlike other controls, this option does not affect where the control is displayed on the screen (no rotation).
      * @returns {String} id of the created control
@@ -414,7 +466,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} height Height of the touchpad (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``x``, ``y``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the touchpad. A message field called ``tag`` is included to differentiate the different types of interactions; it is one of ``down`` (touch started), ``up`` (touch ended), or ``move`` (during continued/held touch). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``x``, ``y``, ``tag``.
      * @param {Color=} options.color The color of the touchpad.
      * @param {TouchpadStyle=} options.style Controls the appearance of the touchpad. These are the same as for :func:`PhoneIoT.addButton` except that only ``rectangle`` and ``square`` are allowed.
      * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
@@ -444,7 +496,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Size} width Width (length) of the slider (percentage).
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the slider. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``level``, ``tag``.
+     * @param {String=} options.event The name of a message type to be sent each time the user touches, slides, or lets go of the slider. The messages also include a ``tag`` field which functions identically to the one in :func:`PhoneIoT.addTouchpad`. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``level``, ``tag``.
      * @param {Color=} options.color The color of the slider.
      * @param {BoundedNumber<0,1>=} options.value The initial value of the slider (default ``0.0``).
      * @param {SliderStyle=} options.style Controls the appearance of the slider. Allowed values are ``slider`` (default) or ``progress``.
@@ -513,7 +565,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Object=} options Additional options
      * @param {String=} options.group The name of the group to associate this radio button with. You do not need this value to access the control later. If not specified, defaults to ``main``.
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
-     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is set. Message fields: ``id``, ``state``.
+     * @param {String=} options.event The name of an event to send every time the user clicks the radio button. Note that clicking a radio button always checks it, unlike toggles. You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``, ``state``.
      * @param {Boolean=} options.checked Defaults to ``false``. If set to ``true``, the radio button will be initially checked. Note that, while the user cannot check multiple radio buttons, you are free to do so programmatically.
      * @param {Color=} options.color The color of the radio button itself.
      * @param {Color=} options.textColor The text color of the radio button.
@@ -667,9 +719,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {SensorPeriod=} sensors.orientation ``orientation`` period
      * @param {SensorPeriod=} sensors.accelerometer ``accelerometer`` period
      * @param {SensorPeriod=} sensors.magneticField ``magneticField`` period
-     * @param {SensorPeriod=} sensors.rotation ``rotation`` period
+     * @param {SensorPeriod=} sensors.rotation @deprecated ``rotation`` period
      * @param {SensorPeriod=} sensors.linearAcceleration ``linearAcceleration`` period
-     * @param {SensorPeriod=} sensors.gameRotation ``gameRotation`` sensor period
+     * @param {SensorPeriod=} sensors.gameRotation @deprecated ``gameRotation`` sensor period
      * @param {SensorPeriod=} sensors.lightLevel ``lightLevel`` period
      * @param {SensorPeriod=} sensors.microphoneLevel ``microphoneLevel`` period
      * @param {SensorPeriod=} sensors.proximity ``proximity`` period
@@ -721,7 +773,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @returns {Array} A list of sensor names
      */
     PhoneIoT.prototype.getSensors = function () {
-        return Object.keys(common.SENSOR_PACKERS);
+        return Object.keys(common.SENSOR_PACKERS).filter(s => !common.DEPRECATED_SENSORS.has(s));
     };
     /**
      * This is the first RPC you should *always* call when working with PhoneIoT.
@@ -785,11 +837,14 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * - azimuth (effectively the compass heading) ``[-180, 180]``
      * - pitch (vertical tilt) ``[-90, 90]``
-     * - roll ``[-90, 90]``
+     * - roll ``[-180, 180]``
+     * 
+     * If you are getting inconsistent values for the first (azimuth) angle,
+     * try moving and rotating your device around in a figure-8 to recalibrate it.
      * 
      * Sensor name: ``orientation``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -803,6 +858,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * The output of this RPC assumes the device is face-up.
      * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Number} the compass heading (in degrees)
@@ -815,6 +876,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * The output of this RPC assumes the device is face-up.
      * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {String} the current compass direction name
@@ -824,6 +891,12 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Equivalent to :func:`PhoneIoT.getCompassDirection`, except that it only returns ``N``, ``E``, ``S``, or ``W``.
+     * 
+     * If you are getting inconsistent values, try moving and rotating your device around in a figure-8 to recalibrate it.
+     * 
+     * Sensor name: ``orientation``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``heading``, ``dir``, ``cardinalDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -840,7 +913,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``accelerometer``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -861,6 +934,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * - ``left`` - the device is horizontal, lying on its left side (when facing the screen)
      * - ``right`` - the device is horizontal, lying on its right side (when facing the screen)
      * 
+     * Sensor name: ``accelerometer``
+     * 
+     * Message fields: ``x``, ``y``, ``z``, ``facingDir``, ``device``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {String} name of the facing direction
@@ -878,7 +955,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gravity``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -897,7 +974,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``linearAcceleration``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -912,7 +989,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gyroscope``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -928,8 +1005,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``rotation``
      * 
-     * Message fields: ``x``, ``y``, ``z``, ``w``
+     * Message fields: ``x``, ``y``, ``z``, ``w``, ``device``
      * 
+     * @deprecated
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Array} 4D rotational vector
@@ -942,8 +1020,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``gameRotation``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
+     * @deprecated
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Array} 3D rotational vector
@@ -960,7 +1039,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``magneticField``
      * 
-     * Message fields: ``x``, ``y``, ``z``
+     * Message fields: ``x``, ``y``, ``z``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -976,7 +1055,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``microphoneLevel``
      * 
-     * Message fields: ``volume``
+     * Message fields: ``volume``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -992,7 +1071,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1009,7 +1088,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
+     * 
      * @category Sensors
      * @param {Device} device id of the device
      * @returns {Number} current bearing (in degrees)
@@ -1023,7 +1103,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``location``
      * 
-     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``
+     * Message fields: ``latitude``, ``longitude``, ``bearing``, ``altitude``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1040,7 +1120,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``proximity``
      * 
-     * Message fields: ``distance``
+     * Message fields: ``distance``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1055,7 +1135,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``stepCount``
      * 
-     * Message fields: ``count``
+     * Message fields: ``count``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1070,7 +1150,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``lightLevel``
      * 
-     * Message fields: ``value``
+     * Message fields: ``value``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1186,12 +1266,12 @@ server.on('message', function (message, remote) {
 });
 
 /* eslint no-console: off */
-if (process.env.PHONE_IOT_PORT) {
+PhoneIoT.initialize = function () {
     console.log('PHONE_IOT_PORT is ' + process.env.PHONE_IOT_PORT);
     server.bind(process.env.PHONE_IOT_PORT || 1976);
 
     setTimeout(PhoneIoT.prototype._heartbeat, 1000);
-}
+};
 
 PhoneIoT.isSupported = function () {
     if (!process.env.PHONE_IOT_PORT) {

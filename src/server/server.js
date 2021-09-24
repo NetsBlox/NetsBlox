@@ -34,9 +34,10 @@ const middleware = require('./routes/middleware');
 const Client = require('./client');
 const Messages = require('./services/messages');
 const assert = require('assert');
-const request = require('request');
+const axios = require('axios');
 const CustomServicesHosts = require('./api/core/services-hosts');
 const RestAPI = require('./api/rest');
+const NetsBloxAddress = require('./netsblox-address');
 
 var Server = function(opts) {
     this._logger = new Logger('netsblox');
@@ -79,18 +80,34 @@ Server.prototype.configureRoutes = async function(servicesURL) {
     if (servicesURL) {
         this.app.use('/services', (req, res) => {
             const url = servicesURL + req.originalUrl.replace('/services', '');
-            const proxyReq = request({
+            const opts = {
                 method: req.method,
-                uri: url,
-                body: req.body,
+                url: url,
+                responseType: 'stream',
                 headers: req.headers,
-                json: true,
-            });
-            proxyReq.on('error', err => {
-                this._logger.warn(`Error occurred on call to ${url}: ${err}`);
-                res.sendStatus(500);
-            });
-            return proxyReq.pipe(res);
+                data: req.body,
+                maxRedirects: 0,
+            };
+            const passResponse = proxyResp => {
+                const {status, data, headers} = proxyResp;
+                Object.entries(headers).forEach(header => {
+                    const [field, value] = header;
+                    res.set(field, value);
+                });
+                res.status(status);
+                return data.pipe(res);
+            };
+
+            return axios(opts)
+                .then(passResponse)
+                .catch(err => {
+                    if (err.response) {
+                        passResponse(err.response);
+                    } else {
+                        this._logger.warn(`Error occurred on call to ${url}: ${err}`);
+                        return res.sendStatus(500);
+                    }
+                });
         });
     }
 
@@ -425,7 +442,19 @@ class ServicesPrivateAPI {
         this.messageHandlers = {};
         this.logger = logger.fork('services');
 
-        this.on(Messages.SendMessage, message => {
+        this.on(Messages.SendMessage, async message => {
+            const {target, projectId, roleId} = message;
+            const address = await NetsBloxAddress.new(target, projectId, roleId);
+            const states = address.resolve();
+            const clients = states
+                .flatMap(state => {
+                    const [projectId, roleId] = state;
+                    return NetworkTopology.getClientsAt(projectId, roleId);
+                });
+
+            clients.forEach(client => client.sendMessage(message.type, message.contents));
+        });
+        this.on(Messages.SendMessageToClient, message => {
             const client = NetworkTopology.getClient(message.clientId);
             if (client) {
                 const hasChangedSituation = message.projectId !== client.projectId ||

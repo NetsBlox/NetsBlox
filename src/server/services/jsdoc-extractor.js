@@ -29,6 +29,22 @@ function cleanMarkup(str) {
     return str;
 }
 
+function parseInlineTags(desc) {
+    if (!desc) return { tags: [], desc };
+    const tags = [];
+
+    for (;;) {
+        const parsed = doctrine.parse(desc, {unwrap: true});
+        assert(!parsed.description.length || !parsed.tags.length, 'An inline tag may not have a description');
+        if (parsed.description.length) {
+            return { tags, description: parsed.description };
+        }
+        assert(parsed.tags.length === 1); // rest is desc on the tag
+        tags.push(parsed.tags[0].title);
+        desc = parsed.tags[0].description;
+    }
+}
+
 //simplifies a single metadata returned by doctrine to be used within netsblox
 function simplify(metadata) {
     let {description, tags} = metadata;
@@ -40,9 +56,8 @@ function simplify(metadata) {
     let simplifyParam = param => {
         let {name, type, description} = param;
         const rawDescription = description;
-        description = cleanMarkup(description);
 
-        let simpleParam = {name, description, rawDescription};
+        let simpleParam = {name, rawDescription};
 
         // if type is defined
         if (type) {
@@ -56,6 +71,13 @@ function simplify(metadata) {
             logger.warn(`rpc ${fnName}, parameter ${name} is missing the type attribute`);
         }
         return simpleParam;
+    };
+    let cleanDesc = arg => {
+        assert(arg.tags === undefined);
+        const parsedDesc = parseInlineTags(arg.rawDescription);
+        arg.rawDescription = parsedDesc.description;
+        arg.tags = parsedDesc.tags;
+        arg.description = cleanMarkup(arg.rawDescription);
     };
 
     let args = tags
@@ -73,8 +95,10 @@ function simplify(metadata) {
                     `Cannot add field ${fieldName} to ${objectName}. Argument is not an object.`
                 );
                 arg.name = fieldName;
+                cleanDesc(arg);
                 objectArg.type.params.push(arg);
             } else {
+                cleanDesc(arg);
                 args.push(arg);
             }
             return args;
@@ -330,5 +354,6 @@ module.exports = {
     _parseSource: parseSource,
     _simplify: simplify,
     parse: parseService,
-    Docs
+    Docs,
+    cleanMarkup,
 };
