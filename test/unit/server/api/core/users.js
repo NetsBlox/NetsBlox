@@ -3,7 +3,9 @@ describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const utils = require('../../../../assets/utils');
     const UsersAPI = utils.reqSrc('./api/core/users');
+    const Auth = utils.reqSrc('./api/core/auth');
     const UsersStorage = utils.reqSrc('./storage/users');
+    const ProjectsStorage = utils.reqSrc('./storage/projects');
     const GroupsStorage = utils.reqSrc('./storage/groups');
     const username = 'brian';
 
@@ -100,16 +102,39 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe.only('delete', function() {
-        it('should delete user', function() {
-            // TODO
+        beforeEach(() => Auth.disable());
+        afterEach(() => Auth.enable());
+
+        describe('success', function() {
+            before(async () => {
+                Auth.disable();
+                await UsersAPI.delete(null, username);
+            });
+
+            it('should delete user', async function() {
+                const user = await UsersStorage.collection.findOne({username});
+                assert(!user);
+            });
+
+            it('should delete user\'s projects', async function() {
+                const project = await ProjectsStorage._collection.findOne({owner: username});
+                assert(!project);
+            });
         });
 
-        it('should delete user\'s projects', function() {
-            // TODO
+        it('should throw error if doesnt exist', async function() {
+            await assert.rejects(
+                () => UsersAPI.delete(null, 'someUser'),
+                /not find user/
+            );
         });
 
-        it('should not delete other user accounts', function() {
-            // TODO
+        it('should not delete other user accounts', async function() {
+            Auth.enable();
+            await assert.rejects(
+                () => UsersAPI.delete('otherUser', username),
+                /not allowed/
+            );
         });
 
         it('should delete member account', function() {
