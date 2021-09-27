@@ -137,7 +137,13 @@ describe(utils.suiteName(__filename), function() {
             );
         });
 
-        it('should delete member account', function() {
+        it('should allow own deletion', async function() {
+            Auth.enable();
+            await UsersAPI.delete(username, username);
+        });
+
+        it('should delete allow owner to delete member account', async function() {
+            //await UsersAPI.delete(null, username);
             // TODO
         });
     });

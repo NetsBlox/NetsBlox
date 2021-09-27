@@ -1,3 +1,4 @@
+const ProjectsStorage = require('../../storage/projects');
 const NetworkTopology = require('../../network-topology');
 const Logger = require('../../logger');
 const UsersStorage = require('../../storage/users');
@@ -108,6 +109,7 @@ class Users {
         if (result.deletedCount === 0) {
             throw new UserNotFound(username);
         }
+        await ProjectsStorage._collection.deleteMany({owner: username});
     }
 
     async setPassword(username, oldPassword, newPassword) {
