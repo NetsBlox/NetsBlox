@@ -143,21 +143,29 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should delete allow owner to delete member account', async function() {
-            //await UsersAPI.delete(null, username);
-            // TODO
+            Auth.enable();
+            //await UsersAPI.delete(owner, member);
         });
     });
 
     describe('setPassword', function() {
         it('should change user password', function() {
+            await UsersAPI.setPassword(username, 'newPassword');
             // TODO
         });
 
         it('should not change different user password', function() {
-            // TODO
+            assert.rejects(
+                () => UsersAPI.setPassword(username, 'wrongPassword', 'newPassword'),
+                // TODO
+            );
         });
 
         it('should change member password', function() {
+            assert.rejects(
+                () => UsersAPI.setPassword(owner, member, 'wrongPassword', 'newPassword'),
+                // TODO
+            );
             // TODO
         });
     });
@@ -175,7 +183,14 @@ describe(utils.suiteName(__filename), function() {
             // TODO
         });
 
-        it('should email user new password', function() {
+        it('should email user new password', function(done) {
+            const mockMailer = {};
+            mockMailer.sendMail = data => {
+                assert(data.html.includes(newPassword))
+                done();
+            };
+
+            UsersAPI.resetPassword(username, newPassword, mockMailer);
             // TODO
         });
     });

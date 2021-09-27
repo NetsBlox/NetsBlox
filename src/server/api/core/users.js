@@ -8,7 +8,7 @@ const Auth = require('./auth');
 const P = Auth.Permission;
 const {hex_sha512} = require('../../../common/sha512');
 const randomString = require('just.randomstring');
-const mailer = require('../../mailer');
+const defaultMailer = require('../../mailer');
 const _ = require('lodash');
 
 class Users {
@@ -125,7 +125,7 @@ class Users {
         }
     }
 
-    async resetPassword(username) {
+    async resetPassword(username, mailer=defaultMailer) {
         const password = randomString(8);
         const hash = hex_sha512(password);
         const query = {username};
