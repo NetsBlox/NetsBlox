@@ -39,7 +39,7 @@ class DeviceService {
     }
 
     async _initializeRPC(methodSpec) {
-        // getDevices and listen have special implementations
+        // Default methods have special implementations
         if(methodSpec.name === 'getDevices'){
             this[methodSpec.name] = async function() {
                 return IoTScapeServices.getDevices(this.serviceName);
@@ -47,6 +47,15 @@ class DeviceService {
         } else if(methodSpec.name === 'listen'){
             this[methodSpec.name] = async function() {
                 return IoTScapeServices.listen(this.serviceName, this.socket, ...arguments);
+            };
+        } else if(methodSpec.name === 'send'){
+            this[methodSpec.name] = async function() {
+                let rpcCall = arguments[1].split(' ');
+                return IoTScapeServices.call(this.serviceName, rpcCall[0], arguments[0], ...rpcCall.slice(1));
+            };
+        } else if(methodSpec.name === 'getMessageTypes'){
+            this[methodSpec.name] = async function() {
+                return IoTScapeServices.getMessageTypes(this.serviceName);
             };
         } else {
             this[methodSpec.name] = async function() {

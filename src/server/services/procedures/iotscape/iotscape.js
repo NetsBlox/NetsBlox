@@ -174,7 +174,7 @@ IoTScape._createService = async function(definition, remote) {
  * @param {Object} methodsInfo Methods from parsed JSON data
  */
 function _generateMethods(methodsInfo) {
-    // Add getDevices and listen methods by default
+    // Add default methods first
     let methods = [{
         name: 'getDevices',
         documentation: 'Get a list of device IDs for this service',
@@ -190,11 +190,38 @@ function _generateMethods(methodsInfo) {
         arguments: [{
             name: 'id',
             optional: false,
-            documentation: 'ID of device to send request to',
+            documentation: 'ID of device to listen to messages from',
         }],
         returns: {
             documentation: '',
             type: ['void']
+        }
+    },
+    {
+        name: 'send',
+        documentation: 'Send a text-based message to the service',
+        arguments: [{
+            name: 'id',
+            optional: false,
+            documentation: 'ID of device to send request to',
+        },
+        {
+            name: 'command',
+            optional: false,
+            documentation: 'Request to send to device',
+        }],
+        returns: {
+            documentation: '',
+            type: ['any']
+        }
+    },
+    {
+        name: 'getMessageTypes',
+        documentation: 'Register for receiving messages from the given id',
+        arguments: [],
+        returns: {
+            documentation: '',
+            type: ['array']
         }
     }, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
