@@ -132,7 +132,7 @@ IoTScape._createService = async function(definition, remote) {
     }
 
     const serviceInfo = parsed.service;
-    const methodsInfo = parsed.methods;
+    const methodsInfo = parsed.methods || {};
 
     const version = serviceInfo.version;
     const id = parsed.id;

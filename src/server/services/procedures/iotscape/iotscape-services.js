@@ -71,7 +71,7 @@ IoTScapeServices.getMessageTypes = function(service) {
     }
     
     // Parse events into NetsBlox-friendlier format
-    let eventsInfo = IoTScapeServices._serviceDefinitions[service].events;
+    let eventsInfo = IoTScapeServices._serviceDefinitions[service].events || {};
     eventsInfo = Object.keys(eventsInfo).map(event => [event, eventsInfo[event].params]);
     return eventsInfo;
 };
