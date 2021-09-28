@@ -146,8 +146,8 @@ IoTScapeServices._listeningClients = {};
 /**
  * Add a client to get event updates from a device
  * @param {String} service Name of service
- * @param {String} id ID of device
  * @param {*} client Client to add to listeners
+ * @param {String} id ID of device
  */
 IoTScapeServices.listen = function(service, client, id){
     id = id.toString();
@@ -173,6 +173,7 @@ IoTScapeServices.listen = function(service, client, id){
 /**
  * Make a call to a IoTScape function
  * @param {String} service Name of service
+ * @param {String} func RPC on device to call
  * @param {String} id ID of device
  * @param  {...any} args 
  */
