@@ -67,12 +67,12 @@ IoTScapeServices.getServices = function () {
  */
 IoTScapeServices.getMessageTypes = function(service) {
     if(!IoTScapeServices.serviceExists(service)){
-        return [];
+        return {};
     }
     
     // Parse events into NetsBlox-friendlier format
     let eventsInfo = IoTScapeServices._serviceDefinitions[service].events || {};
-    eventsInfo = Object.keys(eventsInfo).map(event => [event, eventsInfo[event].params]);
+    eventsInfo = Object.keys(eventsInfo).map(event => [event, ['id', ...eventsInfo[event].params]]);
     return eventsInfo;
 };
 
@@ -248,29 +248,27 @@ IoTScapeServices.start = function(socket){
         }
 
         // Ignore other messages
-        if(!parsed.request){
-            return;
-        }
+        if(parsed.request){
+            const requestID = parsed.request;
+            
+            if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
+                if(parsed.response){
+                    // Return multiple results as a list, single result as a value
+                    const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
+                    const responseType = methodInfo.returns.type;
 
-        const requestID = parsed.request;
-        
-        if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
-            if(parsed.response){
-                // Return multiple results as a list, single result as a value
-                const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
-                const responseType = methodInfo.returns.type;
-
-                try {
-                    if(responseType.length > 1) {
-                        IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
-                    } else {
-                        IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                    try {
+                        if(responseType.length > 1) {
+                            IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                        } else {
+                            IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                        }
+                    } catch (error) {
+                        logger.log('IoTScape response invalid: ' + error);
                     }
-                } catch (error) {
-                    logger.log('IoTScape response invalid: ' + error);
-                }
 
-                delete IoTScapeServices._awaitingRequests[requestID];
+                    delete IoTScapeServices._awaitingRequests[requestID];
+                }
             }
         }
 
@@ -281,7 +279,7 @@ IoTScapeServices.start = function(socket){
             
             // Send responses
             clients.forEach((client) => {
-                client.sendMessage(parsed.event.type, parsed.event.args);
+                client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
             });
         }
     });
