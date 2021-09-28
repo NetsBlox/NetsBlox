@@ -70,6 +70,18 @@ IoTScape.getMessageTypes = function(service){
 };
 
 /**
+ * List the methods associated with a service
+ * @param {string} service Name of service to get methods for
+ */
+IoTScape.getMethods = function(service){
+    if(!IoTScapeServices.serviceExists(service)){
+        throw new Error('Service not found');
+    }
+    
+    return IoTScapeServices.getMethods(service);
+};
+
+/**
  * Make a call to a device as a text command
  * @param {String} service Name of service to make call to
  * @param {String} id ID of device to make call to
@@ -218,6 +230,15 @@ function _generateMethods(methodsInfo) {
     {
         name: 'getMessageTypes',
         documentation: 'Register for receiving messages from the given id',
+        arguments: [],
+        returns: {
+            documentation: '',
+            type: ['array']
+        }
+    },
+    {
+        name: 'getMethods',
+        documentation: 'Get methods associated with this service',
         arguments: [],
         returns: {
             documentation: '',

@@ -76,6 +76,22 @@ IoTScapeServices.getMessageTypes = function(service) {
     return eventsInfo;
 };
 
+
+/**
+ * List methods associated with a service
+ * @param {string} service Name of service
+ */
+IoTScapeServices.getMethods = function(service) {
+    if(!IoTScapeServices.serviceExists(service)){
+        return {};
+    }
+    
+    // Parse methods into NetsBlox-friendlier format
+    let methodsInfo = IoTScapeServices._serviceDefinitions[service].methods;
+    methodsInfo = Object.keys(methodsInfo).map(method => [method, methodsInfo[method].params.map(param => param.name)]);
+    return methodsInfo;
+};
+
 /**
  * Determine if a device with a given ID exists
  * @param {String} service Name of service

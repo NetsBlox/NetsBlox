@@ -57,6 +57,10 @@ class DeviceService {
             this[methodSpec.name] = async function() {
                 return IoTScapeServices.getMessageTypes(this.serviceName);
             };
+        } else if(methodSpec.name === 'getMethods'){
+            this[methodSpec.name] = async function() {
+                return IoTScapeServices.getMethods(this.serviceName);
+            };
         } else {
             this[methodSpec.name] = async function() {
                 return await IoTScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
