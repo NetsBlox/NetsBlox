@@ -14,6 +14,8 @@ const logger = require('../utils/logger')('hurricane');
 const axios = require('axios');
 const _ = require('lodash');
 
+const HurricaneData = {};
+
 // UPDATE INFO - These are fallbacks for in case the live download/parsing of up to date data fails
 // data files are available at https://www.nhc.noaa.gov/data/ under "Best Track Data (HURDAT2)"
 // grab both the "Atlantic hurricane database" and "Northeast and North Central Pacific hurricane database" files
@@ -66,22 +68,23 @@ async function get(url) {
     return resp.data;
 }
 function latestFile(files) {
-    let latest = { name: '', month: -1, day: -1, year: -1 };
-    for (const file of files) {
-        if (file.year > latest.year) { latest = file; continue; }
-        if (file.year < latest.year) continue;
-
-        if (file.month > latest.month) { latest = file; continue; }
-        if (file.month < latest.month) continue;
-
-        if (file.day > latest.day) { latest = file; continue; }
-        if (file.day < latest.day) continue;
-
-        if (file.name.length > latest.name.length) latest = file; // sometimes they have <name>.txt and <name>a.txt, etc.
-    }
-    if (latest.name.length === 0) throw Error('no files found');
-    return latest;
+    if (files.length === 0) throw Error('no files found');
+    const greater = (a, b) => a.date > b.date || (a.date.getTime() === b.date.getTime() && a.name.length > b.name.length);
+    return files.reduce((latest, file) => greater(file, latest) ? file : latest);
 }
+
+HurricaneData._extractFiles = index => {
+    const baseFile = latestFile(Array.from(
+        index.matchAll(/href=['"](hurdat2-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
+        x => { return { name: x[1], date: new Date(+`20${x[4]}`, +x[2] - 1, +x[3]) }; }
+    ));
+    const nepacFile = latestFile(Array.from(
+        index.matchAll(/href=['"](hurdat2-nepac-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
+        x => { return { name: x[1], date: new Date(+`20${x[4]}`, +x[2] - 1, +x[3]) }; }
+    ));
+
+    return { baseFile, nepacFile };
+};
 
 let CACHED_DATA = undefined;
 let CACHE_TIME_STAMP = undefined;
@@ -91,19 +94,7 @@ async function getData() {
     let res = [];
     try {
         const index = await get(DATA_ROOT);
-
-        const baseFile = latestFile(Array.from(
-            index.matchAll(/href=['"](hurdat2-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
-            x => {return {name: x[1], month: +x[2], day: +x[3], year: +x[4]}; }
-        ));
-        logger.info(`found base file: ${baseFile.name} (${baseFile.month}/${baseFile.day}/20${baseFile.year})`);
-
-        const nepacFile = latestFile(Array.from(
-            index.matchAll(/href=['"](hurdat2-nepac-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
-            x => {return {name: x[1], month: +x[2], day: +x[3], year: +x[4]}; }
-        ));
-        logger.info(`found nepac file: ${nepacFile.name} (${nepacFile.month}/${nepacFile.day}/20${nepacFile.year})`);
-
+        const { baseFile, nepacFile } = HurricaneData._extractFiles(index);
         const raw = await get(`${DATA_ROOT}/${baseFile.name}`) + await get(`${DATA_ROOT}/${nepacFile.name}`);
         res = parseData(raw);
     }
@@ -121,8 +112,6 @@ async function getData() {
     CACHE_TIME_STAMP = Date.now();
     return res;
 }
-
-const HurricaneData = {};
 
 /**
  * Get hurricane data including location, maximum winds, and central pressure.
