@@ -41,6 +41,8 @@ IoTScapeServices.removeDevice = function(service, id) {
     }
 
     delete IoTScapeServices._services[service][id];
+
+    IoTScapeServices.getEncryptionState(service, id);
     delete IoTScapeServices._encryptionStates[service][id];
 
     if(IoTScapeServices._listeningClients[service] !== undefined && IoTScapeServices._listeningClients[service][id] !== undefined){
