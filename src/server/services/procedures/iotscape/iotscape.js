@@ -189,70 +189,73 @@ IoTScape._createService = async function(definition, remote) {
     }
 };
 
+// Methods used for all device services but not included in definitions
+const _defaultMethods = [{
+    name: 'getDevices',
+    documentation: 'Get a list of device IDs for this service',
+    arguments: [],
+    returns: {
+        documentation: '',
+        type: ['void']
+    }
+}, 
+{
+    name: 'listen',
+    documentation: 'Register for receiving messages from the given id',
+    arguments: [{
+        name: 'id',
+        optional: false,
+        documentation: 'ID of device to listen to messages from',
+    }],
+    returns: {
+        documentation: '',
+        type: ['void']
+    }
+},
+{
+    name: 'send',
+    documentation: 'Send a text-based message to the service',
+    arguments: [{
+        name: 'id',
+        optional: false,
+        documentation: 'ID of device to send request to',
+    },
+    {
+        name: 'command',
+        optional: false,
+        documentation: 'Request to send to device',
+    }],
+    returns: {
+        documentation: '',
+        type: ['any']
+    }
+},
+{
+    name: 'getMessageTypes',
+    documentation: 'Register for receiving messages from the given id',
+    arguments: [],
+    returns: {
+        documentation: '',
+        type: ['array']
+    }
+},
+{
+    name: 'getMethods',
+    documentation: 'Get methods associated with this service',
+    arguments: [],
+    returns: {
+        documentation: '',
+        type: ['array']
+    }
+}];
+
 /**
  * Creates definitions for methods of an incoming service
  * @param {Object} methodsInfo Methods from parsed JSON data
  */
 function _generateMethods(methodsInfo) {
     // Add default methods first
-    let methods = [{
-        name: 'getDevices',
-        documentation: 'Get a list of device IDs for this service',
-        arguments: [],
-        returns: {
-            documentation: '',
-            type: ['void']
-        }
-    }, 
-    {
-        name: 'listen',
-        documentation: 'Register for receiving messages from the given id',
-        arguments: [{
-            name: 'id',
-            optional: false,
-            documentation: 'ID of device to listen to messages from',
-        }],
-        returns: {
-            documentation: '',
-            type: ['void']
-        }
-    },
-    {
-        name: 'send',
-        documentation: 'Send a text-based message to the service',
-        arguments: [{
-            name: 'id',
-            optional: false,
-            documentation: 'ID of device to send request to',
-        },
-        {
-            name: 'command',
-            optional: false,
-            documentation: 'Request to send to device',
-        }],
-        returns: {
-            documentation: '',
-            type: ['any']
-        }
-    },
-    {
-        name: 'getMessageTypes',
-        documentation: 'Register for receiving messages from the given id',
-        arguments: [],
-        returns: {
-            documentation: '',
-            type: ['array']
-        }
-    },
-    {
-        name: 'getMethods',
-        documentation: 'Get methods associated with this service',
-        arguments: [],
-        returns: {
-            documentation: '',
-            type: ['array']
-        }
-    }, ...Object.keys(methodsInfo).map(methodName => {
+    let methods = [..._defaultMethods, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
         const method = { name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns };

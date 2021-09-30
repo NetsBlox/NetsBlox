@@ -388,83 +388,89 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
     logger.log(IoTScapeServices._encryptionStates[service][id]);
 };
 
+const _handleMessage = function (message, remote) {
+    let parsed;
+
+    try {
+        parsed = JSON.parse(message);
+    } catch(err){
+        logger.log('Error parsing IoTScape message: ' + err);
+        return;
+    }
+
+    // Ignore other messages
+    if(parsed.request){
+        const requestID = parsed.request;
+        
+        if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
+            if(parsed.response){
+                // Return multiple results as a list, single result as a value
+                const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
+                const responseType = methodInfo.returns.type;
+
+                try {
+                    if(responseType.length > 1) {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                    } else {
+                        IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                    }
+                } catch (error) {
+                    logger.log('IoTScape response invalid: ' + error);
+                }
+
+                delete IoTScapeServices._awaitingRequests[requestID];
+            }
+        }
+    }
+
+    if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
+        // Find listening clients 
+        const clientsByID = IoTScapeServices._listeningClients[parsed.service] || {};
+        const clients = clientsByID[parsed.id.toString()] || [];
+        
+        // Handle special message types
+        if(parsed.event.type == '_reset' && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
+            logger.log(`Resetting ${parsed.service}:${parsed.id}`);
+            if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
+                delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
+            }
+        } else {
+            // Send responses
+            clients.forEach((client) => {
+                client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
+            });
+        }
+    }
+};
+
+/**
+ * Send heartbeat requests to all devices
+ */
+const _requestHeartbeats = async () => {
+    for (const service of IoTScapeServices.getServices()) {
+        IoTScapeServices.getDevices(service).forEach(async (device) => {
+            logger.log(`heartbeat ${service}:${device}`);
+            
+            try {
+                // Send heartbeat request, will timeout if device does not respond
+                await IoTScapeServices.call(service, 'heartbeat', device);
+            } catch(e) {
+                // Remove device if it didn't respond
+                logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
+                IoTScapeServices.removeDevice(service, device);
+            }
+        });
+    }
+};
+
 IoTScapeServices.start = function(socket){
     IoTScapeServices.socket = socket;
 
     // Handle incoming responses
-    IoTScapeServices.socket.on('message', function (message, remote) {
-        let parsed;
-
-        try {
-            parsed = JSON.parse(message);
-        } catch(err){
-            logger.log('Error parsing IoTScape message: ' + err);
-            return;
-        }
-
-        // Ignore other messages
-        if(parsed.request){
-            const requestID = parsed.request;
-            
-            if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
-                if(parsed.response){
-                    // Return multiple results as a list, single result as a value
-                    const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
-                    const responseType = methodInfo.returns.type;
-
-                    try {
-                        if(responseType.length > 1) {
-                            IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
-                        } else {
-                            IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
-                        }
-                    } catch (error) {
-                        logger.log('IoTScape response invalid: ' + error);
-                    }
-
-                    delete IoTScapeServices._awaitingRequests[requestID];
-                }
-            }
-        }
-
-        if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
-            // Find listening clients 
-            const clientsByID = IoTScapeServices._listeningClients[parsed.service] || {};
-            const clients = clientsByID[parsed.id.toString()] || [];
-            
-            // Handle special message types
-            if(parsed.event.type == '_reset' && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
-                logger.log(`Resetting ${parsed.service}:${parsed.id}`);
-                if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
-                    delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
-                }
-            } else {
-                // Send responses
-                clients.forEach((client) => {
-                    client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
-                });
-            }
-        }
-    });
-
+    IoTScapeServices.socket.on('message', _handleMessage);
 
     // Request heartbeats on interval
-    setInterval(async () => {
-        for (const service of IoTScapeServices.getServices()) {
-            IoTScapeServices.getDevices(service).forEach(async (device) => {
-                logger.log(`heartbeat ${service}:${device}`);
-                
-                try {
-                    // Send heartbeat request, will timeout if device does not respond
-                    await IoTScapeServices.call(service, 'heartbeat', device);
-                } catch(e) {
-                    // Remove device if it didn't respond
-                    logger.log(`${service}:${device} did not respond to heartbeat, removing from active devices`);
-                    IoTScapeServices.removeDevice(service, device);
-                }
-            });
-        }
-    }, 60 * 1000);
+    setInterval(_requestHeartbeats, 60 * 1000);
 };
 
 module.exports = IoTScapeServices;
