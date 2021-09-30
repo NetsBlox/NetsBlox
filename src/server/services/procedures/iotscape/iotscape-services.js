@@ -305,7 +305,7 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
     if(!Object.keys(IoTScapeServices._encryptionStates[service]).includes(id)){
         // Create entry with default
         IoTScapeServices._encryptionStates[service][id] = {
-            key: 0,
+            key: [0],
             cipher: 'plain'
         };
     }
@@ -315,6 +315,12 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
         // Set default cipher
         if(IoTScapeServices._encryptionStates[service][id].cipher === 'plain' && cipher == null){
             cipher = 'caesar';
+        }
+
+        key = key.map(c => parseInt(c));
+
+        if(key.includes(NaN)){
+            throw new Error('Invalid key');
         }
 
         IoTScapeServices._encryptionStates[service][id].key = key;
