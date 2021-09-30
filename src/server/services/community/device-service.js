@@ -63,7 +63,7 @@ class DeviceService {
             };
         } else {
             this[methodSpec.name] = async function() {
-                return await IoTScapeServices.call(this.serviceName, methodSpec.name, ...arguments);
+                return await IoTScape.send(this.serviceName, arguments[0], [methodSpec.name, arguments[1]].join(' '));
             };
         }
     }
