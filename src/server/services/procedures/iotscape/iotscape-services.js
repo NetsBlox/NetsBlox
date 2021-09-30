@@ -392,7 +392,7 @@ IoTScapeServices.start = function(socket){
     IoTScapeServices.socket = socket;
 
     // Handle incoming responses
-    IoTScapeServices.socket.on('message', function (message) {
+    IoTScapeServices.socket.on('message', function (message, remote) {
         let parsed;
 
         try {
@@ -427,15 +427,23 @@ IoTScapeServices.start = function(socket){
             }
         }
 
-        if(parsed.event){
+        if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
             // Find listening clients 
             const clientsByID = IoTScapeServices._listeningClients[parsed.service] || {};
             const clients = clientsByID[parsed.id.toString()] || [];
             
-            // Send responses
-            clients.forEach((client) => {
-                client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
-            });
+            // Handle special message types
+            if(parsed.event.type == '_reset' && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
+                logger.log(`Resetting ${parsed.service}:${parsed.id}`);
+                if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
+                    delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
+                }
+            } else {
+                // Send responses
+                clients.forEach((client) => {
+                    client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
+                });
+            }
         }
     });
 
