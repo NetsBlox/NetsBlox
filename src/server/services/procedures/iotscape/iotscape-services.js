@@ -257,16 +257,23 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
     const responseType = methodInfo.returns.type;
 
     // No response required
-    if(responseType.length < 1 || responseType[0] == 'void'){
-        return;
-    }
-
-    // Event response type
-    if(responseType[0].startsWith('event')){
-        return;
+    if(responseType.length < 1 || responseType[0] == 'void' || responseType[0].startsWith('event')){
+        return true;
     }
 
     // Expects a value response
+    return _createRequestWithTimeout(reqid, service, func);
+};
+
+/**
+ * Setup a Promise for the result of a request with a timeout
+ * @param {String} reqid Requst ID
+ * @param {String} service Service name
+ * @param {String} func Function name
+ * @param {Number} timeout Timeout in ms
+ * @returns 
+ */
+const _createRequestWithTimeout = function(reqid, service, func, timeout = 3000) {
     return Promise.race([
         new Promise((resolve) => {
             IoTScapeServices._awaitingRequests[reqid] = {
@@ -280,7 +287,7 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
             setTimeout(() => {
                 delete IoTScapeServices._awaitingRequests[reqid];
                 reject();
-            }, 3000);
+            }, timeout);
         })
     ]).then((result) => result).catch(() => {
         throw new Error('Response timed out.');
