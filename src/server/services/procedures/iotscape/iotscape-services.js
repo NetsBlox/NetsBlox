@@ -1,4 +1,5 @@
 const logger = require('../utils/logger')('iotscape-services');
+const ciphers = require('../roboscape/ciphers');
 
 /**
  * Stores information about registered services, with a list of IDs and their respective hosts
@@ -7,6 +8,7 @@ const IoTScapeServices = {};
 
 IoTScapeServices._services = {};
 IoTScapeServices._serviceDefinitions = {};
+IoTScapeServices._encryptionStates = {};
 
 /**
  * Creates or updates the connection information for a remote service
@@ -122,7 +124,7 @@ IoTScapeServices.functionExists = function(service, func){
         return false;
     }
     
-    return func === 'heartbeat' || IoTScapeServices.getFunctionInfo(service, func) !== undefined;
+    return func === 'heartbeat' || func === 'setKey' || func === 'setCipher' || IoTScapeServices.getFunctionInfo(service, func) !== undefined;
 };
 
 /**
@@ -142,6 +144,30 @@ IoTScapeServices.getInfo = function(service, id){
 IoTScapeServices.getFunctionInfo = function(service, func) {
     if(func === 'heartbeat'){
         return {returns: {type:['boolean']}};
+    }
+
+    if(func === 'setKey'){
+        return {
+            params: [{
+                'name': 'key',
+                'documentation': 'Key to set',
+                'type': 'number',
+                'optional': false
+            }],
+            returns: {type:['void']}
+        };
+    }
+
+    if(func === 'setCipher'){
+        return {
+            params: [{
+                'name': 'cipher',
+                'documentation': 'Cipher to use',
+                'type': 'string',
+                'optional': false
+            }],
+            returns: {type:['void']}
+        };
     }
 
     return IoTScapeServices._serviceDefinitions[service].methods[func];
@@ -201,6 +227,17 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
         return false;
     }
 
+    // Handle internal methods
+    if(func === 'setKey'){
+        IoTScapeServices.updateEncryptionState(service, id, args, null);
+        return true;
+    }
+
+    if(func === 'setCipher'){
+        IoTScapeServices.updateEncryptionState(service, id, null, args[0]);
+        return true;
+    }
+
     // Create and send request
     const reqid = IoTScapeServices._generateRequestID();
     let request = {
@@ -247,6 +284,52 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
     ]).then((result) => result).catch(() => {
         throw new Error('Response timed out.');
     });
+};
+
+/**
+ * Updates encryption settings for a device
+ * @param {String} service Service device is contained in
+ * @param {String} id ID of device to update encryption settings for
+ * @param {String=} key Key to set
+ * @param {String=} cipher Cipher to set
+ */
+IoTScapeServices.updateEncryptionState = function(service, id, key = null, cipher = null) {
+    if(!IoTScapeServices.deviceExists(service, id)){
+        throw new Error('Device not found');
+    }
+
+    if(!Object.keys(IoTScapeServices._encryptionStates).includes(service)){
+        IoTScapeServices._encryptionStates[service] = {};
+    }
+
+    if(!Object.keys(IoTScapeServices._encryptionStates[service]).includes(id)){
+        // Create entry with default
+        IoTScapeServices._encryptionStates[service][id] = {
+            key: 0,
+            cipher: 'plain'
+        };
+    }
+
+    // Update key if requested
+    if(key != null){
+        // Set default cipher
+        if(IoTScapeServices._encryptionStates[service][id].cipher === 'plain' && cipher == null){
+            cipher = 'caesar';
+        }
+
+        IoTScapeServices._encryptionStates[service][id].key = key;
+    }
+
+    // Update cipher if requested
+    cipher = (cipher || '').toLowerCase();
+    if(Object.keys(ciphers).includes(cipher)){
+        IoTScapeServices._encryptionStates[service][id].cipher = cipher;
+    } else if(cipher != ''){
+        // Prevent attempts to use ciphers with no implementation
+        throw new Error('Invalid cipher');
+    }
+
+    logger.log(IoTScapeServices._encryptionStates[service][id]);
 };
 
 IoTScapeServices.start = function(socket){

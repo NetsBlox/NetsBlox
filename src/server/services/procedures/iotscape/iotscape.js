@@ -104,6 +104,14 @@ IoTScape.send = function (service, id, command){
         throw new Error('Command too short or invalid');
     }
     
+    // Allow for RoboScape-esque "set"/"get" commands to be implemented simpler (e.g. "set speed" becomes "setSpeed" instead of a "set" method)
+    if(parts.length > 2) {
+        // Don't modify if service actually has a method named "set" or "get"
+        if((parts[0].toLowerCase() == 'set' && !IoTScapeServices.functionExists(service, 'set')) || (parts[0].toLowerCase() == 'get' && !IoTScapeServices.functionExists(service, 'get'))) {
+            parts[0] += parts[1][0].toUpperCase() + parts[1].substr(1);
+            parts.splice(1,1);
+        }
+    }
 
     return IoTScapeServices.call(service, parts[0], id, ...parts.slice(1));
 };

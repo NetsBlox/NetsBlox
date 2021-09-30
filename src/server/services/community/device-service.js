@@ -1,5 +1,6 @@
 const createLogger = require('../procedures/utils/logger');
 const IoTScapeServices = require('../procedures/iotscape/iotscape-services');
+const IoTScape = require('../procedures/iotscape/iotscape');
 
 /**
  * Represents a service created for a IoTScape device
@@ -50,8 +51,7 @@ class DeviceService {
             };
         } else if(methodSpec.name === 'send'){
             this[methodSpec.name] = async function() {
-                let rpcCall = arguments[1].split(' ');
-                return IoTScapeServices.call(this.serviceName, rpcCall[0], arguments[0], ...rpcCall.slice(1));
+                return IoTScape.send(this.serviceName, arguments[0], arguments[1]);
             };
         } else if(methodSpec.name === 'getMessageTypes'){
             this[methodSpec.name] = async function() {
