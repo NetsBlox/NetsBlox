@@ -258,7 +258,7 @@ function _generateMethods(methodsInfo) {
     let methods = [..._defaultMethods, ...Object.keys(methodsInfo).map(methodName => {
         const methodInfo = methodsInfo[methodName];
 
-        const method = { name: methodName, documentation: methodInfo.documentation, returns: methodInfo.returns };
+        const method = { name: methodName, documentation: methodInfo.documentation, categories: [['Basic']],  returns: methodInfo.returns };
 
         method.arguments = methodInfo.params.map(param => {
             let type = param.type === 'number' ? { name: 'Number', params: [] } : null;

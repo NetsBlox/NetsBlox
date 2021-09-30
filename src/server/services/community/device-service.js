@@ -29,6 +29,7 @@ class DeviceService {
                 return {
                     name: m.name,
                     description: m.documentation,
+                    categories: m.categories,
                     args: m.arguments.map(argument => ({
                         name: argument.name,
                         optional: argument.optional,
