@@ -391,8 +391,6 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
         // Prevent attempts to use ciphers with no implementation
         throw new Error('Invalid cipher');
     }
-
-    logger.log(IoTScapeServices._encryptionStates[service][id]);
 };
 
 const _handleMessage = function (message, remote) {
