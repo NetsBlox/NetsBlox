@@ -97,7 +97,7 @@ IoTScape.send = function (service, id, command){
         throw new Error('Device not found');
     }
 
-    let parts = command.split(/\s+/g);
+    let parts = IoTScapeServices.deviceDecrypt(service, id, command).split(/\s+/g);
 
     // Require at least a function name
     if(parts.length < 1){

@@ -41,6 +41,7 @@ IoTScapeServices.removeDevice = function(service, id) {
     }
 
     delete IoTScapeServices._services[service][id];
+    delete IoTScapeServices._encryptionStates[service][id];
 
     if(IoTScapeServices._listeningClients[service] !== undefined && IoTScapeServices._listeningClients[service][id] !== undefined){
         delete IoTScapeServices._listeningClients[service][id];
@@ -284,6 +285,55 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
     ]).then((result) => result).catch(() => {
         throw new Error('Response timed out.');
     });
+};
+
+/**
+ * Get a device's encryption settings (or defaults if not set)
+ * @param {String} service Service device is contained in
+ * @param {String} id ID of device to get encryption settings for
+ */
+IoTScapeServices.getEncryptionState = function(service, id){
+    if(!IoTScapeServices.deviceExists(service, id)){
+        throw new Error('Device not found');
+    }
+
+    if(!Object.keys(IoTScapeServices._encryptionStates).includes(service)){
+        IoTScapeServices._encryptionStates[service] = {};
+    }
+
+    if(!Object.keys(IoTScapeServices._encryptionStates[service]).includes(id)){
+        // Create entry with default
+        IoTScapeServices._encryptionStates[service][id] = {
+            key: [0],
+            cipher: 'plain'
+        };
+    }
+
+    return IoTScapeServices._encryptionStates[service][id];
+};
+
+/**
+ * Encrypt a string with a device's encryption settings
+ * @param {String} service Service device is contained in
+ * @param {String} id ID of device to use encryption settings for
+ * @param {String} plaintext Plaintext to encrypt
+ * @returns Plaintext encrypted with device's encryption settings
+ */
+IoTScapeServices.deviceEncrypt = function(service, id, plaintext){
+    let encryptionState = IoTScapeServices.getEncryptionState(service, id);
+    return ciphers[encryptionState.cipher].encrypt(plaintext, encryptionState.key);
+};
+
+/**
+ * Encrypt a string with a device's encryption settings
+ * @param {String} service Service device is contained in
+ * @param {String} id ID of device to use encryption settings for
+ * @param {String} ciphertext Ciphertext to decrypt
+ * @returns Ciphertext decrypted with device's encryption settings
+ */
+IoTScapeServices.deviceDecrypt = function(service, id, ciphertext){
+    let encryptionState = IoTScapeServices.getEncryptionState(service, id);
+    return ciphers[encryptionState.cipher].decrypt(ciphertext, encryptionState.key);
 };
 
 /**
