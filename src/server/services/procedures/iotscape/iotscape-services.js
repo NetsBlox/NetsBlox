@@ -230,29 +230,33 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
         return false;
     }
 
-    // Handle internal methods
+    // Don't send out serverside commands
+    if(func !== 'setKey' && func !== 'setCipher') {
+        // Create and send request
+        const reqid = IoTScapeServices._generateRequestID();
+        let request = {
+            id: reqid,
+            service: service,
+            device: id,
+            function: func, 
+            params: [...args],
+        };
+        
+        const rinfo = IoTScapeServices.getInfo(service, id);
+        IoTScapeServices.socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
+    }
+
+    // Relay as message to listening clients
+    if(func !== 'heartbeat'){
+        IoTScapeServices.sendMessageToListeningClients(service, id, 'device command', {command: IoTScapeServices.deviceEncrypt(service, id, [func, ...args].join(' '))});
+    }
+
+    // Handle setKey/Cipher after relaying message to use old encryption
     if(func === 'setKey'){
         IoTScapeServices.updateEncryptionState(service, id, args, null);
-        return true;
-    }
-
-    if(func === 'setCipher'){
+    } else if(func === 'setCipher'){
         IoTScapeServices.updateEncryptionState(service, id, null, args[0]);
-        return true;
     }
-
-    // Create and send request
-    const reqid = IoTScapeServices._generateRequestID();
-    let request = {
-        id: reqid,
-        service: service,
-        device: id,
-        function: func, 
-        params: [...args],
-    };
-    
-    const rinfo = IoTScapeServices.getInfo(service, id);
-    IoTScapeServices.socket.send(JSON.stringify(request), rinfo.port, rinfo.address);
 
     // Determine response type
     const methodInfo = IoTScapeServices.getFunctionInfo(service, func);
@@ -431,9 +435,6 @@ const _handleMessage = function (message, remote) {
     }
 
     if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
-        // Find listening clients 
-        const clientsByID = IoTScapeServices._listeningClients[parsed.service] || {};
-        const clients = clientsByID[parsed.id.toString()] || [];
         
         // Handle special message types
         if(parsed.event.type == '_reset' && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
@@ -442,12 +443,20 @@ const _handleMessage = function (message, remote) {
                 delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
             }
         } else {
-            // Send responses
-            clients.forEach((client) => {
-                client.sendMessage(parsed.event.type, {id: parsed.id, ...parsed.event.args});
-            });
+            IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
         }
     }
+};
+
+IoTScapeServices.sendMessageToListeningClients = function(service, id, type, content){
+    // Find listening clients 
+    const clientsByID = IoTScapeServices._listeningClients[service] || {};
+    const clients = clientsByID[id] || [];
+
+    // Send responses
+    clients.forEach((client) => {
+        client.sendMessage(type, {id, ...content});
+    });
 };
 
 /**
