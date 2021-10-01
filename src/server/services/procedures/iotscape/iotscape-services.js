@@ -42,8 +42,9 @@ IoTScapeServices.removeDevice = function(service, id) {
 
     delete IoTScapeServices._services[service][id];
 
-    IoTScapeServices.getEncryptionState(service, id);
-    delete IoTScapeServices._encryptionStates[service][id];
+    if(Object.keys(IoTScapeServices._encryptionStates).includes(service)){
+        delete IoTScapeServices._encryptionStates[service][id];
+    }
 
     if(IoTScapeServices._listeningClients[service] !== undefined && IoTScapeServices._listeningClients[service][id] !== undefined){
         delete IoTScapeServices._listeningClients[service][id];
@@ -230,10 +231,11 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
         return false;
     }
 
+    const reqid = IoTScapeServices._generateRequestID();
+
     // Don't send out serverside commands
     if(func !== 'setKey' && func !== 'setCipher') {
         // Create and send request
-        const reqid = IoTScapeServices._generateRequestID();
         let request = {
             id: reqid,
             service: service,
