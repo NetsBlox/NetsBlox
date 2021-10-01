@@ -17,6 +17,8 @@ const logger = require('../utils/logger')('iotscape');
 const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
 const IoTScapeServices = require('./iotscape-services');
+const Filter = require('bad-words'),
+    filter = new Filter();
 
 const normalizeServiceName = name => name.toLowerCase().replace(/[^a-z0-9]/g, '');
 const RESERVED_RPC_NAMES = ['serviceName', 'COMPATIBILITY'];
@@ -139,14 +141,14 @@ IoTScape._createService = async function(definition, remote) {
 
     const name = Object.keys(parsed)[0];
     parsed = parsed[name];
-    
+
     // Verify service definition in message
     if(parsed.service == undefined){
         return;
     }
 
     // Validate service name
-    if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name){
+    if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name || filter.isProfane(name.replace(/[A-Z]/g, ' $&'))){
         logger.log(`Service name ${name} rejected`);
         return;
     }
@@ -171,6 +173,11 @@ IoTScape._createService = async function(definition, remote) {
         version: serviceInfo.version
     };
 
+    // Additional profanity checks
+    if(filter.isProfane(serviceInfo.description) || methods.map(method => method.name).some(name => filter.isProfane(name)) || methods.map(method => method.documentation).some(doc => filter.isProfane(doc))){
+        logger.log(`Definition for service ${name} rejected`);
+        return;
+    }
     
     // Handle merge for existing service
     service = await _mergeWithExistingService(name, service, methods);
