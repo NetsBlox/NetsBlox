@@ -32,7 +32,7 @@ const locString = (lat, lon) => `${lat}, ${lon}`;
 // helper to filter json down
 function queryJson(json, query){
     const res = jsonQuery(query, { data: json }).value;
-    if (res === undefined || res === null) throw Error('no results');
+    if (res === undefined || res === null) throw Error('No results found.');
     return res;
 }
 
@@ -43,7 +43,9 @@ async function reverseGeocode(lat, lon, query) {
             const res = await geocoder.reverse({ lat, lon });
             return queryJson(res[0], query); // only interested in the first match
         } catch (e) {
-            throw Error('Failed to geolocate');
+            const message = `Reverse geocoding (${lat},${lon}) error: ${e.message}`;
+            logger.warn(message);
+            throw Error(`Failed to lookup geocode at ${lat}, ${lon}`);
         }
     });
 }
@@ -60,7 +62,9 @@ GeoLocationRPC.geolocate = async function (address) {
             const res = await geocoder.geocode(address);
             return { latitude: res[0].latitude, longitude: res[0].longitude };
         } catch (e) {
-            throw Error('Failed to geolocate');
+            const message = `Geocoding (${address}) error: ${e.message}`;
+            logger.warn(message);
+            throw Error(`Failed to find location for ${address}`);
         }
     });
 };
@@ -148,10 +152,10 @@ GeoLocationRPC.countryCode = function (latitude, longitude) {
  * @returns {Array} list of administative level names
  */
 GeoLocationRPC.info = async function (latitude, longitude) {
-    const res = await geocoder.reverse({ lat: latitude, lon: longitude });
-    const { city, administrativeLevels, country, countryCode } = res[0]; // we only care about the top result
+    const [topResult] = await geocoder.reverse({ lat: latitude, lon: longitude });
+    const { city, administrativeLevels, country, countryCode } = topResult;
     if (!city || !administrativeLevels || !country || !countryCode) {
-        throw Error('Failed to geolocate');
+        throw Error(`Failed to lookup geocode at ${latitude}, ${longitude}`);
     }
     const levels = [];
 
