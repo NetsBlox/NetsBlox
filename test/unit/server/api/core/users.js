@@ -101,7 +101,7 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
-    describe.only('delete', function() {
+    describe('delete', function() {
         beforeEach(() => Auth.disable());
         afterEach(() => Auth.enable());
 
@@ -149,7 +149,7 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('setPassword', function() {
-        it('should change user password', function() {
+        it('should change user password', async function() {
             await UsersAPI.setPassword(username, 'newPassword');
             // TODO
         });
