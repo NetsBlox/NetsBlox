@@ -21,10 +21,9 @@ describe(utils.suiteName(__filename), function() {
     describe('geolocate', function() {
         it('should use proper key for caching', async () => {
             await geocoding.geolocate('Moscow, Russia');
-            const response = await geocoding.geolocate('1025 16th Ave S, Nashville, TN 37212');
-            const [[,lat], [,long]] = response;
-            assert.equal(Math.floor(lat), 36);
-            assert.equal(Math.floor(long), -87);
+            const { latitude, longitude } = await geocoding.geolocate('1025 16th Ave S, Nashville, TN 37212');
+            assert.equal(Math.floor(latitude), 36);
+            assert.equal(Math.floor(longitude), -87);
         });
     });
 
