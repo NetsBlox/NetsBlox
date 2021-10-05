@@ -1,3 +1,5 @@
+const Q = require('q');
+
 class ServiceEvents {
     constructor() {
         const events = [
@@ -20,12 +22,30 @@ class ServiceEvents {
         this._handlers[event].push(fn);
     }
 
+    off (event, fn) {
+        this._handlers[event] = this._handlers[event].filter(handler => handler !== fn);
+    }
+
+    once (event, fn) {
+        const deferred = Q.defer();
+        const callback = (...args) => {
+            fn(...args);
+            this.off(event, callback);
+            deferred.resolve();
+        };
+        this.on(event, callback);
+        return deferred.promise;
+    }
+
     ensureValidEvent(event) {
         if (!this._handlers[event]) {
             throw new Error(`Unsupported service event: ${event}`);
         }
     }
 
+    new() {
+        return new ServiceEvents();
+    }
 }
 
 ServiceEvents.prototype.UPDATE = 'update';

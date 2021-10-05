@@ -207,12 +207,15 @@ function suiteName(filename) {
 async function expect(fn, err) {
     const start = Date.now();
     const maxEndTime = start + 1500;
-    while (!await fn()) {
+    let result = await fn();
+    while (!result) {
         await sleep(25);
         if (Date.now() > maxEndTime) {
             throw err;
         }
+        result = await fn();
     }
+    return result;
 }
 
 module.exports = {
