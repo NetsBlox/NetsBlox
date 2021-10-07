@@ -402,12 +402,17 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
 };
 
 const _handleMessage = function (message, remote) {
-    let parsed;
+    let parsed = null;
 
     try {
         parsed = JSON.parse(message);
     } catch(err){
         logger.log('Error parsing IoTScape message: ' + err);
+        return;
+    }
+
+    if(parsed == null){
+        logger.log('Invalid IoTScape message');
         return;
     }
 

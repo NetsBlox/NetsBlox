@@ -125,7 +125,7 @@ IoTScape.send = function (service, id, command){
  * @param {RemoteInfo} remote Remote host information
  */
 IoTScape._createService = async function(definition, remote) {    
-    let parsed;
+    let parsed = null;
 
     try {
         parsed = JSON.parse(definition);
@@ -134,16 +134,16 @@ IoTScape._createService = async function(definition, remote) {
         return;
     }
 
-    // Ignore request messages sent to this method
-    if(parsed.request){
+    // Ignore empty and request messages sent to this method
+    if(parsed == null || parsed.request){
         return;
     }
 
     const name = Object.keys(parsed)[0];
     parsed = parsed[name];
 
-    // Verify service definition in message
-    if(parsed.service == undefined){
+    // Verify service definition is in message
+    if(typeof(parsed.service) == 'undefined'){
         return;
     }
 
@@ -157,10 +157,15 @@ IoTScape._createService = async function(definition, remote) {
     const methodsInfo = parsed.methods || {};
 
     const version = serviceInfo.version;
-    const id = parsed.id;
+    const id = parsed.id.trim();
 
     logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
     
+    if(id == '' || filter.isProfane(id.replace(/[A-Z]/g, ' $&'))){
+        logger.log(`ID invalid`);
+        return;
+    }
+
     let methods = _generateMethods(methodsInfo);
 
     let service = {
