@@ -147,26 +147,18 @@ IoTScape._createService = async function(definition, remote) {
         return;
     }
 
-    // Validate service name
-    if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name || filter.isProfane(name.replace(/[A-Z]/g, ' $&'))){
-        logger.log(`Service name ${name} rejected`);
-        return;
-    }
-
     const serviceInfo = parsed.service;
     const methodsInfo = parsed.methods || {};
+    let methods = _generateMethods(methodsInfo);
 
     const version = serviceInfo.version;
     const id = parsed.id.trim();
 
     logger.log(`Received definition for service ${name} v${version} from ID ${id}`);
     
-    if(id == '' || filter.isProfane(id.replace(/[A-Z]/g, ' $&'))){
-        logger.log(`ID invalid`);
+    if(!IoTScape._validateServiceStrings(name, id, serviceInfo, methods)){
         return;
     }
-
-    let methods = _generateMethods(methodsInfo);
 
     let service = {
         name: name,
@@ -178,12 +170,6 @@ IoTScape._createService = async function(definition, remote) {
         version: serviceInfo.version
     };
 
-    // Additional profanity checks
-    if(filter.isProfane(serviceInfo.description) || methods.map(method => method.name).some(name => filter.isProfane(name)) || methods.map(method => method.documentation).some(doc => filter.isProfane(doc))){
-        logger.log(`Definition for service ${name} rejected`);
-        return;
-    }
-    
     // Handle merge for existing service
     service = await _mergeWithExistingService(name, service, methods);
     
@@ -199,6 +185,31 @@ IoTScape._createService = async function(definition, remote) {
         }
         throw err;
     }
+};
+
+/**
+ * Check that strings provided in a service definition are valid and free of profanity
+ * @returns {boolean} Were the strings for this service considered valid
+ */
+IoTScape._validateServiceStrings = function(name, id, serviceInfo, methods){
+        // Validate service name
+        if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name || filter.isProfane(name.replace(/[A-Z]/g, ' $&'))){
+            logger.log(`Service name ${name} rejected`);
+            return false;
+        }
+        
+        if(id == '' || filter.isProfane(id.replace(/[A-Z]/g, ' $&'))){
+            logger.log('ID invalid');
+            return false;
+        }
+    
+        // Additional profanity checks
+        if(filter.isProfane(serviceInfo.description) || methods.map(method => method.name).some(name => !isValidRPCName(name) || filter.isProfane(name)) || methods.map(method => method.documentation).some(doc => filter.isProfane(doc))){
+            logger.log(`Definition for service ${name} rejected`);
+            return false;
+        }
+
+        return true;
 };
 
 // Methods used for all device services but not included in definitions
