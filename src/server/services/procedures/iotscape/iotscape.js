@@ -192,24 +192,24 @@ IoTScape._createService = async function(definition, remote) {
  * @returns {boolean} Were the strings for this service considered valid
  */
 IoTScape._validateServiceStrings = function(name, id, serviceInfo, methods){
-        // Validate service name
-        if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name || filter.isProfane(name.replace(/[A-Z]/g, ' $&'))){
-            logger.log(`Service name ${name} rejected`);
-            return false;
-        }
+    // Validate service name
+    if(!isValidServiceName(name) || name.replace(/[^a-zA-Z0-9]/g, '') !== name || filter.isProfane(name.replace(/[A-Z]/g, ' $&'))){
+        logger.log(`Service name ${name} rejected`);
+        return false;
+    }
         
-        if(id == '' || filter.isProfane(id.replace(/[A-Z]/g, ' $&'))){
-            logger.log('ID invalid');
-            return false;
-        }
+    if(id == '' || filter.isProfane(id.replace(/[A-Z]/g, ' $&'))){
+        logger.log('ID invalid');
+        return false;
+    }
     
-        // Additional profanity checks
-        if(filter.isProfane(serviceInfo.description) || methods.map(method => method.name).some(name => !isValidRPCName(name) || filter.isProfane(name)) || methods.map(method => method.documentation).some(doc => filter.isProfane(doc))){
-            logger.log(`Definition for service ${name} rejected`);
-            return false;
-        }
+    // Additional profanity checks
+    if(filter.isProfane(serviceInfo.description) || methods.map(method => method.name).some(name => !isValidRPCName(name) || filter.isProfane(name)) || methods.map(method => method.documentation).some(doc => filter.isProfane(doc))){
+        logger.log(`Definition for service ${name} rejected`);
+        return false;
+    }
 
-        return true;
+    return true;
 };
 
 // Methods used for all device services but not included in definitions
