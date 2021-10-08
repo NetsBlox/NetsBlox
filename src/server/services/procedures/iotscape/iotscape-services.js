@@ -118,6 +118,44 @@ IoTScapeServices.serviceExists = function(service){
 };
 
 /**
+ * Methods handled locally or sent by server instead of user
+ */
+IoTScapeServices._specialMethods = {
+    'heartbeat': {
+        returns: {
+            type:['boolean']
+        }
+    },
+    'setKey': {
+        params: [{
+            'name': 'key',
+            'documentation': 'Key to set',
+            'type': 'number',
+            'optional': false
+        }],
+        returns: {
+            type: ['void']
+        }
+    },
+    'setCipher': {
+        params: [{
+            'name': 'cipher',
+            'documentation': 'Cipher to use',
+            'type': 'string',
+            'optional': false
+        }],
+        returns: {
+            type:['void']
+        }
+    },
+    '_requestedKey': {
+        returns: {
+            type: ['void']
+        }
+    }
+};
+
+/**
  * Determine if a service has a given function
  * @param {String} service Name of service
  * @param {String} func Name of function
@@ -128,7 +166,7 @@ IoTScapeServices.functionExists = function(service, func){
         return false;
     }
     
-    return func === 'heartbeat' || func === 'setKey' || func === 'setCipher' || IoTScapeServices.getFunctionInfo(service, func) !== undefined;
+    return Object.keys(IoTScapeServices._specialMethods).includes(func) || IoTScapeServices.getFunctionInfo(service, func) !== undefined;
 };
 
 /**
@@ -146,32 +184,9 @@ IoTScapeServices.getInfo = function(service, id){
  * @param {String} func Name of function
  */
 IoTScapeServices.getFunctionInfo = function(service, func) {
-    if(func === 'heartbeat'){
-        return {returns: {type:['boolean']}};
-    }
-
-    if(func === 'setKey'){
-        return {
-            params: [{
-                'name': 'key',
-                'documentation': 'Key to set',
-                'type': 'number',
-                'optional': false
-            }],
-            returns: {type:['void']}
-        };
-    }
-
-    if(func === 'setCipher'){
-        return {
-            params: [{
-                'name': 'cipher',
-                'documentation': 'Cipher to use',
-                'type': 'string',
-                'optional': false
-            }],
-            returns: {type:['void']}
-        };
+    
+    if(Object.keys(IoTScapeServices._specialMethods).includes(func)){
+        return IoTScapeServices._specialMethods[func];
     }
 
     return IoTScapeServices._serviceDefinitions[service].methods[func];
@@ -351,6 +366,8 @@ IoTScapeServices.deviceDecrypt = function(service, id, ciphertext){
     return ciphers[encryptionState.cipher].decrypt(ciphertext, encryptionState.key);
 };
 
+IoTScapeServices._specialMessageTypes = ['_reset', '_requestKey'];
+
 /**
  * Updates encryption settings for a device
  * @param {String} service Service device is contained in
@@ -442,12 +459,27 @@ const _handleMessage = function (message, remote) {
     }
 
     if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
-        
-        // Handle special message types
-        if(parsed.event.type == '_reset' && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
-            logger.log(`Resetting ${parsed.service}:${parsed.id}`);
-            if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
-                delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
+
+        // Handle special message types, but only if they come from the device
+        if(IoTScapeServices._specialMessageTypes.includes(parsed.event.type) && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
+            if(parsed.event.type == '_reset'){
+                // Reset encryption on device
+                logger.log(`Resetting ${parsed.service}:${parsed.id}`);
+                if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
+                    delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
+                }
+            } else if(parsed.event.type == '_requestKey'){
+                // Generate hardware key
+                let key = [];
+
+                for (let i = 0; i < 4; i++) {
+                    key.push(Math.floor(Math.random() * 16));
+                }
+
+                IoTScapeServices.updateEncryptionState(parsed.service, parsed.id, key, 'caesar');
+
+                // Tell device what the new key is, so it can display it
+                IoTScapeServices.call(parsed.service, parsed.id, '_requestedKey', ...key);
             }
         } else {
             IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
