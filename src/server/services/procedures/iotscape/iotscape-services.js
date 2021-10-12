@@ -243,6 +243,7 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
 
     // Validate name, ID, and function
     if(!IoTScapeServices.deviceExists(service, id) || !IoTScapeServices.functionExists(service, func)){
+        logger.log(`Unknown function ${func} or unknown device ${service}:${id}`);
         return false;
     }
 
@@ -469,6 +470,7 @@ const _handleMessage = function (message, remote) {
                     delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
                 }
             } else if(parsed.event.type == '_requestKey'){
+                logger.log(`Generating HW key for ${parsed.service}:${parsed.id}`);
                 // Generate hardware key
                 let key = [];
 
@@ -479,7 +481,7 @@ const _handleMessage = function (message, remote) {
                 IoTScapeServices.updateEncryptionState(parsed.service, parsed.id, key, 'caesar');
 
                 // Tell device what the new key is, so it can display it
-                IoTScapeServices.call(parsed.service, parsed.id, '_requestedKey', ...key);
+                IoTScapeServices.call(parsed.service, '_requestedKey', parsed.id, ...key);
             }
         } else {
             IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
