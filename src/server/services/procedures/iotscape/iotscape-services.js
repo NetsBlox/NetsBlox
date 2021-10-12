@@ -494,10 +494,16 @@ IoTScapeServices.sendMessageToListeningClients = function(service, id, type, con
     const clientsByID = IoTScapeServices._listeningClients[service] || {};
     const clients = clientsByID[id] || [];
 
-    // Send responses
-    clients.forEach((client) => {
-        client.sendMessage(type, {id, ...content});
-    });
+    if(IoTScapeServices.getEncryptionState(service, id).cipher == 'plain' || type == 'device command'){
+        // Send basic mode responses
+        clients.forEach((client) => {
+            client.sendMessage(type, {id, ...content});
+        });
+    } else {
+        clients.forEach((client) => {
+            client.sendMessage('device message', {id, message: IoTScapeServices.deviceEncrypt(service, id, [type, ...Object.values(content)].join(' '))});
+        });
+    }
 };
 
 /**
