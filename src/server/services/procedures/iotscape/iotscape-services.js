@@ -367,8 +367,6 @@ IoTScapeServices.deviceDecrypt = function(service, id, ciphertext){
     return ciphers[encryptionState.cipher].decrypt(ciphertext, encryptionState.key);
 };
 
-IoTScapeServices._specialMessageTypes = ['_reset', '_requestKey'];
-
 /**
  * Updates encryption settings for a device
  * @param {String} service Service device is contained in
@@ -419,6 +417,41 @@ IoTScapeServices.updateEncryptionState = function(service, id, key = null, ciphe
     }
 };
 
+IoTScapeServices._specialMessageTypes = {
+    '_reset': (parsed) => {
+    // Reset encryption on device
+        logger.log(`Resetting ${parsed.service}:${parsed.id}`);
+        if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
+            delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
+        }
+    }, 
+    '_requestKey': (parsed) => {
+        logger.log(`Generating HW key for ${parsed.service}:${parsed.id}`);
+        // Generate hardware key
+        let key = [];
+
+        for (let i = 0; i < 4; i++) {
+            key.push(Math.floor(Math.random() * 16));
+        }
+
+        IoTScapeServices.updateEncryptionState(parsed.service, parsed.id, key, 'caesar');
+
+        // Tell device what the new key is, so it can display it
+        IoTScapeServices.call(parsed.service, '_requestedKey', parsed.id, ...key);
+    }, 
+    '_link': (parsed) => {
+        const targetService = parsed.event.args.service;
+        const targetID = parsed.event.args.id;
+
+        if(!IoTScapeServices.deviceExists(targetService, targetID)){
+            logger.log(`Requested invalid link of ${parsed.service}:${parsed.id} to ${targetService}:${targetID}`);
+            return;
+        }
+        
+        logger.log(`Linking ${parsed.service}:${parsed.id} to ${targetService}:${targetID}`);
+    }
+};
+
 const _handleMessage = function (message, remote) {
     let parsed = null;
 
@@ -460,29 +493,9 @@ const _handleMessage = function (message, remote) {
     }
 
     if(parsed.event && IoTScapeServices.deviceExists(parsed.service, parsed.id)){
-
         // Handle special message types, but only if they come from the device
-        if(IoTScapeServices._specialMessageTypes.includes(parsed.event.type) && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
-            if(parsed.event.type == '_reset'){
-                // Reset encryption on device
-                logger.log(`Resetting ${parsed.service}:${parsed.id}`);
-                if(Object.keys(IoTScapeServices._encryptionStates).includes(parsed.service)){
-                    delete IoTScapeServices._encryptionStates[parsed.service][parsed.id];
-                }
-            } else if(parsed.event.type == '_requestKey'){
-                logger.log(`Generating HW key for ${parsed.service}:${parsed.id}`);
-                // Generate hardware key
-                let key = [];
-
-                for (let i = 0; i < 4; i++) {
-                    key.push(Math.floor(Math.random() * 16));
-                }
-
-                IoTScapeServices.updateEncryptionState(parsed.service, parsed.id, key, 'caesar');
-
-                // Tell device what the new key is, so it can display it
-                IoTScapeServices.call(parsed.service, '_requestedKey', parsed.id, ...key);
-            }
+        if(Object.keys(IoTScapeServices._specialMessageTypes).includes(parsed.event.type) && IoTScapeServices._services[parsed.service][parsed.id].address == remote.address && IoTScapeServices._services[parsed.service][parsed.id].port == remote.port){
+            IoTScapeServices._specialMessageTypes[parsed.event.type](parsed);
         } else {
             IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
         }
