@@ -17,6 +17,7 @@ const logger = require('../utils/logger')('iotscape');
 const Storage = require('../../storage');
 const ServiceEvents = require('../utils/service-events');
 const IoTScapeServices = require('./iotscape-services');
+const IoTScapeDevices = require('./iotscape-devices');
 const Filter = require('bad-words'),
     filter = new Filter();
 
@@ -95,11 +96,11 @@ IoTScape.send = function (service, id, command){
         throw new Error('Service not found');
     }
     
-    if(!IoTScapeServices.deviceExists(service, id)){
+    if(!IoTScapeDevices.deviceExists(service, id)){
         throw new Error('Device not found');
     }
 
-    let parts = IoTScapeServices.deviceDecrypt(service, id, command).split(/\s+/g);
+    let parts = IoTScapeDevices.deviceDecrypt(service, id, command).split(/\s+/g);
 
     // Require at least a function name
     if(parts.length < 1){
