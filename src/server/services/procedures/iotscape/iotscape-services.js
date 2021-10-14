@@ -283,6 +283,12 @@ IoTScapeServices._specialMessageTypes = {
         IoTScapeDevices.clearEncryption(parsed.service, parsed.id);
     }, 
     '_requestKey': (parsed) => {
+
+        if(IoTScapeDevices.getEncryptionState(parsed.service, parsed.id).cipher == 'linked'){
+            logger.log(`Refused to generate HW key for ${parsed.service}:${parsed.id} due to existing link`);
+            return;
+        }
+
         logger.log(`Generating HW key for ${parsed.service}:${parsed.id}`);
         // Generate hardware key
         let key = [];
