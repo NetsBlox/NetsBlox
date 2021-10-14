@@ -1,5 +1,4 @@
 const logger = require('../utils/logger')('iotscape-services');
-const ciphers = require('../roboscape/ciphers');
 const IoTScapeDevices = require('./iotscape-devices');
 
 /**
@@ -177,7 +176,7 @@ IoTScapeServices.listen = function(service, client, id){
 
     if(!IoTScapeServices._listeningClients[service][id].find(existingClient => existingClient.clientId == client.clientId && existingClient.roleId == client.roleId && existingClient.projectId == client.projectId)){
         IoTScapeServices._listeningClients[service][id].push(client);
-        logger.log(IoTScapeServices._listeningClients[service][id])
+        logger.log(IoTScapeServices._listeningClients[service][id]);
     }
 };
 
@@ -334,38 +333,48 @@ const _handleMessage = function (message, remote) {
 
     // Ignore other messages
     if(parsed.request){
-        const requestID = parsed.request;
-        
-        if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
-            if(parsed.response){
-                // Return multiple results as a list, single result as a value
-                const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
-                const responseType = methodInfo.returns.type;
-
-                try {
-                    if(responseType.length > 1) {
-                        IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
-                    } else {
-                        IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
-                    }
-                } catch (error) {
-                    logger.log('IoTScape response invalid: ' + error);
-                }
-
-                delete IoTScapeServices._awaitingRequests[requestID];
-            }
-        }
+        _handleResponse(parsed);
     }
 
     if(parsed.event && IoTScapeDevices.deviceExists(parsed.service, parsed.id)){
-        // Handle special message types, but only if they come from the device
-        if(Object.keys(IoTScapeServices._specialMessageTypes).includes(parsed.event.type) && IoTScapeDevices._services[parsed.service][parsed.id].address == remote.address && IoTScapeDevices._services[parsed.service][parsed.id].port == remote.port){
-            IoTScapeServices._specialMessageTypes[parsed.event.type](parsed);
-        } else {
-            IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
+        _handleEvent(parsed, remote);
+    }
+};
+
+const _handleResponse = function(parsed){
+    
+    const requestID = parsed.request;
+        
+    if(Object.keys(IoTScapeServices._awaitingRequests).includes(requestID.toString())){
+        if(parsed.response){
+            // Return multiple results as a list, single result as a value
+            const methodInfo = IoTScapeServices.getFunctionInfo(IoTScapeServices._awaitingRequests[requestID].service, IoTScapeServices._awaitingRequests[requestID].function);
+            const responseType = methodInfo.returns.type;
+
+            try {
+                if(responseType.length > 1) {
+                    IoTScapeServices._awaitingRequests[requestID].resolve(parsed.response);
+                } else {
+                    IoTScapeServices._awaitingRequests[requestID].resolve(...parsed.response);
+                }
+            } catch (error) {
+                logger.log('IoTScape response invalid: ' + error);
+            }
+
+            delete IoTScapeServices._awaitingRequests[requestID];
         }
     }
 };
+
+const _handleEvent = function(parsed, remote) {
+    // Handle special message types, but only if they come from the device
+    if(Object.keys(IoTScapeServices._specialMessageTypes).includes(parsed.event.type) && IoTScapeDevices._services[parsed.service][parsed.id].address == remote.address && IoTScapeDevices._services[parsed.service][parsed.id].port == remote.port){
+        IoTScapeServices._specialMessageTypes[parsed.event.type](parsed);
+    } else {
+        IoTScapeServices.sendMessageToListeningClients(parsed.service, parsed.id.toString(), parsed.event.type, {...parsed.event.args});
+    }
+};
+
 
 /**
  * Send a NetsBlox message to clients listening to a device

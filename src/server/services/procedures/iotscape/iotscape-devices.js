@@ -99,21 +99,7 @@ IoTScapeDevices.updateEncryptionState = function(service, id, key = null, cipher
 
     // Update key if requested
     if(key != null){
-        // Set default cipher
-        if(IoTScapeDevices._encryptionStates[service][id].cipher === 'plain' && cipher == null){
-            cipher = 'caesar';
-        }
-
-        // Setting linked status does not require key to be parsed
-        if(cipher != 'linked'){
-            key = key.map(c => parseInt(c));        
-
-            if(key.includes(NaN)){
-                throw new Error('Invalid key');
-            }
-        }
-
-        IoTScapeDevices._encryptionStates[service][id].key = key;
+        IoTScapeDevices._setKey(service, id, key, cipher);
     }
 
     // Update cipher if requested
@@ -124,6 +110,24 @@ IoTScapeDevices.updateEncryptionState = function(service, id, key = null, cipher
         // Prevent attempts to use ciphers with no implementation
         throw new Error('Invalid cipher');
     }
+};
+
+IoTScapeDevices._setKey = function(service, id, key, cipher){
+    // Set default cipher
+    if(IoTScapeDevices._encryptionStates[service][id].cipher === 'plain' && cipher == null){
+        cipher = 'caesar';
+    }
+
+    // Setting linked status does not require key to be parsed
+    if(cipher != 'linked'){
+        key = key.map(c => parseInt(c));        
+
+        if(key.includes(NaN)){
+            throw new Error('Invalid key');
+        }
+    }
+
+    IoTScapeDevices._encryptionStates[service][id].key = key;
 };
 
 /**
@@ -145,6 +149,8 @@ IoTScapeDevices.removeDevice = function(service, id) {
     if(IoTScapeDevices._listeningClients[service] !== undefined && IoTScapeDevices._listeningClients[service][id] !== undefined){
         delete IoTScapeDevices._listeningClients[service][id];
     }
+
+    logger.log(`Removed ${service}:${id}`);
 };
 
 /**
