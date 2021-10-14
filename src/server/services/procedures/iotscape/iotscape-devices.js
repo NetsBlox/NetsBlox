@@ -63,7 +63,13 @@ IoTScapeDevices.getEncryptionState = function(service, id){
         };
     }
 
-    return IoTScapeDevices._encryptionStates[service][id];
+    const state = IoTScapeDevices._encryptionStates[service][id];
+
+    if(state.cipher == 'linked'){
+        return IoTScapeDevices.getEncryptionState(state.key.service, state.key.id);
+    }
+
+    return state;
 };
 
 
@@ -98,10 +104,13 @@ IoTScapeDevices.updateEncryptionState = function(service, id, key = null, cipher
             cipher = 'caesar';
         }
 
-        key = key.map(c => parseInt(c));
+        // Setting linked status does not require key to be parsed
+        if(cipher != 'linked'){
+            key = key.map(c => parseInt(c));        
 
-        if(key.includes(NaN)){
-            throw new Error('Invalid key');
+            if(key.includes(NaN)){
+                throw new Error('Invalid key');
+            }
         }
 
         IoTScapeDevices._encryptionStates[service][id].key = key;
@@ -109,7 +118,7 @@ IoTScapeDevices.updateEncryptionState = function(service, id, key = null, cipher
 
     // Update cipher if requested
     cipher = (cipher || '').toLowerCase();
-    if(Object.keys(ciphers).includes(cipher)){
+    if(['linked', ...Object.keys(ciphers)].includes(cipher)){
         IoTScapeDevices._encryptionStates[service][id].cipher = cipher;
     } else if(cipher != ''){
         // Prevent attempts to use ciphers with no implementation
@@ -166,6 +175,27 @@ IoTScapeDevices.clearEncryption = function(service, id){
     if(Object.keys(IoTScapeDevices._encryptionStates).includes(service)){
         delete IoTScapeDevices._encryptionStates[service][id];
     }
+};
+
+/**
+ * Set targetService's device with targetId as its ID to use the encryption settings of a different device
+ * @param {String} service Name of service
+ * @param {String} id ID of device
+ * @param {String} targetService 
+ * @param {String} targetId 
+ */
+IoTScapeDevices.link = function(service, id, targetService, targetId){
+    // Validate input
+    if(service == targetService && id == targetId){
+        throw new Error('Device cannot be linked to self');
+    }
+
+    // Prevent cycles and long chains by enforcing only one layer of linking
+    if(IoTScapeDevices.getEncryptionState(service, id).cipher == 'linked'){
+        throw new Error('Cannot link to other linked device');
+    }
+
+    IoTScapeDevices.updateEncryptionState(targetService, targetId, {service, id}, 'linked');
 };
 
 module.exports = IoTScapeDevices;

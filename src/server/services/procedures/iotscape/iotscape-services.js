@@ -301,6 +301,8 @@ IoTScapeServices._specialMessageTypes = {
         }
         
         logger.log(`Linking ${parsed.service}:${parsed.id} to ${targetService}:${targetID}`);
+
+        IoTScapeDevices.link(parsed.service, parsed.id, targetService, targetID);
     }
 };
 
