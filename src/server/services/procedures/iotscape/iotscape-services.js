@@ -156,7 +156,7 @@ IoTScapeServices._listeningClients = {};
 /**
  * Add a client to get event updates from a device
  * @param {String} service Name of service
- * @param {*} client Client to add to listeners
+ * @param {Object} client Client to add to listeners
  * @param {String} id ID of device
  */
 IoTScapeServices.listen = function(service, client, id){
@@ -175,8 +175,9 @@ IoTScapeServices.listen = function(service, client, id){
         IoTScapeServices._listeningClients[service][id] = [];
     }
 
-    if(!IoTScapeServices._listeningClients[service][id].includes(client)){
+    if(!IoTScapeServices._listeningClients[service][id].find(existingClient => existingClient.clientId == client.clientId && existingClient.roleId == client.roleId && existingClient.projectId == client.projectId)){
         IoTScapeServices._listeningClients[service][id].push(client);
+        logger.log(IoTScapeServices._listeningClients[service][id])
     }
 };
 

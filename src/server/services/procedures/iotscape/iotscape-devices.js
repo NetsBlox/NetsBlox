@@ -2,7 +2,7 @@ const logger = require('../utils/logger')('iotscape-devices');
 const ciphers = require('../roboscape/ciphers');
 
 /**
- * Stores information about registered services, with a list of IDs and their respective hosts
+ * Stores information about registered devices, with a list of IDs and their respective hosts
  */
 const IoTScapeDevices = {};
 IoTScapeDevices._services = {};
