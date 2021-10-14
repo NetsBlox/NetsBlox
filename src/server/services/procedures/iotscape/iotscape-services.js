@@ -220,10 +220,15 @@ IoTScapeServices.call = async function (service, func, id, ...args) {
     }
 
     // Handle setKey/Cipher after relaying message to use old encryption
-    if(func === 'setKey'){
-        IoTScapeDevices.updateEncryptionState(service, id, args, null);
-    } else if(func === 'setCipher'){
-        IoTScapeDevices.updateEncryptionState(service, id, null, args[0]);
+    if(IoTScapeDevices.getEncryptionState(service, id).cipher != 'linked'){
+        if(func === 'setKey'){
+            IoTScapeDevices.updateEncryptionState(service, id, args, null);
+        } else if(func === 'setCipher'){
+            IoTScapeDevices.updateEncryptionState(service, id, null, args[0]);
+        }
+    } else {
+        // Not supported on linked device
+        return false;
     }
 
     // Determine response type
