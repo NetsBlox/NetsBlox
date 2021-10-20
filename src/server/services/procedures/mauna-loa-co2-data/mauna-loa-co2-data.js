@@ -8,17 +8,7 @@
  * @category Climate
  */
 
-const fs = require('fs');
-const path = require('path');
-
-const data = (function() {
-    const filename = path.join(__dirname,'co2_mm_mlo.txt');
-    const lines = fs.readFileSync(filename, 'utf8').split('\n');
-    return lines.filter(x => !x.startsWith('#')).map(line => {
-        const [,, date, interpolated, trend] = line.split(/\s+/).map(parseFloat);
-        return {date, interpolated, trend};
-    });
-})();
+const {getData} = require('./data');
 
 const MaunaLoaCO2Data = {};
 MaunaLoaCO2Data.serviceName = 'MaunaLoaCO2Data';
@@ -33,8 +23,8 @@ MaunaLoaCO2Data.serviceName = 'MaunaLoaCO2Data';
  * @param {Number=} endyear last year of data to include
  * @returns {Array}
  */
-MaunaLoaCO2Data.getRawCO2 = function(startyear=-Infinity, endyear=Infinity){
-    return data.filter(datum => datum.date > startyear && datum.date < endyear)
+MaunaLoaCO2Data.getRawCO2 = async function(startyear=-Infinity, endyear=Infinity){
+    return (await getData()).filter(datum => datum.date > startyear && datum.date < endyear)
         .map(datum => [datum.date, datum.interpolated]);
 };
 
@@ -48,8 +38,8 @@ MaunaLoaCO2Data.getRawCO2 = function(startyear=-Infinity, endyear=Infinity){
  * @param {Number=} endyear last year of data to include
  * @returns {Array}
  */
-MaunaLoaCO2Data.getCO2Trend = function(startyear=-Infinity, endyear=Infinity){
-    return data.filter(datum => datum.date > startyear && datum.date < endyear)
+MaunaLoaCO2Data.getCO2Trend = async function(startyear=-Infinity, endyear=Infinity){
+    return (await getData()).filter(datum => datum.date > startyear && datum.date < endyear)
         .map(datum => [datum.date, datum.trend]);
 };
 

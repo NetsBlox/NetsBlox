@@ -8,45 +8,110 @@
  * @category Science
  * @category Climate
  */
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
+const logger = require('../utils/logger')('hurricane');
+const axios = require('axios');
 const _ = require('lodash');
 
 const HurricaneData = {};
-HurricaneData._data = [];
 
-(function() {  // Load the hurricane data from the files
+// UPDATE INFO - These are fallbacks for in case the live download/parsing of up to date data fails
+// data files are available at https://www.nhc.noaa.gov/data/ under "Best Track Data (HURDAT2)"
+// grab both the "Atlantic hurricane database" and "Northeast and North Central Pacific hurricane database" files
+const FALLBACK_FILES = [
+    'hurdat2-1851-2020-052921.txt',
+    'hurdat2-nepac-1949-2020-043021a.txt',
+];
+
+const DATA_ROOT = 'https://www.nhc.noaa.gov/data/hurdat';
+
+// maximum lifetime of any given downloaded resource.
+// downloads are cached for fast reuse, but will be discarded after this amount of time (milliseconds).
+const DATA_SOURCE_LIFETIME = 1 * 24 * 60 * 60 * 1000; // 1 day
+
+function parseData(raw) {  // Load the hurricane data from the files
     let name = '';
+    const res = [];
     const parseLine = function (type, line) {
         if (line.startsWith('AL') || line.startsWith('EP')){
             name = line.substring(19, 28).trim();
-        } else {
-            let year = +line.substring(0, 4);
-            let month = line.substring(4,6);
-            let day = line.substring(6,8);
-            let time = line.substring(10,14);
-            let recordID = line.substring(15,17);
-            let status = line.substring(18,21).trim();
-            let latitude = line.substring(23,27);
-            let longitude = '-' + line.substring(30,35).trim();
-            let maxWind = line.substring(39,41);
-            let minPressure = line.substring(43,47).trim();
-
-            HurricaneData._data.push({name, year, month, day, time, recordID, status,
-                latitude, longitude, maxWind, minPressure});
+            return; // no actual data
         }
+        
+        res.push({ name,
+            year: +line.substring(0, 4),
+            month: line.substring(4,6),
+            day: line.substring(6,8),
+            time: line.substring(10,14),
+            recordID: line.substring(15,17),
+            status: line.substring(18,21).trim(),
+            latitude: line.substring(23,27),
+            longitude: '-' + line.substring(30,35).trim(),
+            maxWind: line.substring(39,41),
+            minPressure: line.substring(43,47).trim(),
+        });
     };
 
-    const dataFiles = [
-        'hurdat2-1851-2018-051019.txt',
-        'hurdat2-nepac-1949-2017-050418.txt'
-    ];
+    raw.split('\n').forEach(line => parseLine('AL', line));
+    return res;
+}
 
-    dataFiles.map(name => fs.readFileSync(path.join(__dirname, name), 'utf8'))
-        .reduce((text1, text2) => text1 + text2)
-        .split('\n')
-        .forEach(line => parseLine('AL', line));
-})();
+async function get(url) {
+    logger.info(`requesting ${url}`);
+    const resp = await axios({ url, method: 'GET' });
+    if (resp.status !== 200) {
+        logger.error(`download failed with status ${resp.status}`);
+        throw Error(`failed to download ${url} (status ${resp.status})`);
+    }
+    logger.info('download complete');
+    return resp.data;
+}
+function latestFile(files) {
+    if (files.length === 0) throw Error('no files found');
+    const greater = (a, b) => a.date > b.date || (a.date.getTime() === b.date.getTime() && a.name.length > b.name.length);
+    return files.reduce((latest, file) => greater(file, latest) ? file : latest);
+}
+
+HurricaneData._extractFiles = index => {
+    const baseFile = latestFile(Array.from(
+        index.matchAll(/href=['"](hurdat2-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
+        x => { return { name: x[1], date: new Date(+`20${x[4]}`, +x[2] - 1, +x[3]) }; }
+    ));
+    const nepacFile = latestFile(Array.from(
+        index.matchAll(/href=['"](hurdat2-nepac-\d{4}-\d{4}-(\d{2})(\d{2})(\d{2})[^'"]*\.txt)['"]/g),
+        x => { return { name: x[1], date: new Date(+`20${x[4]}`, +x[2] - 1, +x[3]) }; }
+    ));
+
+    return { baseFile, nepacFile };
+};
+
+let CACHED_DATA = undefined;
+let CACHE_TIME_STAMP = undefined;
+async function getData() {
+    if (CACHED_DATA !== undefined && Date.now() - CACHE_TIME_STAMP <= DATA_SOURCE_LIFETIME) return CACHED_DATA;
+
+    let res = [];
+    try {
+        const index = await get(DATA_ROOT);
+        const { baseFile, nepacFile } = HurricaneData._extractFiles(index);
+        const raw = await get(`${DATA_ROOT}/${baseFile.name}`) + await get(`${DATA_ROOT}/${nepacFile.name}`);
+        res = parseData(raw);
+    }
+    catch (err) {
+        logger.error(`failed to load up-to-date data (${err})`);
+        logger.error('falling back to local files');
+
+        const pieces = await Promise.all(FALLBACK_FILES.map(name => fs.readFile(path.join(__dirname, name), 'utf8')));
+        const raw = pieces.reduce((a, b) => a + b);
+        res = parseData(raw);
+    }
+
+    logger.info('restructure complete - caching result');
+    CACHED_DATA = res;
+    CACHE_TIME_STAMP = Date.now();
+    return res;
+}
 
 /**
  * Get hurricane data including location, maximum winds, and central pressure.
@@ -55,9 +120,9 @@ HurricaneData._data = [];
  * @param {BoundedNumber<1850,2020>} year - year that the hurricane occurred in
  * @returns {Array<Object>} - All recorded data for the given hurricane
  */
-HurricaneData.getHurricaneData = function(name, year){
+HurricaneData.getHurricaneData = async function(name, year){
     name = name.toUpperCase();
-    const measurements = HurricaneData._data
+    const measurements = (await getData())
         .filter(data => data.name === name && data.year == year);
 
     return measurements;
@@ -70,8 +135,8 @@ HurricaneData.getHurricaneData = function(name, year){
  * @returns {Array<String>} names
  */
 
-HurricaneData.getHurricanesInYear = function(year){
-    const names = HurricaneData._data
+HurricaneData.getHurricanesInYear = async function(year){
+    const names = (await getData())
         .filter(data => data.year == year)
         .map(data => data.name);
 
@@ -84,9 +149,9 @@ HurricaneData.getHurricanesInYear = function(year){
  * @param {String} name - name of the hurricane to find the year(s) of
  * @returns {Array<Number>} years - list with all of the years that a particular name has been used for a hurricane
  */
-HurricaneData.getYearsWithHurricaneNamed = function(name){
+HurricaneData.getYearsWithHurricaneNamed = async function(name){
     name = name.toUpperCase();
-    const years = HurricaneData._data
+    const years = (await getData())
         .filter(data => data.name == name)
         .map(data => data.year);
 

@@ -175,16 +175,23 @@ const sleep = delay => {
     return deferred.promise;
 };
 
+function isSubclass(Subclass, Clazz) {
+    return Subclass.prototype instanceof Clazz;
+}
+
 async function shouldThrow(fn, Err, msg) {
+    assert(
+        Err === undefined || Err instanceof Error || isSubclass(Err, Error),
+        `shouldThrow expected Err to be a type of Error: ${Err}`
+    );
     try {
         await fn();
     } catch (err) {
-        if (err instanceof Error) {
+        if (Err) {
+            assert(err instanceof Error, `Non-error was thrown: ${err}`);
             assert.equal(err.constructor.name, Err.name, `Expected ${Err.name}. Found ${err}`);
-        } else {
-            console.error(`Caught ${typeof err}:`, err);
         }
-        return;
+        return err;
     }
     throw new Error(msg || `Expected fn to throw ${Err.name}`);
 }
@@ -200,12 +207,15 @@ function suiteName(filename) {
 async function expect(fn, err) {
     const start = Date.now();
     const maxEndTime = start + 1500;
-    while (!await fn()) {
+    let result = await fn();
+    while (!result) {
         await sleep(25);
         if (Date.now() > maxEndTime) {
             throw err;
         }
+        result = await fn();
     }
+    return result;
 }
 
 module.exports = {

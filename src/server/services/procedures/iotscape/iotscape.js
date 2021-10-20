@@ -103,7 +103,14 @@ IoTScape.send = function (service, id, command){
  * @param {RemoteInfo} remote Remote host information
  */
 IoTScape._createService = async function(definition, remote) {    
-    let parsed = JSON.parse(definition);
+    let parsed;
+
+    try {
+        parsed = JSON.parse(definition);
+    } catch(err){
+        logger.log('Error parsing IoTScape service: ' + err);
+        return;
+    }
 
     // Ignore request messages sent to this method
     if(parsed.request){

@@ -291,7 +291,7 @@ class Projects {
 
     _getProjectMetadata(project, origin='') {
         let metadata = this.getProjectInfo(project);
-        metadata.Thumbnail = `${origin}/api/projects/${project.owner}/${project.name}/thumbnail`;
+        metadata.Thumbnail = `${origin}/api/projects/${encodeURIComponent(project.owner)}/${encodeURIComponent(project.name)}/thumbnail`;
         return metadata;
     }
 

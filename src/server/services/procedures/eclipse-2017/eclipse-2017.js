@@ -256,8 +256,8 @@ Eclipse2017.stationsInfo = function(){
 /**
  * Divide the eclipse path into a number of sections and select weather stations from each section.
  *
- * @param {Number} numSections Number of sections to divide the path into
- * @param {Number} perSection Number of stations to select
+ * @param {Integer} numSections Number of sections to divide the path into
+ * @param {Integer} perSection Number of stations to select
  */
 Eclipse2017.selectSectionBased = stationUtils.selectSectionBased;
 
