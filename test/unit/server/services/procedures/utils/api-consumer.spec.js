@@ -90,7 +90,14 @@ describe(utils.suiteName(__filename), function() {
             });
         });
 
-        it('should throw when requesting a nonexisintg resource', done => {
+        it('should not allow cache of 0', () => {
+            assert.throws(
+                () => new ApiConsumer('InvalidCacheTime','', {cache: {ttl: 0}}),
+                /caching is required/
+            );
+        });
+
+        it('should throw when requesting a nonexisting resource', done => {
             const queryOpts = {
                 queryString: '/',
                 baseUrl: 'http://AAnonexistingdomainadslfjazxcvsadf.com',
