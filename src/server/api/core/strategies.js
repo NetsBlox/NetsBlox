@@ -54,5 +54,6 @@ class Strategies {
 
 const strategies = new Strategies();
 strategies.contents.push(new SnapStrategy());
+strategies.Strategy = Strategy;
 
 module.exports = strategies;

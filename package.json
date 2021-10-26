@@ -80,6 +80,7 @@
     "request": "^2.88.0",
     "request-promise": "^4.2.4",
     "rimraf": "^2.6.3",
+    "sinon": "^11.1.2",
     "snap2js": "^1.6.0",
     "sphericalmercator": "^1.0.5",
     "temp-units-conv": "^0.1.1",

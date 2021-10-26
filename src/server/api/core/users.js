@@ -58,51 +58,6 @@ class Users {
         return _.omit(user, ['_id', 'hash']);
     }
 
-    async login(username, password, strategy, projectId) {
-        if (!username) throw new MissingArguments('username');
-        if (!password) throw new MissingArguments('password');
-        //let user = null;
-
-        //// Should check if the user has a valid cookie. If so, log them in with it!
-        //// Explicit login
-        //try {
-            //await middleware.login(req, res);
-        //} catch (err) {
-            //logger.log(`Login failed for "${username}": ${err}`);
-            //if (req.body.silent) {
-                //return res.sendStatus(204);
-            //} else {
-                //return res.status(403).send(err.message);
-            //}
-        //}
-
-        //username = req.session.username;
-        //user = req.session.user;
-
-        //// Update the project if logging in from the netsblox app
-        //if (projectId) {  // update project owner
-            //const project = await Projects.getById(projectId);
-
-            //// Update the project owner, if needed
-            //if (project && Utils.isSocketUuid(project.owner)) {
-                //const name = await user.getNewName(project.name);
-                //await project.setName(name);
-                //await project.setOwner(username);
-                //await NetworkTopology.onRoomUpdate(projectId);
-            //}
-        //}
-
-        //if (req.body.return_user) {
-            //return res.status(200).json({
-                //username: username,
-                //admin: user.admin,
-                //email: user.email
-            //});
-        //} else {
-            //return res.status(200).json(ExternalAPI);
-        //}
-    }
-
     async delete(requestor, username) {
         await Auth.ensureAuthorized(requestor, P.User.DELETE(username));
         const result = await UsersStorage.collection.deleteOne({username});
@@ -112,11 +67,14 @@ class Users {
         await ProjectsStorage._collection.deleteMany({owner: username});
     }
 
-    async setPassword(username, oldPassword, newPassword) {
-        // TODO: Check if the username is correct for better error message?
-        const oldHash = hex_sha512(oldPassword);
+    async setPassword(requestor, username, newPassword, oldPassword=null) {
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(username));
+
         const newHash = hex_sha512(newPassword);
-        const query = {username, hash: oldHash};
+        const query = {username};
+        if (oldPassword) {
+            query.hash = hex_sha512(oldPassword);
+        }
         const updates = {$set: {hash: newHash}};
 
         const result = await UsersStorage.collection.updateOne(query, updates);
@@ -130,13 +88,13 @@ class Users {
         const hash = hex_sha512(password);
         const query = {username};
         const update = {$set: {hash}};
-        const user = await UsersStorage.findOneAndUpdate(query, update);
-        if (!user) {
+        const result = await UsersStorage.collection.findOneAndUpdate(query, update);
+        if (!result.value) {
             throw new UserNotFound(username);
         }
 
         mailer.sendMail({
-            to: user.email,
+            to: result.value.email,
             subject: 'Temporary Password',
             html: '<p>Hello '+username+',<br/><br/>Your NetsBlox password has been '+
                 'temporarily set to '+password+'. Please change it after '+
@@ -144,13 +102,78 @@ class Users {
         });
     }
 
-    async logout(clientId) {
+    async login(username, password, strategy, clientId) {
+        if (!username) throw new MissingArguments('username');
+        if (!password) throw new MissingArguments('password');
+
+        let user;
+        if (strategy) {  // TODO: should we make a "default strategy"?
+            await strategy.authenticate(username, password);
+            user = await UsersStorage.findWithStrategy(username, strategy.type);
+        } else {
+            const hash = hex_sha512(password);
+            user = await UsersStorage.collection.findOne({username, hash});
+            if (!user) {
+                throw new IncorrectUserOrPassword();
+            }
+        }
+
+        if (clientId) {
+            const client = NetworkTopology.getClient(clientId);
+            if (!client) {
+                throw new RequestError('Client not found.');
+            }
+            client.setUsername(user.username);
+            await ProjectsStorage._collection.updateOne(
+                {owner: client.uuid},
+                {$set: {owner: user.username}}
+            );
+                // TODO: Update this
+            //if (project && Utils.isSocketUuid(project.owner)) {
+                //const name = await user.getNewName(project.name);
+                //await project.setName(name);
+                //await project.setOwner(username);
+                //await NetworkTopology.onRoomUpdate(projectId);
+            //}
+        }
+    }
+
+    async logout(requestor, clientId) {
+        // TODO: permissions? Can edit client?
         const client = NetworkTopology.getClient(clientId);
         if (client) {
             client.onLogout();
         }
     }
 
+    async linkAccount(requestor, username, strategy, strategyUsername, password) {
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(username));
+        await strategy.authenticate(strategyUsername, password);
+        const user = await UsersStorage.findWithStrategy(strategyUsername, strategy.type);
+        if (user) {
+            throw new RequestError(`${strategyUsername} is already linked to a NetsBlox account.`);
+        }
+
+        const result = await UsersStorage.collection.updateOne(
+            {username},
+            {$push: {linkedAccounts: {username: strategyUsername, type: strategy.type}}}
+        );
+        if (result.modifiedCount === 0) {
+            throw new UserNotFound(username);
+        }
+        return result.modifiedCount === 1;
+    }
+
+    async unlinkAccount(requestor, username, account) {
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(username));
+        const result = await UsersStorage.collection.updateOne(
+            {username},
+            {$pull: {linkedAccounts: account}}
+        );
+        if (result.matchedCount === 0) {
+            throw new UserNotFound(username);
+        }
+    }
 }
 
 module.exports = new Users();

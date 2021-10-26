@@ -80,7 +80,7 @@ const canLoadXml = string => {
 // Create configured room helpers
 let logger = new Logger('netsblox:test');
 const createSocket = function(username) {
-    const uuid = serverUtils.getNewClientId();
+    const uuid = serverUtils.isSocketUuid(username) ? username : serverUtils.getNewClientId();
     const client = NetworkTopology.onConnect(new Socket(), uuid);
     client.username = username || client.uuid;
     return client;
@@ -151,13 +151,18 @@ const clearCache = function() {
     });
 };
 
+const resetAndSeed = async function(...fixtureData) {
+    await reset(false);
+    await fixtures.create(Storage, ...fixtureData);
+};
+
 const reset = function(seedDefaults=true) {
     let db = null;
     // TODO: load the seed data
     // Reload the server and the paths
-    let routes = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'server', 'routes'))
+    const routes = fs.readdirSync(path.join(__dirname, '..', '..', 'src', 'server', 'routes'))
         .map(file => `../../src/server/routes/${file}`);
-    let modulesToRefresh = routes.concat('../../src/server/server');
+    const modulesToRefresh = routes.concat('../../src/server/server');
     clearCache.apply(null, modulesToRefresh);
 
     return Q(connect())
