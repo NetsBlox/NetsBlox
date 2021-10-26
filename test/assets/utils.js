@@ -257,6 +257,7 @@ module.exports = {
     logger: mainLogger,
     createRoom: createRoom,
     createSocket: createSocket,
+    createClient: createSocket,
     sendEmptyRole: sendEmptyRole,
     shouldThrow,
     fixtures,

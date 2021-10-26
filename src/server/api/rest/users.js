@@ -1,4 +1,5 @@
 const Users = require('../core/users');
+const Strategies = require('../core/strategies');
 const UsersRouter = require('express').Router();
 const {handleErrors, setUsername} = require('./utils');
 
@@ -17,15 +18,20 @@ UsersRouter.route('/create')
 
 UsersRouter.route('/login')
     .post(handleErrors(async (req, res) => {
-        const projectId = req.body.projectId;
-        const {username, password} = req.body.projectId;
+        const {strategy: strategyName} = req.params;
+        const {username, password, clientId} = req.body.projectId;
+        const strategy = Strategies.find(strategyName);
+        await Users.login(username, password, strategy, clientId);
         // TODO: login and set the session cookies
+        // TODO: do we need to return the user?
+        res.sendStatus(200);
     }));
 
 UsersRouter.route('/logout')
     .post(handleErrors(async (req, res) => {
         const {clientId} = req.body;
-        await Users.logout(clientId);
+        const {username} = req.session;
+        await Users.logout(username, clientId);
         req.session.destroy();
         res.sendStatus(200);
     }));
@@ -53,5 +59,19 @@ UsersRouter.route('/password/:username')
         await Users.resetPassword(username);
         return res.sendStatus(200);
     }));
+
+UsersRouter.route('/view/:username')
+    .get(handleErrors(async (req, res) => {
+        // TODO: should we allow the requestor to be different? Probably for when editing members
+    }));
+
+UsersRouter.route('/link/:username')
+    .post(handleErrors(async (req, res) => {
+    }));
+
+UsersRouter.route('/unlink/:username')
+    .post(handleErrors(async (req, res) => {
+    }));
+    // TODO: should we allow the requestor to be different? Probably for when editing members
 
 module.exports = UsersRouter;

@@ -272,18 +272,19 @@ describe(utils.suiteName(__filename), function() {
         });
 
         describe('if client provided', function() {
-            let clientId, count = 0, projectName;
+            let clientId, count = 0, projectName, projectId;
 
             beforeEach(async () => {
                 clientId = `_netsblox_login_tests_${count}`;
                 projectName = `login-tests-${++count}`;
-                await utils.createRoom({
+                const project = await utils.createRoom({
                     name: projectName,
                     owner: clientId,
                     roles: {
                         role: [clientId]
                     }
                 });
+                projectId = project.getId();
             });
 
             it('should set username for client', async function() {
@@ -297,16 +298,46 @@ describe(utils.suiteName(__filename), function() {
                 const project = await ProjectsStorage._collection.findOne({name: projectName});
                 assert.equal(project.owner, username);
             });
+
+            it('should update project name so it doesnt collide', async function() {
+                await ProjectsStorage._collection.insertOne({
+                    owner: username,
+                    name: projectName,
+                    isOriginal: true,
+                });
+                await UsersAPI.login(username, 'secretPassword', null, clientId);
+                const projects = await ProjectsStorage._collection.find({name: projectName}).toArray();
+                assert.equal(projects.length, 1);
+
+                const [project] = projects;
+                assert.equal(project.owner, username);
+                assert(project.isOriginal);
+
+                const newProject = await ProjectsStorage.getById(projectId);
+                assert(newProject);
+                assert(newProject.name.startsWith(projectName));
+            });
         });
     });
 
     describe('logout', function() {
-        it('should update the owner of project for client', function() {
-            // TODO
+        let clientId;
+        before(async () => {
+            const client = await utils.createSocket(username);
+            clientId = client.uuid;
         });
 
-        it('should update the client username', function() {
-            // TODO
+        it('should update the client username', async function() {
+            await UsersAPI.logout(username, clientId);
+            const client = NetworkTopology.getClient(clientId);
+            assert.equal(client.username, client.uuid);
+        });
+
+        it.only('should not logout other users', async function() {
+            await assert.rejects(
+                UsersAPI.logout('nonExistentUser', clientId),
+                /not allowed/
+            );
         });
     });
 });

@@ -10,6 +10,8 @@ const {hex_sha512} = require('../../../common/sha512');
 const randomString = require('just.randomstring');
 const defaultMailer = require('../../mailer');
 const _ = require('lodash');
+const ObjectId = require('mongodb').ObjectId;
+const Utils = require('../../utils');
 
 class Users {
     constructor() {
@@ -112,8 +114,8 @@ class Users {
             user = await UsersStorage.findWithStrategy(username, strategy.type);
         } else {
             const hash = hex_sha512(password);
-            user = await UsersStorage.collection.findOne({username, hash});
-            if (!user) {
+            user = await UsersStorage.get(username);
+            if (!user || hash !== user.hash) {
                 throw new IncorrectUserOrPassword();
             }
         }
@@ -123,24 +125,27 @@ class Users {
             if (!client) {
                 throw new RequestError('Client not found.');
             }
+            const {projectId} = client;
             client.setUsername(user.username);
-            await ProjectsStorage._collection.updateOne(
-                {owner: client.uuid},
-                {$set: {owner: user.username}}
+
+            const project = await ProjectsStorage._collection.findOne(
+                {_id: ObjectId(projectId)}
             );
-                // TODO: Update this
-            //if (project && Utils.isSocketUuid(project.owner)) {
-                //const name = await user.getNewName(project.name);
-                //await project.setName(name);
-                //await project.setOwner(username);
-                //await NetworkTopology.onRoomUpdate(projectId);
-            //}
+            if (Utils.isSocketUuid(project.owner)) {
+                const name = await user.getNewName(project.name);
+                await ProjectsStorage._collection.updateOne(
+                    {_id: ObjectId(projectId)},
+                    {$set: {owner: user.username, name}}
+                );
+                await NetworkTopology.onRoomUpdate(projectId);
+            }
         }
     }
 
     async logout(requestor, clientId) {
         // TODO: permissions? Can edit client?
         const client = NetworkTopology.getClient(clientId);
+        await Auth.ensureAuthorized(requestor, P.User.WRITE(client.username));
         if (client) {
             client.onLogout();
         }
