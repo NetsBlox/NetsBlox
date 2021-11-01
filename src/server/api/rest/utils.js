@@ -13,6 +13,22 @@ Utils.handleErrors = fn => {
     };
 };
 
-Utils.setUsername = setUsername;
+Utils.setUsername = function(req, res) {
+    req.session = req.session || new Session(res);
+    // TODO: add login logic
+    jwt.verify(cookie, sessionSecret, (err, token) => {
+        if (err) {
+            logger.error(`Error verifying jwt: ${err}`);
+            return cb(err);
+        }
+
+        req.session.username = token.username;
+        if (!skipRefresh) {
+            refreshCookie(res, token);
+        }
+        req.loggedIn = true;
+        return cb(null, true);
+    });
+};
 
 module.exports = Utils;

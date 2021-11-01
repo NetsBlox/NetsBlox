@@ -12,6 +12,7 @@ const defaultMailer = require('../../mailer');
 const _ = require('lodash');
 const ObjectId = require('mongodb').ObjectId;
 const Utils = require('../../utils');
+const WELCOME_HTML = require('../../mail/welcome');
 
 class Users {
     constructor() {
@@ -104,14 +105,53 @@ class Users {
         });
     }
 
-    async login(username, password, strategy, clientId) {
+    async login(username, password, strategy, clientId, mailer=defaultMailer) {
         if (!username) throw new MissingArguments('username');
         if (!password) throw new MissingArguments('password');
 
         let user;
-        if (strategy) {  // TODO: should we make a "default strategy"?
+        if (strategy) {
             await strategy.authenticate(username, password);
             user = await UsersStorage.findWithStrategy(username, strategy.type);
+
+            if (!user) {
+                const email = await strategy.getEmail(username, password);
+                user = UsersStorage.new(username, email);
+                user.linkedAccounts.push({username, type: strategy.type});
+
+                let saved = false;
+                let count = 0;
+                const strategySuffix = strategy.type.toLowerCase()
+                    .replace(/[^a-zA-Z]/g, '');
+                while (!saved) {
+                    const userData = user._saveable();
+                    const result = await UsersStorage.collection.updateOne(
+                        user.getStorageId(),
+                        {$setOnInsert: userData},
+                        {upsert: true},
+                    );
+                    saved = result.upsertedCount === 1;
+                    if (!saved) {
+                        count++;
+                        if (count > 1) {
+                            user.username = `${username}${count}_${strategySuffix}`;
+                        } else {
+                            user.username = `${username}_${strategySuffix}`;
+                        }
+                    }
+                }
+            }
+
+            try {
+                await mailer.sendMail({
+                    to: user.email,
+                    subject: 'Welcome to NetsBlox!',
+                    html: WELCOME_HTML(user.username, username)
+                });
+            } catch (err) {
+                this.logger.error(`Unable to send welcome email: ${err}`);
+            }
+
         } else {
             const hash = hex_sha512(password);
             user = await UsersStorage.get(username);
@@ -140,6 +180,7 @@ class Users {
                 await NetworkTopology.onRoomUpdate(projectId);
             }
         }
+        return user;
     }
 
     async logout(requestor, clientId) {

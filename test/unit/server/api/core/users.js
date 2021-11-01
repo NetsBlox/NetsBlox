@@ -1,5 +1,5 @@
 const utils = require('../../../../assets/utils');
-describe(utils.suiteName(__filename), function() {
+describe.only(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const utils = require('../../../../assets/utils');
     const UsersAPI = utils.reqSrc('./api/core/users');
@@ -14,6 +14,10 @@ describe(utils.suiteName(__filename), function() {
     const Strategies = utils.reqSrc('api/core/strategies');
     const {Strategy} = Strategies;
     const NetworkTopology = utils.reqSrc('network-topology');
+    const mailer = {
+        sendMail: sinon.spy(),
+    };
+    let strategy;
 
     before(async () => {
         await utils.reset(
@@ -22,7 +26,14 @@ describe(utils.suiteName(__filename), function() {
             //new f.Group(username, 'SomeGroup'),
             //new f.User(member, null, 'SomeGroup'),
         );
+        strategy = new Strategy('Test');
+        Strategies.contents.push(strategy);
     });
+
+    after(() => {
+        Strategies.contents.pop();
+    });
+
 
     describe('create', function() {
         it('should create new user', async function() {
@@ -181,9 +192,7 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('resetPassword', function() {
-        const mailer = {
-            sendMail: sinon.spy(),
-        };
+        before(() => mailer.sendMail = sinon.spy());
 
         it('should change user password', async function() {
             const {hash: password} = await UsersStorage.collection.findOne({username});
@@ -209,16 +218,6 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('linkAccount', function() {
-        let strategy;
-        before(() => {
-            strategy = new Strategy('Test');
-            Strategies.contents.push(strategy);
-        });
-
-        after(() => {
-            Strategies.contents.pop();
-        });
-
         it('should register the new auth strategy', async function() {
             const snapUser = 'brollb';
             const {linkedAccounts} = await UsersStorage.collection.findOne({username});
@@ -253,8 +252,19 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('login', function() {
-        it('should log user in', async function() {
-            await UsersAPI.login(username, 'secretPassword');
+
+        it('should return user', async function() {
+            const user = await UsersAPI.login(username, 'secretPassword');
+            assert(user);
+        });
+
+        it('should create user if logging in with strategy', async function() {
+            mailer.sendMail = sinon.spy();
+            const username = 'loginStrategyTestUser';
+            await UsersAPI.login(username, 'secretPassword', strategy, null, mailer);
+            const user = await UsersStorage.collection.findOne({username});
+            assert(user);
+            assert(mailer.sendMail.calledOnce);
         });
 
         it('should throw error if user/password incorrect', async function() {
@@ -333,7 +343,7 @@ describe(utils.suiteName(__filename), function() {
             assert.equal(client.username, client.uuid);
         });
 
-        it.only('should not logout other users', async function() {
+        it('should not logout other users', async function() {
             await assert.rejects(
                 UsersAPI.logout('nonExistentUser', clientId),
                 /not allowed/
