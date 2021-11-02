@@ -69,6 +69,7 @@
     "mongoose": "^5.10.15",
     "moviedb": "^0.2.7",
     "node-geocoder": "^3.16.0",
+    "node-html-parser": "^5.1.0",
     "node-schedule": "^1.3.2",
     "nodemailer": "=2.6.4",
     "nop": "^1.0.0",
