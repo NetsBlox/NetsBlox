@@ -104,7 +104,8 @@ class ApiConsumer extends NBService {
 
     _checkInvalidApiKey(statusCode) {
         const is4xxError = statusCode > 399 && statusCode < 500;
-        if (is4xxError && this.apiKey) {
+        const isNotFoundError = statusCode === 404;
+        if (is4xxError && this.apiKey && !isNotFoundError) {
             throw new InvalidKeyError(this.apiKey);
         }
     }
