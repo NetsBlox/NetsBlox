@@ -77,6 +77,10 @@ module.exports.TwitterKey = new ApiKey(
     'https://developer.twitter.com/en/docs/basics/authentication/oauth-2-0',
     'TWITTER_BEARER_TOKEN'
 );
+module.exports.GeniusKey = new ApiKey(
+    'Genius',
+    'https://genius.com/signup_or_login',
+);
 
 class InvalidKeyError extends Error {
     constructor(apiKey) {
