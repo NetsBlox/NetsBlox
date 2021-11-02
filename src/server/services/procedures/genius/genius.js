@@ -2,7 +2,9 @@
  * The Genius service provides access to the Genius API, the world's
  * biggest collection of song lyrics and musical knowledge.
  *
+ * @alpha
  * @service
+ * @category Music
  */
 const {parse: parseHTML} = require('node-html-parser');
 const ApiConsumer = require('../utils/api-consumer');
