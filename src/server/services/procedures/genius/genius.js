@@ -21,7 +21,10 @@ Genius._requestData = async function(options) {
     try {
         return await ApiConsumer.prototype._requestData.call(this, options);
     } catch (err) {
-        throw new Error('Song or artist not found.');
+        if (err.statusCode === 404) {
+            throw new Error('Song or artist not found.');
+        }
+        throw err;
     }
 };
 
