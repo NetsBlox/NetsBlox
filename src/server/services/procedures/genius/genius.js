@@ -2,6 +2,8 @@
  * The Genius service provides access to the Genius API, the world's
  * biggest collection of song lyrics and musical knowledge.
  *
+ * For more information, check out https://genius.com.
+ *
  * @alpha
  * @service
  * @category Music
