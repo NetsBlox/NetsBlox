@@ -8,7 +8,7 @@ ENV NETSBLOX_BLOB_DIR /blob-data
 RUN echo installing dependencies..
 
 RUN apt update
-RUN apt install build-essential libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev libgd2-dev cmake python3-sphinx python3-pip -y
+RUN apt install build-essential libgd-dev libcairo2-dev libcairo2-dev libpango1.0-dev cmake python3-sphinx python3-pip -y
 RUN pip3 install sphinx_rtd_theme
 
 RUN echo compiling and installing Gnuplot..
