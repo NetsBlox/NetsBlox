@@ -137,8 +137,18 @@ Genius._parseLyrics = function(html) {
     };
     const lyricsElement = findElement(doc, isLyricsElement);
     if (!lyricsElement) throw LyricsSectionNotFound();
-    return lyricsElement.text;
+    return getTextWithNewLines(lyricsElement);
 };
+
+function getTextWithNewLines(node) {
+    if (node.childNodes.length > 0) {
+        return node.childNodes.reduce((txt, node) => txt + getTextWithNewLines(node), '');
+    } else if (node.tagName === 'BR') {
+        return '\n';
+    } else {
+        return node.text;
+    }
+}
 
 function findElement(node, fn) {
     if (fn(node)) return node;
