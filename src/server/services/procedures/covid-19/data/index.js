@@ -248,12 +248,9 @@ class COVIDData {
     }
 
     async getAllLocations() {
-        const docs = await this._model.find({}, {country: 1, state: 1, city: 1}).distinct('fullLocation');
+        const docs = await this._model.find({}, {fullLocation: 1}).distinct('fullLocation');
         const sortedDocs = _.sortBy(docs, ['country', 'state', 'city']);
-        return _.sortedUniqBy(
-            sortedDocs,
-            doc => doc.country + doc.state + doc.city
-        );
+        return sortedDocs;
     }
 
     async getLocation(country, state, city) {
