@@ -136,6 +136,7 @@ class COVIDData {
             country,
             state,
             city,
+            fullLocation: {country, city, state},
             latitude: parseFloat(this.getColumn(row, columnNames, 'lat') || NULL_LAT_LNG),
             longitude: parseFloat(this.getColumn(row, columnNames, 'long') || NULL_LAT_LNG),
             confirmed: parseInt(this.getColumn(row, columnNames, 'confirmed') || '0'),
@@ -247,7 +248,7 @@ class COVIDData {
     }
 
     async getAllLocations() {
-        const docs = await this._model.find({}, {country: 1, state: 1, city: 1});
+        const docs = await this._model.find({}, {country: 1, state: 1, city: 1}).distinct('fullLocation');
         const sortedDocs = _.sortBy(docs, ['country', 'state', 'city']);
         return _.sortedUniqBy(
             sortedDocs,

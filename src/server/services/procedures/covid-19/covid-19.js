@@ -18,6 +18,7 @@ const schema = {
     country: String,
     state: String,
     city: String,
+    fullLocation: Object,
     latitude: Number,
     longitude: Number,
     confirmed: Number,
