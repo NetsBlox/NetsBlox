@@ -21,4 +21,4 @@ function registerTypes() {
     });
 }
 
-module.exports = {registerTypes};
+module.exports = {registerTypes, VaccineCategories};
