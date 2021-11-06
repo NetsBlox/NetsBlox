@@ -15,10 +15,7 @@ const vaccination = require('./vaccination/vaccination-data-source');
 const {registerTypes, VaccineCategories} = require('./types');
 const schema = {
     date: Date,
-    country: String,
-    state: String,
-    city: String,
-    fullLocation: Object,
+    region: Object,
     latitude: Number,
     longitude: Number,
     confirmed: Number,
