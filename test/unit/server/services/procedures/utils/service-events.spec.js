@@ -10,8 +10,9 @@ describe(utils.suiteName(__filename), function() {
         });
 
         it('should handle an emitted event', function(done) {
-            ServiceEvents.on(ServiceEvents.UPDATE, done);
-            ServiceEvents.emit(ServiceEvents.UPDATE);
+            const events = ServiceEvents.new();
+            events.on(ServiceEvents.UPDATE, done);
+            events.emit(ServiceEvents.UPDATE);
         });
 
         it('should handle emitted events (multiple times)', function(done) {
