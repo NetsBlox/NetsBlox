@@ -71,7 +71,7 @@ describe(utils.suiteName(__filename), function() {
 
             it('should emit service update event', function(done) {
                 service.setRequester('client_1234', 'brian');
-                ServiceEvents.once(ServiceEvents.UPDATE, done);
+                ServiceEvents.once(ServiceEvents.UPDATE, () => done());
                 service.createServiceFromTable('testName', data);
             });
 
