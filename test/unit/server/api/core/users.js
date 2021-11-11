@@ -19,16 +19,12 @@ describe.only(utils.suiteName(__filename), function() {
     };
     let strategy;
 
-    before(async () => {
-        await utils.reset(
-            //new f.User(username),
-            //new f.User('otherUser'),
-            //new f.Group(username, 'SomeGroup'),
-            //new f.User(member, null, 'SomeGroup'),
-        );
+    before(() => {
         strategy = new Strategy('Test');
         Strategies.contents.push(strategy);
     });
+
+    beforeEach(() => utils.reset());
 
     after(() => {
         Strategies.contents.pop();
@@ -58,19 +54,17 @@ describe.only(utils.suiteName(__filename), function() {
         });
 
         describe('groups', function() {
-            let groupId;
-            before(async () => {
-                const group = await GroupsStorage.new('testUsers', username);
-                groupId = group.getId();
-            });
-
             it('should be able to add users to own groups', async function() {
+                const group = await GroupsStorage.new('testUsers', username);
+                const groupId = group.getId();
                 await UsersAPI.create('brian', 'username43', 'some@email.com', groupId, 'password');
                 const user = await UsersStorage.collection.findOne({username: 'username43'});
                 assert(user);
             });
 
             it('should not be able to add users to other groups', async function() {
+                const group = await GroupsStorage.new('testUsers', username);
+                const groupId = group.getId();
                 await assert.rejects(
                     () => UsersAPI.create('', 'username44', 'some@email.com', groupId, 'password'),
                     /edit the requested group/
@@ -128,17 +122,14 @@ describe.only(utils.suiteName(__filename), function() {
         afterEach(() => Auth.enable());
 
         describe('success', function() {
-            before(async () => {
-                Auth.disable();
-                await UsersAPI.delete(null, username);
-            });
-
             it('should delete user', async function() {
+                await UsersAPI.delete(null, username);
                 const user = await UsersStorage.collection.findOne({username});
                 assert(!user);
             });
 
             it('should delete user\'s projects', async function() {
+                await UsersAPI.delete(null, username);
                 const project = await ProjectsStorage._collection.findOne({owner: username});
                 assert(!project);
             });
@@ -192,7 +183,7 @@ describe.only(utils.suiteName(__filename), function() {
     });
 
     describe('resetPassword', function() {
-        before(() => mailer.sendMail = sinon.spy());
+        beforeEach(() => mailer.sendMail = sinon.spy());
 
         it('should change user password', async function() {
             const {hash: password} = await UsersStorage.collection.findOne({username});
@@ -211,7 +202,7 @@ describe.only(utils.suiteName(__filename), function() {
         it('should email user new password', async function() {
             await UsersAPI.resetPassword(username, mailer);
             assert(mailer.sendMail.calledOnce);
-            const [mailData] = mailer.sendMail.args;
+            const [[mailData]] = mailer.sendMail.args;
             assert.equal(mailData.to, `${username}@netsblox.org`);
             assert.equal(mailData.subject, 'Temporary Password');
         });
@@ -221,7 +212,7 @@ describe.only(utils.suiteName(__filename), function() {
         it('should register the new auth strategy', async function() {
             const snapUser = 'brollb';
             const {linkedAccounts} = await UsersStorage.collection.findOne({username});
-            await UsersAPI.linkAccount(username, strategy, snapUser, 'somePassword');
+            await UsersAPI.linkAccount(username, username, strategy, snapUser, 'somePassword');
             const {linkedAccounts: newAccounts} = await UsersStorage.collection.findOne({username});
             assert.equal(newAccounts.length, linkedAccounts.length + 1);
             assert(newAccounts.find(acct => acct.username === snapUser));
@@ -230,7 +221,7 @@ describe.only(utils.suiteName(__filename), function() {
         it('should authenticate w/ the strategy', async function() {
             strategy.authenticate = sinon.spy();
             const snapUser = 'brollb2';
-            await UsersAPI.linkAccount(username, strategy, snapUser, 'somePassword');
+            await UsersAPI.linkAccount(username, username, strategy, snapUser, 'somePassword');
             assert(strategy.authenticate.calledOnce);
         });
 
