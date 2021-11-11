@@ -1,10 +1,13 @@
 const utils = require('../../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
-    var Chart = utils.reqSrc('services/procedures/chart/chart.js'),
-        RPCMock = require('../../../../../assets/mock-service'),
-        chart = new RPCMock(Chart),
-        assert = require('assert');
+    const Chart = utils.reqSrc('services/procedures/chart/chart.js');
+    const RPCMock = require('../../../../../assets/mock-service');
+    const assert = require('assert');
+    let chart;
+
+    before(() => chart = new RPCMock(Chart));
+    after(() => chart.destroy());
 
     utils.verifyRPCInterfaces('Chart',[
         ['draw', ['lines', 'options']],

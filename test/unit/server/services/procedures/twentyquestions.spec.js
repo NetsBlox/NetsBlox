@@ -3,8 +3,11 @@ const utils = require('../../../../assets/utils');
 describe(utils.suiteName(__filename), function() {
     const TwentyQuestions = utils.reqSrc('services/procedures/twenty-questions/twenty-questions');
     const RPCMock = require('../../../../assets/mock-service');
-    const twentyquestions = new RPCMock(TwentyQuestions);
     const assert = require('assert');
+    let twentyquestions;
+
+    before(() => twentyquestions = new RPCMock(TwentyQuestions));
+    after(() => twentyquestions.destroy());
 
     utils.verifyRPCInterfaces('TwentyQuestions', [
         ['start', ['answer']],

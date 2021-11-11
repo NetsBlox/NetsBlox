@@ -5,7 +5,10 @@ describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const PublicRoles = utils.reqSrc('services/procedures/public-roles/public-roles');
     const RPCMock = require('../../../../assets/mock-service');
-    const publicroles = new RPCMock(PublicRoles);
+    let publicroles;
+
+    before(() => publicroles = new RPCMock(PublicRoles));
+    after(() => publicroles.destroy());
 
     utils.verifyRPCInterfaces('PublicRoles', [
         ['getPublicRoleId'],

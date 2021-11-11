@@ -6,9 +6,8 @@ describe(utils.suiteName(__filename), function() {
         assert = require('assert'),
         connectn;
 
-    before(function() {
-        connectn = new RPCMock(ConnectN);
-    });
+    before(() => connectn = new RPCMock(ConnectN));
+    after(() => connectn.destroy());
 
     describe('newGame', function() {
         it('should detect invalid number for rows', function() {
