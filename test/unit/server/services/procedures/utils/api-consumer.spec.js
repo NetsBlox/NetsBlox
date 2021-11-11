@@ -53,6 +53,28 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('_checkInvalidApiKey', function() {
+        const service = testRpc.unwrap();
+        const mockKey = {provider: 'Test'};
+
+        before(() => service.apiKey = mockKey);
+
+        it('should throw invalid API key error on 403', function() {
+            assert.throws(
+                () => service._checkInvalidApiKey(403),
+                /Invalid API key/
+            );
+        });
+
+        it('should not throw invalid API key error on 500', function() {
+            service._checkInvalidApiKey(500);
+        });
+
+        it('should not throw invalid API key error on 404', function() {
+            service._checkInvalidApiKey(404);
+        });
+    });
+
     describe('requestData', ()=>{
 
         it('should get correct data from the endpoint', done => {
@@ -90,7 +112,14 @@ describe(utils.suiteName(__filename), function() {
             });
         });
 
-        it('should throw when requesting a nonexisintg resource', done => {
+        it('should not allow cache of 0', () => {
+            assert.throws(
+                () => new ApiConsumer('InvalidCacheTime','', {cache: {ttl: 0}}),
+                /caching is required/
+            );
+        });
+
+        it('should throw when requesting a nonexisting resource', done => {
             const queryOpts = {
                 queryString: '/',
                 baseUrl: 'http://AAnonexistingdomainadslfjazxcvsadf.com',

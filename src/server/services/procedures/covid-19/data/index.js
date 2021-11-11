@@ -95,7 +95,7 @@ class COVIDData {
         this.ensureNumeric(doc, 'deaths');
         this.ensureNumeric(doc, 'recovered');
         const hasZeroCount = !(doc.confirmed + doc.deaths + doc.recovered);
-        assert(doc.country || hasZeroCount, `Missing country: ${JSON.stringify(doc)}`);
+        assert(doc.region.country || hasZeroCount, `Missing country: ${JSON.stringify(doc)}`);
     }
 
     ensureNumeric(doc, field) {
@@ -133,9 +133,7 @@ class COVIDData {
         }
 
         return {
-            country,
-            state,
-            city,
+            region: {country, city, state},
             latitude: parseFloat(this.getColumn(row, columnNames, 'lat') || NULL_LAT_LNG),
             longitude: parseFloat(this.getColumn(row, columnNames, 'long') || NULL_LAT_LNG),
             confirmed: parseInt(this.getColumn(row, columnNames, 'confirmed') || '0'),
@@ -236,23 +234,20 @@ class COVIDData {
     }
 
     getQuery(country, state, city) {
-        const query = {country: this.resolveCountry(country)};
+        const query = {'region.country': this.resolveCountry(country)};
         if (state) {
-            query.state = this.resolveState(state);
+            query['region.state'] = this.resolveState(state);
         }
         if (city) {
-            query.city = city;
+            query['region.city'] = city;
         }
         return query;
     }
 
     async getAllLocations() {
-        const docs = await this._model.find({}, {country: 1, state: 1, city: 1});
+        const docs = await this._model.find({}, {region: 1}).distinct('region');
         const sortedDocs = _.sortBy(docs, ['country', 'state', 'city']);
-        return _.sortedUniqBy(
-            sortedDocs,
-            doc => doc.country + doc.state + doc.city
-        );
+        return sortedDocs;
     }
 
     async getLocation(country, state, city) {

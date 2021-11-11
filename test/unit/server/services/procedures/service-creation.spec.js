@@ -1,7 +1,10 @@
 const utils = require('../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
+    const {sleep} = utils.reqSrc('server-utils');
+    const ServicesWorker = utils.reqSrc('services/api').services;
     const ServiceCreation = utils.reqSrc('services/procedures/service-creation/service-creation');
+    const ServiceEvents = utils.reqSrc('services/procedures/utils/service-events');
     const RPCMock = require('../../../../assets/mock-service');
     const service = new RPCMock(ServiceCreation);
     const assert = require('assert');
@@ -62,6 +65,30 @@ describe(utils.suiteName(__filename), function() {
                 /code.*query/
             );
         });
+
+        describe('success', function() {
+            before(() => utils.reset());
+
+            it('should emit service update event', function(done) {
+                service.setRequester('client_1234', 'brian');
+                ServiceEvents.once(ServiceEvents.UPDATE, () => done());
+                service.createServiceFromTable('testName', data);
+            });
+
+            it('should create new service', async function() {
+                const name = 'createNewServiceTest';
+                service.setRequester('client_1234', 'brian');
+                await service.createServiceFromTable(name, data);
+                await utils.expect(
+                    () => {
+                        const serviceNames = ServicesWorker.getServices().map(service => service.serviceName);
+                        return serviceNames.includes(name);
+                    },
+                    new Error('Service not created')
+                );
+            });
+        });
+
     });
 
     describe('getConstantFields ', function() {

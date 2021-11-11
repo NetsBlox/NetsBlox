@@ -1,3 +1,4 @@
+const assert = require('assert');
 const NBService = require('./service.js'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
@@ -20,6 +21,10 @@ class ApiConsumer extends NBService {
         }, opts);
         super(name);
 
+        assert(
+            opts.cache.ttl > 0,
+            'Some level of caching is required. Please specify a cache value greater than 0'
+        );
         this._baseUrl = baseUrl.replace(/\?$/, '').replace(/\/$/, '');
 
         // setup cache. maxsize is in bytes, ttl in seconds
@@ -99,7 +104,8 @@ class ApiConsumer extends NBService {
 
     _checkInvalidApiKey(statusCode) {
         const is4xxError = statusCode > 399 && statusCode < 500;
-        if (is4xxError && this.apiKey) {
+        const isNotFoundError = statusCode === 404;
+        if (is4xxError && this.apiKey && !isNotFoundError) {
             throw new InvalidKeyError(this.apiKey);
         }
     }
