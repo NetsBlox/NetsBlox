@@ -52,16 +52,22 @@ Perms.addPermissionSet('Group', {
 });
 Perms.addPermissionSet('User', {
     READ: function(username) {
-        return requestor => assert(
-            username === requestor,
-            new Errors.Unauthorized(requestor, `view user "${username}"`)
-        );
+        return async requestor => {
+            if (username === requestor) return;
+            const user = await Users.get(username);
+            const groupId = user.groupId;
+            if (groupId && await isGroupOwner(requestor, groupId)) return;
+            throw new Errors.Unauthorized(requestor, `view user "${username}"`);
+        };
     },
     WRITE: function(username) {
-        return requestor => assert(
-            username === requestor,
-            new Errors.Unauthorized(requestor, `edit user "${username}"`)
-        );
+        return async requestor => {
+            if (username === requestor) return;
+            const user = await Users.get(username);
+            const groupId = user.groupId;
+            if (groupId && await isGroupOwner(requestor, groupId)) return;
+            throw new Errors.Unauthorized(requestor, `edit user "${username}"`);
+        };
     },
 });
 Perms.addPermissionSet('Library', {

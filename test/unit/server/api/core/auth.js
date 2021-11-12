@@ -4,11 +4,19 @@ describe(utils.suiteName(__filename), function() {
     const P = Auth.Permission;
     const Errors = utils.reqSrc('./api/core/errors');
 
+    before(() => utils.reset());
     beforeEach(() => Auth.enable());
 
     it('should ensure users cannot view others', async function() {
         await utils.shouldThrow(
             () => Auth.ensureAuthorized('brian', P.User.READ('hamid')),
+            Errors.Unauthorized
+        );
+    });
+
+    it('should ensure users cannot edit others', async function() {
+        await utils.shouldThrow(
+            () => Auth.ensureAuthorized('brian', P.User.WRITE('hamid')),
             Errors.Unauthorized
         );
     });
@@ -19,8 +27,11 @@ describe(utils.suiteName(__filename), function() {
         Auth.enable();
     });
 
-    it.skip('should allow group owner to edit members', async function() {
-        // TODO
-        await Auth.ensureAuthorized('brian', P.User.WRITE('hamid'));
+    it('should allow group owner to edit members', async function() {
+        await Auth.ensureAuthorized('brian', P.User.WRITE('groupMember'));
+    });
+
+    it('should allow group owner to view members', async function() {
+        await Auth.ensureAuthorized('brian', P.User.READ('groupMember'));
     });
 });
