@@ -9,6 +9,7 @@ describe(utils.suiteName(__filename), function() {
     before(function() {
         earthquakes = new RPCMock(EarthQuakes, true);
     });
+    after(() => earthquakes.destroy());
 
     describe('byRegion', function() {
         it('should accept min/max Latitude/Longitude', function() {

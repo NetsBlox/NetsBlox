@@ -6,10 +6,13 @@ describe(utils.suiteName(__filename), function() {
     const ServiceCreation = utils.reqSrc('services/procedures/service-creation/service-creation');
     const ServiceEvents = utils.reqSrc('services/procedures/utils/service-events');
     const RPCMock = require('../../../../assets/mock-service');
-    const service = new RPCMock(ServiceCreation);
     const assert = require('assert');
     // All entries from NetsBlox are sent as strings
     const toStringEntries = data => data.map(row => row.map(item => item.toString()));
+    let service;
+
+    before(() => service = new RPCMock(ServiceCreation));
+    after(() => service.destroy());
 
     utils.verifyRPCInterfaces('ServiceCreation', [
         ['getCreateFromTableOptions', ['data']],

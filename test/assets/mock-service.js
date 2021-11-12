@@ -89,6 +89,10 @@ class MockService {
     unwrap () {
         return this._service;
     }
+
+    destroy () {
+        NetworkTopology.onDisconnect(this.socket);
+    }
 }
 
 class MockRequest {

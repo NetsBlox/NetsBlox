@@ -3,14 +3,16 @@ const utils = require('../../../../assets/utils');
 describe(utils.suiteName(__filename), function() {
     const KVStore = utils.reqSrc('services/procedures/key-value-store/key-value-store');
     const RPCMock = require('../../../../assets/mock-service');
-    const kvstore = new RPCMock(KVStore);
     const assert = require('assert');
     const Services = utils.reqSrc('services/api').services;
+    let kvstore;
 
     before(async () => {
         await utils.connect();
         await Services.initialize();
+        kvstore = new RPCMock(KVStore);
     });
+    after(() => kvstore.destroy());
 
     async function assertThrowsAsync(fn) {
         try {

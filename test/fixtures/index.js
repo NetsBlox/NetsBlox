@@ -19,9 +19,15 @@ Fixtures.seedDefaults = async function (storage) {
         user.hash = hash(data.password);
         return user.save();
     });
-    const createGroups = groups.map(data => {
-        const {owner, name} = data;
-        return Groups.new(name, owner);
+    const createGroups = groups.map(async data => {
+        const {owner, name, members=[]} = data;
+        const group = await Groups.new(name, owner);
+        await Promise.all(members.map(async userData => {
+            const {username, email='user@netsblox.org', password='password'} = userData;
+            let user = storage.users.new(username, email, group.getId());
+            user.hash = hash(password);
+            return user.save();
+        }));
     });
 
     await Promise.all(createUsers);

@@ -2,17 +2,15 @@ const utils = require('../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
     var Googlemaps = utils.reqSrc('services/procedures/google-maps/google-maps'),
-        RPCMock = require('../../../../assets/mock-service'),
+        MockService = require('../../../../assets/mock-service'),
         assert = require('assert'),
-        googlemaps = new RPCMock(Googlemaps);
+        googlemaps;
 
-    before(function(done) {
-        utils.connect()
-            .then(() => {
-                googlemaps = new RPCMock(Googlemaps);
-                done();
-            });
+    before(async () => {
+        await utils.connect();
+        googlemaps = new MockService(Googlemaps);
     });
+    after(() => googlemaps.destroy());
 
     describe('interfaces', function() {
         utils.verifyRPCInterfaces('GoogleMaps', [

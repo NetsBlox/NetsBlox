@@ -1,15 +1,17 @@
 const utils = require('../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
-    var SimpleHangman = utils.reqSrc('services/procedures/simple-hangman/simple-hangman'),
-        RPCMock = require('../../../../assets/mock-service'),
-        hangman = new RPCMock(SimpleHangman),
-        assert = require('assert');
+    const SimpleHangman = utils.reqSrc('services/procedures/simple-hangman/simple-hangman');
+    const RPCMock = require('../../../../assets/mock-service');
+    const assert = require('assert');
+    let hangman;
 
     beforeEach(function() {
         hangman = new RPCMock(SimpleHangman);
         hangman.unwrap()._state.word = 'battleship';
     });
+
+    afterEach(() => hangman.destroy());
 
     utils.verifyRPCInterfaces('SimpleHangman', [
         ['restart', ['word']],
