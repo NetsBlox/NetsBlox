@@ -2,9 +2,12 @@ const utils = require('../../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
     const Autograders = utils.reqSrc('services/procedures/autograders/autograders');
-    const RPCMock = require('../../../../../assets/mock-service');
-    const service = new RPCMock(Autograders);
+    const MockService = require('../../../../../assets/mock-service');
     const assert = require('assert');
+    let service;
+
+    before(() => service = new MockService(Autograders));
+    after(() => service.destroy());
 
     utils.verifyRPCInterfaces('Autograders', [
         ['getAutograders'],

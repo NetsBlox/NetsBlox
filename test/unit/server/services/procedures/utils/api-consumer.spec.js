@@ -3,10 +3,12 @@ const utils = require('../../../../../assets/utils');
 describe(utils.suiteName(__filename), function() {
     const ApiConsumer = require('../../../../../../src/server/services/procedures/utils/api-consumer.js'),
         apiConsumer = new ApiConsumer('testConsumer',''),
-        RPCMock = require('../../../../../assets/mock-service'),
-        testRpc = new RPCMock(apiConsumer),
+        MockService = require('../../../../../assets/mock-service'),
         assert = require('assert');
+    let testRpc;
 
+    before(() => testRpc = new MockService(apiConsumer));
+    after(() => testRpc.destroy());
 
     describe('cache manager filestorage store', function(){
         it('should be able to save and read data to and from cache', done=>{
@@ -23,7 +25,9 @@ describe(utils.suiteName(__filename), function() {
 
     describe('_getFullUrl', () => {
         const baseUrl = 'https://abc.com';
-        const service = testRpc.unwrap();
+        let service;
+
+        before(() => service = testRpc.unwrap());
 
         it('should override url with "url" option', function() {
             const options = {baseUrl, queryString: 'a=b&c=d'};
@@ -54,10 +58,13 @@ describe(utils.suiteName(__filename), function() {
     });
 
     describe('_checkInvalidApiKey', function() {
-        const service = testRpc.unwrap();
         const mockKey = {provider: 'Test'};
+        let service;
 
-        before(() => service.apiKey = mockKey);
+        before(() => {
+            service = testRpc.unwrap();
+            service.apiKey = mockKey;
+        });
 
         it('should throw invalid API key error on 403', function() {
             assert.throws(

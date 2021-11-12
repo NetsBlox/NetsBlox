@@ -5,9 +5,12 @@ describe(utils.suiteName(__filename), function() {
 
     const Q = require('q');
     const CloudVariables = utils.reqSrc('services/procedures/cloud-variables/cloud-variables');
-    const RPCMock = require('../../../../assets/mock-service');
-    const cloudvariables = new RPCMock(CloudVariables);
+    const MockService = require('../../../../assets/mock-service');
     const assert = require('assert');
+    let cloudvariables;
+
+    before(() => cloudvariables = new MockService(CloudVariables));
+    after(() => cloudvariables.destroy());
 
     utils.verifyRPCInterfaces('CloudVariables', [
         ['lockVariable', ['name', 'password']],

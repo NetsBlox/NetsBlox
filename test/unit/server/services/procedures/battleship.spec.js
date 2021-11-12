@@ -1,14 +1,15 @@
 const utils = require('../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
-    var Battleship = utils.reqSrc('services/procedures/battleship/battleship'),
-        RPCMock = require('../../../../assets/mock-service'),
-        battleship = new RPCMock(Battleship),
-        assert = require('assert');
+    const Battleship = utils.reqSrc('services/procedures/battleship/battleship');
+    const RPCMock = require('../../../../assets/mock-service');
+    const assert = require('assert');
+    let battleship;
 
     before(function() {
         battleship = new RPCMock(Battleship);
     });
+    after(() => battleship.destroy());
 
     utils.verifyRPCInterfaces('Battleship', [
         ['start'],
