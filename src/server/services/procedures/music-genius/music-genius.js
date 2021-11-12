@@ -1,5 +1,5 @@
 /**
- * The Genius service provides access to the Genius API, the world's
+ * The MusicGenius service provides access to the Genius API, the world's
  * biggest collection of song lyrics and musical knowledge.
  *
  * For more information, check out https://genius.com.
@@ -13,7 +13,7 @@ const ApiConsumer = require('../utils/api-consumer');
 const {GeniusKey} = require('../utils/api-key');
 const baseUrl = 'https://api.genius.com/';
 const days = 24 * 60 * 60;
-const Genius = new ApiConsumer('Genius', baseUrl, {cache: {ttl: 7*days}});
+const Genius = new ApiConsumer('MusicGenius', baseUrl, {cache: {ttl: 7*days}});
 ApiConsumer.setRequiredApiKey(Genius, GeniusKey);
 const prepare = require('./data-prep');
 
