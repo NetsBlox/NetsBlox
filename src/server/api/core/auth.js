@@ -55,7 +55,7 @@ Perms.addPermissionSet('User', {
         return async requestor => {
             if (username === requestor) return;
             const user = await Users.get(username);
-            const groupId = user.groupId;
+            const groupId = user?.groupId;
             if (groupId && await isGroupOwner(requestor, groupId)) return;
             throw new Errors.Unauthorized(requestor, `view user "${username}"`);
         };
@@ -64,7 +64,7 @@ Perms.addPermissionSet('User', {
         return async requestor => {
             if (username === requestor) return;
             const user = await Users.get(username);
-            const groupId = user.groupId;
+            const groupId = user?.groupId;
             if (groupId && await isGroupOwner(requestor, groupId)) return;
             throw new Errors.Unauthorized(requestor, `edit user "${username}"`);
         };
@@ -72,8 +72,9 @@ Perms.addPermissionSet('User', {
     DELETE: function(username) {
         return async requestor => {
             if (username === requestor) return;
-
-            // TODO: Check if the requestor is the group owner for the username
+            const user = await Users.get(username);
+            const groupId = user?.groupId;
+            if (groupId && await isGroupOwner(requestor, groupId)) return;
             throw new Errors.Unauthorized(requestor, `delete user "${username}"`);
         };
     },

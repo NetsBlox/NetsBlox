@@ -1,5 +1,5 @@
 const utils = require('../../../../assets/utils');
-describe.only(utils.suiteName(__filename), function() {
+describe(utils.suiteName(__filename), function() {
     const assert = require('assert');
     const utils = require('../../../../assets/utils');
     const UsersAPI = utils.reqSrc('./api/core/users');
@@ -8,7 +8,7 @@ describe.only(utils.suiteName(__filename), function() {
     const ProjectsStorage = utils.reqSrc('./storage/projects');
     const GroupsStorage = utils.reqSrc('./storage/groups');
     const username = 'brian';
-    const member = 'memberUser';
+    const member = 'groupMember';
     const {hex_sha512} = utils.reqSrc('../common/sha512');
     const sinon = require('sinon');
     const Strategies = utils.reqSrc('api/core/strategies');
