@@ -157,7 +157,7 @@ describe.only(utils.suiteName(__filename), function() {
 
         it('should delete allow owner to delete member account', async function() {
             Auth.enable();
-            //await UsersAPI.delete(owner, member);
+            await UsersAPI.delete(username, member);
         });
     });
 
@@ -176,9 +176,9 @@ describe.only(utils.suiteName(__filename), function() {
         });
 
         it('should change member password', async function() {
-            await assert.rejects(
-                () => UsersAPI.setPassword(username, member, 'newPassword'),
-            );  // TODO
+            await UsersAPI.setPassword(username, member, 'newPassword');
+            const user = await UsersStorage.collection.findOne({username: member});
+            assert.equal(user.hash, hex_sha512('newPassword'));
         });
     });
 
