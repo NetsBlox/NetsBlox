@@ -146,7 +146,7 @@ async function getWorldData() {
     }
 
     if (goodRows === 0) {
-        logger.error(`World Data got no data (all rows were invalid)`);
+        logger.error('World Data got no data (all rows were invalid)');
     } else if (goodRows !== rows.length) {
         const bad = rows.length - goodRows;
         logger.warn(`World Data: ${bad} of ${rows.length} rows (${100 * bad / rows.length}%) were discarded due to incomplete data`);
