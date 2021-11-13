@@ -3,11 +3,11 @@
 // It will need to load RPC's from the RPC directory and then mantain a separate
 // RPC context for each room.
 
-var fs = require('fs'),
-    path = require('path'),
-    utils = require('../server-utils'),
-    JsonToSnapList = require('./procedures/utils').jsonToSnapList,
-    InputTypes = require('./input-types.js');
+const fs = require('fs');
+const path = require('path');
+const utils = require('../server-utils');
+const JsonToSnapList = require('./procedures/utils').jsonToSnapList;
+const InputTypes = require('./input-types.js');
 
 const {Docs} = require('./jsdoc-extractor.js');
 const {RESERVED_FN_NAMES} = require('../../common/constants').RPC;
@@ -63,10 +63,46 @@ class ServicesWorker {
         this.checkStaleServices();
     }
 
+    validateTypes(service) {
+        const docs = service._docs;
+        const isFS = !!docs.servicePath;
+        const fail = msg => {
+            msg = `Type Checker - ${msg}`;
+            if (isFS) throw Error(msg);
+            else console.error(msg);
+        }
+        if (!docs || !Array.isArray(docs.rpcs)) {
+            fail(`Failed to get rpc doc info for service ${service.serviceName}`);
+            return;
+        }
+
+        const getParser = tydoc => {
+            if (typeof(tydoc) != 'object') return undefined;
+            const ty = tydoc.type ? tydoc.type : tydoc;
+            return InputTypes.parse[typeof(ty) == 'object' ? ty.name : ty];
+        };
+
+        for (const rpc of docs.rpcs) {
+            if (rpc.name.startsWith('_')) continue;
+            if (rpc.returns && !getParser(rpc.returns)) {
+                fail(`RPC ${service.serviceName}.${rpc.name} - unknown return type ${JSON.stringify(rpc.returns)}`);
+            }
+            for (const arg of rpc.args) {
+                if (!getParser(arg.type)) {
+                    fail(`RPC ${service.serviceName}.${rpc.name}:${arg.name} - unknown arg type ${JSON.stringify(arg.type)}`);
+                }
+            }
+        }
+    }
+
     async loadRPCs() {
         const DBServices = await this.loadRPCsFromDatabase();
-        this.loadRPCsFromFS().concat(DBServices)
-            .forEach(service => this.registerRPC(service));
+        const FSServices = this.loadRPCsFromFS();
+
+        for (const service of FSServices.concat(DBServices)) {
+            this.validateTypes(service);
+            this.registerRPC(service);
+        }
     }
 
     loadRPCsFromFS() {

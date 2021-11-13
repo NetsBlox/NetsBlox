@@ -184,7 +184,7 @@ PhoneIoT.prototype._heartbeat = function () {
 
 /**
  * Returns the MAC addresses of the registered devices for this client.
- * @returns {array} the list of registered devices
+ * @returns {Array<String>} the list of registered devices
  */
 PhoneIoT.prototype._getRegistered = function () {
     const state = this._state;
@@ -202,7 +202,7 @@ PhoneIoT.prototype._getRegistered = function () {
 /**
  * Returns the addresses of all authorized devices.
  * @category Utility
- * @returns {array}
+ * @returns {Array<String>}
  */
 PhoneIoT.prototype._getDevices = async function () {
     const availableDevices = Object.keys(this._devices);
@@ -796,7 +796,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @category Display
      * @param {Device} device id of the device
      * @param {String} id id of the control to read
-     * @returns {boolean} ``true`` for pressed, otherwise ``false``
+     * @returns {Boolean} ``true`` for pressed, otherwise ``false``
      */
     PhoneIoT.prototype.isPressed = function (device, id) {
         return this._passToDevice('isPressed', arguments);
@@ -809,7 +809,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @category Display
      * @param {Device} device id of the device
      * @param {String} id id of the control to read
-     * @returns {boolean} ``true`` for checked, otherwise ``false``
+     * @returns {Boolean} ``true`` for checked, otherwise ``false``
      */
     PhoneIoT.prototype.getToggleState = function (device, id) {
         return this._passToDevice('getToggleState', arguments);
@@ -825,7 +825,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @category Display
      * @param {Device} device id of the device
      * @param {String} id id of the control to modify
-     * @param {boolean} state new value for the toggle state
+     * @param {Boolean} state new value for the toggle state
      */
     PhoneIoT.prototype.setToggleState = function (device, id, state) {
         return this._passToDevice('setToggleState', arguments);
@@ -1170,7 +1170,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @category Display
      * @param {Device} device id of the device
      * @param {String} id id of the image display
-     * @returns {object} the displayed image
+     * @returns {Image} the displayed image
      */
     PhoneIoT.prototype.getImage = async function (device, id) {
         const bin = await this._passToDevice('getImage', arguments);
@@ -1188,7 +1188,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @category Display
      * @param {Device} device id of the device
      * @param {String} id the id of the control to modify
-     * @param {ImageBitmap} img the new image to display
+     * @param {Image} img the new image to display
      */
     PhoneIoT.prototype.setImage = function (device, id, img) {
         return this._passToDevice('setImage', arguments);
@@ -1197,8 +1197,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     // /**
     //  * Sets the total message limit for the given device.
     //  * @param {Device} device id of the device
-    //  * @param {number} rate number of messages per seconds
-    //  * @returns {boolean} True if the device was found
+    //  * @param {Number} rate number of messages per seconds
+    //  * @returns {Boolean} True if the device was found
     //  */
     // PhoneIoT.prototype.setTotalRate = function (device, rate) {
     //     return this._passToDevice('setTotalRate', arguments);
@@ -1207,9 +1207,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     // /**
     //  * Sets the client message limit and penalty for the given device.
     //  * @param {Device} device id of the device
-    //  * @param {number} rate number of messages per seconds
-    //  * @param {number} penalty number seconds of penalty if rate is violated
-    //  * @returns {boolean} True if the device was found
+    //  * @param {Number} rate number of messages per seconds
+    //  * @param {Number} penalty number seconds of penalty if rate is violated
+    //  * @returns {Boolean} True if the device was found
     //  */
     // PhoneIoT.prototype.setClientRate = function (device, rate, penalty) {
     //     return this._passToDevice('setClientRate', arguments);

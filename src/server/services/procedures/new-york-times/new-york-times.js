@@ -294,7 +294,7 @@ NewYorkTimes.searchConcepts = async function(query) {
  * @param{Object} concept
  * @param{String} concept.name
  * @param{ConceptType} concept.type
- * @returns{ConceptInfo}
+ * @returns{Object}
  */
 NewYorkTimes.getConceptInfo = async function(concept) {
     const response = await this._requestData({

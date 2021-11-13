@@ -213,6 +213,25 @@ defineType({
 });
 
 defineType({
+    name: 'Union',
+    displayName: 'AnyOf',
+    description: 'A value which is any of the listed allowed types.',
+    baseType: 'Any',
+    parser: async (input, params=[]) => {
+        let errorMsg = 'Input was not one of the allowed types:';
+        for (const ty of params) {
+            const parser = getTypeParser(ty);
+            try {
+                return await parser(input);
+            } catch (e) {
+                errorMsg += '\n' + e;
+            }
+        }
+        throw Error(errorMsg);
+    },
+});
+
+defineType({
     name: 'Array',
     displayName: 'List',
     description: 'A list of (zero or more) values.',
@@ -322,6 +341,14 @@ defineType({
         await types.Function(blockXml, _params, ctx); // check that it compiles
         return blockXml;
     },
+});
+
+// in the future, this should have a useful parser of some kind
+// not an issue for now since only 1 RPC takes images as input
+defineType({
+    name: 'Image',
+    description: 'Any image',
+    baseType: 'Any',
 });
 
 defineType({

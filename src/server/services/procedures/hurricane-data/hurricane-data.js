@@ -116,7 +116,7 @@ async function getData() {
 /**
  * Get hurricane data including location, maximum winds, and central pressure.
  *
- * @param {string} name - name of the hurricane
+ * @param {String} name - name of the hurricane
  * @param {BoundedNumber<1850,2020>} year - year that the hurricane occurred in
  * @returns {Array<Object>} - All recorded data for the given hurricane
  */

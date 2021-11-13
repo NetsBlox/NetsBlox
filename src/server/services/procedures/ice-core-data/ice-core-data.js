@@ -189,7 +189,7 @@ IceCoreData.getIceCoreNames = function() {
 /**
  * Get a table showing the amount of available data for each ice core.
  *
- * @returns {Table} data availability table
+ * @returns {Array<Array>} data availability table
  */
 IceCoreData.getDataAvailability = async function() {
     const dataStatistics = await IceCoreMetadata.find({}).lean();

@@ -132,7 +132,7 @@ RoboScape.prototype._getRegistered = function () {
 
 /**
  * Registers for receiving messages from the given robots.
- * @param {array} robots one or a list of robots
+ * @param {Union<Array<String>,String>} robots one or a list of robots
  * @deprecated
  */
 RoboScape.prototype.eavesdrop = function (robots) {
@@ -141,7 +141,7 @@ RoboScape.prototype.eavesdrop = function (robots) {
 
 /**
  * Registers for receiving messages from the given robots.
- * @param {array} robots one or a list of robots
+ * @param {Union<Array<String>,String>} robots one or a list of robots
  */
 RoboScape.prototype.listen = async function (robots) {
     var state = this._state;
@@ -172,7 +172,7 @@ RoboScape.prototype.listen = async function (robots) {
 
 /**
  * Returns the MAC addresses of all authorized robots.
- * @returns {array}
+ * @returns {Array<String>}
  */
 RoboScape.prototype.getRobots = async function () {
     const availableRobots = Object.keys(this._robots);
@@ -267,7 +267,7 @@ if (ROBOSCAPE_MODE === 'native' || ROBOSCAPE_MODE === 'both') {
     /**
      * Returns the current number of wheel ticks (1/64th rotations)
      * @param {String} robot name of the robot (matches at the end)
-     * @returns {array} the number of ticks for the left and right wheels
+     * @returns {Array<Integer>} the number of ticks for the left and right wheels
      */
     RoboScape.prototype.getTicks = function (robot) {
         return this._passToRobot('getTicks', arguments);
