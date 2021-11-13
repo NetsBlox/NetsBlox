@@ -69,8 +69,8 @@ class ServicesWorker {
         const fail = msg => {
             msg = `Type Checker - ${msg}`;
             if (isFS) throw Error(msg);
-            else console.error(msg);
-        }
+            else this._logger.error(msg);
+        };
         if (!docs || !Array.isArray(docs.rpcs)) {
             fail(`Failed to get rpc doc info for service ${service.serviceName}`);
             return;
