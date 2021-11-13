@@ -113,6 +113,12 @@ async function getWorldData() {
         'people fully vaccinated per hundred',
         'daily vaccinations per million',
     ];
+    const missing_fields = desired_fields.filter(f => !fields.includes(f));
+    if (missing_fields.length !== 0) {
+        logger.error(`World Data missing ${missing_fields.length} expected fields: ${missing_fields}`);
+    }
+
+    let goodRows = 0;
     for (const row of rows) {
         const rawVals = row.split(',');
         if (rawVals.length !== fields.length) continue; // bad csv (unlikely), skip the row
@@ -131,11 +137,19 @@ async function getWorldData() {
             data[field] = parseFloat(vals[field]);
         }
         if (!isGoodData(data)) continue;
+        goodRows += 1;
 
         const entry = dictPathOrEmptyInit(res, [country, date]);
         for (const key in data) {
             entry[key] = data[key];
         }
+    }
+
+    if (goodRows === 0) {
+        logger.error(`World Data got no data (all rows were invalid)`);
+    } else if (goodRows !== rows.length) {
+        const bad = rows.length - goodRows;
+        logger.warn(`World Data: ${bad} of ${rows.length} rows (${100 * bad / rows.length}%) were discarded due to incomplete data`);
     }
 
     logger.info('restructure complete - caching result');
