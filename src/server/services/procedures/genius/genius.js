@@ -4,7 +4,6 @@
  *
  * For more information, check out https://genius.com.
  *
- * @alpha
  * @service
  * @category Music
  */
