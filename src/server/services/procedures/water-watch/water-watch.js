@@ -25,7 +25,6 @@ function encodeQueryData(options) {
  * @param {Latitude} maxLatitude Maximum latitude of bounding box
  * @param {Longitude} minLongitude Minimum longitude of bounding box
  * @param {Longitude} maxLongitude Maximum longitude of bounding box
- * @returns {Promise<String>} Messages sent of data
  */
 waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     // https://help.waterdata.usgs.gov/codes-and-parameters/parameters
@@ -65,7 +64,6 @@ waterwatch.gageHeight = function (minLatitude, maxLatitude, minLongitude, maxLon
  * @param {Latitude} maxLatitude Maximum latitude of bounding box
  * @param {Longitude} minLongitude Minimum longitude of bounding box
  * @param {Longitude} maxLongitude Maximum longitude of bounding box
- * @returns {Promise<String>} Messages sent of data
  */
 waterwatch.streamFlow = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     var options = {'format':'json', 'bBox': [minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00060'};
@@ -98,7 +96,6 @@ waterwatch.streamFlow = function (minLatitude, maxLatitude, minLongitude, maxLon
  * @param {Latitude} maxLatitude Maximum latitude of bounding box
  * @param {Longitude} minLongitude Minimum longitude of bounding box
  * @param {Longitude} maxLongitude Maximum longitude of bounding box
- * @returns {Promise<String>} Messages sent of data
  */
 waterwatch.waterTemp = function (minLatitude, maxLatitude, minLongitude, maxLongitude) {
     var options = {'format':'json', 'bBox':[minLongitude,minLatitude,maxLongitude,maxLatitude], 'siteType':'GL,ST,GW,GW-MW,SB-CV,LA-SH,FA-CI,FA-OF,FA-TEP,AW','siteStatus':'active','parameterCd':'00010'};

@@ -29,6 +29,26 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('Union', function() {
+        before(() => InputTypes.defineType({
+            name: 'SomeUnion',
+            description: 'test',
+            baseType: 'Union',
+            baseParams: ['Array', 'Boolean', 'Number'],
+        }));
+
+        it('should accept the first successful parse', async () => {
+            assert.deepStrictEqual(await typesParser.SomeUnion(12), 12);
+            assert.deepStrictEqual(await typesParser.SomeUnion('12'), 12);
+            assert.deepStrictEqual(await typesParser.SomeUnion('true'), true);
+            assert.deepStrictEqual(await typesParser.SomeUnion('FALSE'), false);
+            assert.deepStrictEqual(await typesParser.SomeUnion([1,2,3]), [1,2,3]);
+        });
+        it('should reject unspecified types', async () => {
+            await assert.rejects(() => typesParser.SomeUnion('hello world'));
+        });
+    });
+
     describe('Integer', function() {
         it('should parse into JS numbers', async () => {
             let rawInput = '54';
