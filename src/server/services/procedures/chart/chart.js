@@ -252,8 +252,8 @@ chart._parseDrawInputs = async function(lines, options){
  * @param {Boolean=} options.smooth true to enable smoothing
  * @param {Enum<line,dot>=} options.grid grid type to use
  * @param {Boolean=} options.isTimeSeries true to enable time series mode
- * @param {String=} options.timeInputFormat input time format for time series data
- * @param {String=} options.timeDisplayFormat output time format for time series data
+ * @param {TimeFormat=} options.timeInputFormat input time format for time series data
+ * @param {TimeFormat=} options.timeDisplayFormat output time format for time series data
  * @param {Array=} options.logscale logscale settings to use
  * 
  * @returns {Image} the generated chart
