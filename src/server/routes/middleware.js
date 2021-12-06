@@ -1,4 +1,6 @@
 // Dictionary of all middleware functions for netsblox routes.
+const Filter = require('bad-words');
+const profaneChecker = new Filter();
 var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     Groups = require('../storage/groups'),
@@ -354,6 +356,12 @@ var setUsername = function(req, res, cb) {
     return result;
 };
 
+function isProfane(text) {
+    const normalized = text.toLowerCase();
+    return profaneChecker.isProfane(normalized) ||
+        profaneChecker.list.find(badWord => normalized.includes(badWord.toLowerCase()));
+}
+
 module.exports = {
     hasSocket,
     noCache,
@@ -369,11 +377,11 @@ module.exports = {
     isValidMember,
     memberIsNew,
     canManageMember,
+    isProfane,
 
     // additional
     init: _server => {
         server = _server;
         logger = server._logger.fork('middleware');
-    },
-    COOKIE_ID
+    }, COOKIE_ID
 };
