@@ -18,6 +18,7 @@ const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
 const Strategies = require('../api/core/strategies');
 const {RequestError} = require('../api/core/errors');
+const {isProfane} = middleware;
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
@@ -79,7 +80,7 @@ module.exports = [
 
             // validate username
             const nameRegex = /[^a-zA-Z0-9][a-zA-Z0-9_\-\(\)\.]*/;
-            if (uname[0] === '_' || nameRegex.test(uname)) {
+            if (uname[0] === '_' || nameRegex.test(uname) || isProfane(uname)) {
                 return res.status(400).send('ERROR: Invalid username');
             }
 
