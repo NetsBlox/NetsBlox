@@ -1,9 +1,8 @@
 const OAuth = require('../../core/oauth');
-const {LoginRequired, InvalidRedirectURL, OAuthFlowError} = require('../../core/errors');
+const {InvalidRedirectURL, OAuthFlowError} = require('../../core/errors');
 const {NoAuthorizationCode, InvalidGrantType} = require('../../core/errors');
 const OAuthRouter = require('express').Router();
-const {handleErrors, setUsername} = require('../utils');
-const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
+const {handleErrors, ensureLoggedIn, ensureLoggedInAllowRedirect} = require('../utils');
 const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
@@ -21,32 +20,15 @@ OAuthRouter.route('/auth.js')
     .get((req, res) => res.sendFile(path.join(__dirname, 'auth.js')));
 
 OAuthRouter.route('/')
-    .get(setUsername, handleErrors(async (req, res) => {
+    .get(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
         const {username} = req.session;
-        const isLoggedIn = !!username;
-        if (!isLoggedIn) {
-            if (LOGIN_URL) {
-                const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
-                const url = baseUrl + req.originalUrl;
-                res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
-                return;
-            } else {
-                throw new LoginRequired();
-            }
-        }
         const clientId = req.query.client_id;
         const client = await OAuth.getClient(clientId);
         res.send(AuthorizeTemplate({username, client, scopes: DEFAULT_SCOPES}));
     }));
 
 OAuthRouter.route('/code')
-    .post(setUsername, handleErrors(async (req, res) => {
-        const {username} = req.session;
-        const isLoggedIn = !!username;
-        if (!isLoggedIn) {
-            throw new LoginRequired();
-        }
-
+    .post(ensureLoggedIn, handleErrors(async (req, res) => {
         const redirectUri = req.query.redirect_uri;
         if (!redirectUri) {
             throw new InvalidRedirectURL();
@@ -61,6 +43,7 @@ OAuthRouter.route('/code')
         }
 
         const clientId = req.query.client_id;
+        const {username} = req.session;
         const authCode = await OAuth.authorizeClient(username, clientId, redirectUri);
 
         res.redirect(`${redirectUri}?code=${authCode}&state=${state}`);

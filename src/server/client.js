@@ -472,15 +472,6 @@ Client.MessageHandlers = {
         return req.promise.resolve(project);
     },
 
-    'elevate-permissions': async function(msg) {
-        const {username, projectId} = msg;
-        const project = await Projects.getById(projectId);
-        if (project.owner === this.username) {
-            await project.addCollaborator(username);
-            await NetworkTopology.onRoomUpdate(projectId);
-        }
-    },
-
     'permission-elevation-request': function(msg) {
         const {projectId} = msg;
         return Projects.getProjectMetadataById(this.projectId)
@@ -502,50 +493,6 @@ Client.MessageHandlers = {
         const {projectId, roleId, actionId, silent=true} = msg;
         return this.requestActionsAfter(projectId, roleId, actionId, silent);
     },
-
-    // TODO: The following handler is deprecated and should be removed after the
-    // next release (ie, in 2 releases so there is time to transition away).
-    'export-room': async function(msg) {
-        const {projectId} = msg;
-        const occupantForRole = {};
-
-        // Get the first occupant for each role
-        NetworkTopology.getClientsAtProject(projectId).reverse()
-            .forEach(client => {
-                occupantForRole[client.roleId] = client;
-            });
-
-        const project = await Projects.getById(this.projectId);
-        // For each role...
-        //   - if it is occupied, request the content
-        //   - else, use the content from the database
-        const ids = await project.getRoleIds();
-        const fetchers = ids.map(id => {
-            const occupant = occupantForRole[id];
-            if (occupant) {
-                return occupant.getProjectJson()
-                    .catch(err => {
-                        this._logger.info(`Failed to retrieve project via ws. Falling back to content from database... (${err.message})`);
-                        return project.getRoleById(id);
-                    });
-            }
-            return project.getRoleById(id);
-        });
-
-        const roles = await Promise.all(fetchers);
-        const roleContents = roles.map(content =>
-            Utils.xml.format('<role name="@">', content.ProjectName)
-            + content.SourceCode + content.Media + '</role>'
-        );
-        const xml = Utils.xml.format('<room name="@" app="@">', project.name, Utils.APP) +
-            roleContents.join('') + '</room>';
-        this._logger.trace(`Exporting project for ${projectId}` +
-            ` to ${this.username}`);
-
-        _.extend(msg, {content: xml});
-        this.send(msg);
-    },
-
 };
 
 // Utilities for testing

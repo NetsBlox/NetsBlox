@@ -1,6 +1,8 @@
-const {RequestError} = require('../core/errors');
+const {RequestError, LoginRequired} = require('../core/errors');
 const Utils = {};
 const {setUsername} = require('../../routes/middleware');
+const assert = require('assert');
+const {SERVER_PROTOCOL, LOGIN_URL} = process.env;
 
 Utils.handleErrors = fn => {
     return async function(req, res) {
@@ -29,6 +31,26 @@ Utils.setUsername = function(req, res) {
         req.loggedIn = true;
         return cb(null, true);
     });
+};
+
+Utils.ensureLoggedIn = async function(req, res) {
+    await Utils.setUsername(req);
+    // TODO: allow redirects?
+    assert(req.session?.username, new LoginRequired());
+};
+
+Utils.ensureLoggedInAllowRedirect = async function(req, res) {
+    try {
+        await Utils.ensureLoggedIn(req)
+    } catch (err) {
+        if (err instanceof LoginRequired && LOGIN_URL) {
+            const baseUrl = (SERVER_PROTOCOL || req.protocol) + '://' + req.get('Host');
+            const url = baseUrl + req.originalUrl;
+            res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
+            return;
+        }
+        throw err;
+    }
 };
 
 module.exports = Utils;

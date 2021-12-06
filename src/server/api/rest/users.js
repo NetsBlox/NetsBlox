@@ -1,22 +1,18 @@
 const Users = require('../core/users');
 const Strategies = require('../core/strategies');
 const UsersRouter = require('express').Router();
-const {handleErrors, setUsername} = require('./utils');
+const {handleErrors, ensureLoggedIn, ensureLoggedInAllowRedirect} = require('./utils');
 const jwt = require('jsonwebtoken');
 const sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction';
 const COOKIE_ID = 'netsblox-cookie';
 
 // TODO: Add a dry run option?
 UsersRouter.route('/create')
-    .post(handleErrors(async (req, res) => {
+    .post(setUsername, handleErrors(async (req, res) => {
         const {username, password, groupId, email} = req.body;
         // TODO: ensure required parameters exist
         const dryrun = req.query.dryrun === 'true';
-        let requestor = null;
-        if (groupId) {
-            requestor = await getUsername(req);
-            // TODO: get the requestor username
-        }
+        const requestor = req.session?.username;
         await Users.create(requestor, username, email, groupId, password, dryrun);
         res.sendStatus(200);
     }));
@@ -33,8 +29,7 @@ UsersRouter.route('/login')
     }));
 
 UsersRouter.route('/logout')
-    // TODO: need to be logged in
-    .post(handleErrors(async (req, res) => {
+    .post(ensureLoggedIn, handleErrors(async (req, res) => {
         const {clientId} = req.body;
         const {username} = req.session;
         await Users.logout(username, clientId);
@@ -43,8 +38,7 @@ UsersRouter.route('/logout')
     }));
 
 UsersRouter.route('/delete/:username')
-    // TODO: need to be logged in
-    .post(handleErrors(async (req, res) => {
+    .post(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
         const {username} = req.params;
         const requestor = req.session.username;
         await Users.delete(requestor, username);
@@ -59,8 +53,7 @@ UsersRouter.route('/password/:username')
         await Users.resetPassword(username);
         return res.sendStatus(200);
     }))
-    // TODO: need to be logged in
-    .patch(handleErrors(async (req, res) => {
+    .patch(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
         const {oldPassword, newPassword} = req.body;
         const {username} = req.session;
 
@@ -69,20 +62,32 @@ UsersRouter.route('/password/:username')
     }));
 
 UsersRouter.route('/view/:username')
-    .get(handleErrors(async (req, res) => {
-        // TODO: should we allow the requestor to be different? Probably for when editing members
+    .get(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
+        const {username} = req.params;
+        const requestor = req.session.username;
+        const user = Users.view(requestor, username);
+        return res.json(user);
     }));
 
-UsersRouter.route('/link/:username')
-    // TODO: need to be logged in
-    .post(handleErrors(async (req, res) => {
+UsersRouter.route('/link/:username/:strategy')
+    .post(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
+        const {strategy: strategyName, username} = req.params;
+        const strategy = Strategies.find(strategyName);
+
+        const {username: strategyUsername, password} = req.body;
+        const requestor = req.session.username;
+        await Users.linkAccount(requestor, username, strategy, strategyUsername, password);
+        return res.sendStatus(200);
     }));
 
 UsersRouter.route('/unlink/:username')
-    // TODO: need to be logged in
-    .post(handleErrors(async (req, res) => {
+    .post(ensureLoggedInAllowRedirect, handleErrors(async (req, res) => {
+        const requestor = req.session.username;
+        const {strategy: type, username} = req.params;
+        const account = req.body;
+        await Users.unlinkAccount(requestor, username, account);
+        return res.sendStatus(200);
     }));
-    // TODO: should we allow the requestor to be different? Probably for when editing members
 
 function setNetsBloxCookie(res, user, remember=false) {
     const cookie = {  // TODO: Add an id
