@@ -67,6 +67,8 @@ module.exports = [
         Method: 'post',  // post would make more sense...
         URL: 'SignUp',
         Handler: async function(req, res) {
+            return res.status(400).send('ERROR: Sign up is temporarily disabled.');
+
             logger.log('Sign up request:', req.body.Username, req.body.Email);
             var uname = req.body.Username,
                 password = req.body.Password,
