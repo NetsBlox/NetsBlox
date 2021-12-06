@@ -13,6 +13,7 @@ const NetworkTopology = require('../network-topology');
 const BugReporter = require('../bug-reporter');
 const Storage = require('../storage/storage');
 const Messages = require('../storage/messages');
+const BannedAcounts = require('../storage/banned-accounts');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
 const Strategies = require('../api/core/strategies');
@@ -65,7 +66,7 @@ module.exports = [
     {
         Method: 'post',  // post would make more sense...
         URL: 'SignUp',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             logger.log('Sign up request:', req.body.Username, req.body.Email);
             var uname = req.body.Username,
                 password = req.body.Password,
@@ -80,7 +81,12 @@ module.exports = [
             // validate username
             const nameRegex = /[^a-zA-Z0-9][a-zA-Z0-9_\-\(\)\.]*/;
             if (uname[0] === '_' || nameRegex.test(uname) || isProfane(uname)) {
-                return res.status(400).send('ERROR: invalid username');
+                return res.status(400).send('ERROR: Invalid username');
+            }
+
+            const isBanned = await BannedAcounts.isBannedEmail(email);
+            if (isBanned) {
+                return res.status(400).send('ERROR: Invalid (banned) email address');
             }
 
             return Storage.users.get(uname)
