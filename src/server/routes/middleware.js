@@ -9,6 +9,7 @@ var server,
 const Q = require('q');
 const Users = require('../storage/users');
 const Storage = require('../storage/storage');
+const BannedAccounts = require('../storage/banned-accounts');
 const Strategies = require('../api/core/strategies');
 const mailer = require('../mailer');
 const WELCOME_HTML = (nbUser, snapUser) =>
@@ -71,10 +72,15 @@ function tryLogIn (req, res, cb, skipRefresh) {
     req.session = req.session || new Session(res);
     if (cookie) {
         logger.trace('validating cookie');
-        jwt.verify(cookie, sessionSecret, (err, token) => {
+        jwt.verify(cookie, sessionSecret, async (err, token) => {
             if (err) {
                 logger.error(`Error verifying jwt: ${err}`);
                 return cb(err);
+            }
+            const {username} = token;
+            const isBanned = await BannedAccounts.isBannedUsername(username);
+            if (isBanned) {
+                return cb(new Error('Account has been banned.'));
             }
 
             req.session.username = token.username;

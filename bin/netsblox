@@ -37,4 +37,5 @@ program
     .command('del-key <username> <key>', 'delete an API key for a given user')
     .command('services-hosts', 'manage custom services hosts')
     .command('oauth', 'manage OAuth clients')
+    .command('ban <username>', 'ban user account')
     .parse(process.argv);
