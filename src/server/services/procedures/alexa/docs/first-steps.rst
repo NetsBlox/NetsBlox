@@ -64,6 +64,7 @@ And finally we can create the skill using the `createSkill` RPC! We will store t
 |
 
 Before creating more skills, feel free to check out the `best practices for defining utterances <https://developer.amazon.com/en-US/docs/alexa/custom-skills/best-practices-for-sample-utterances-and-custom-slot-type-values.html#sample-utterance-phrasing>`_.
+
 Testing the Skill in NetsBlox
 #############################
 Testing Alexa skills in NetsBlox is pretty straightforward using the `invokeSkill` RPC:
