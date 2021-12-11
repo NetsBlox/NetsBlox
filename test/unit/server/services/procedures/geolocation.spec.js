@@ -17,7 +17,9 @@ describe(utils.suiteName(__filename), function() {
         ['stateCode*', ['latitude', 'longitude']],
         ['county*', ['latitude', 'longitude']],
         ['info', ['latitude', 'longitude']],
-        ['geolocate', ['address']]
+        ['geolocate', ['address']],
+        ['timezone', ['address']],
+        ['streetAddress', ['address']],
     ]);
 
     describe('geolocate', function() {

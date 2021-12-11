@@ -5,7 +5,7 @@
  * Terms of service: https://developers.google.com/maps/terms
  * @service
  */
-const {GoogleMapsKey} = require('../utils/api-key');
+const {GoogleMapsKey, TimezoneDBKey} = require('../utils/api-key');
 const utils = require('../utils');
 const GeoLocationRPC = {};
 utils.setRequiredApiKey(GeoLocationRPC, GoogleMapsKey);
@@ -24,6 +24,8 @@ const geocoder = NodeGeocoder({
     apiKey:      GEOCODER_API, // for Mapquest, OpenCage, Google Premier
     formatter:   null          // 'gpx', 'string', ...
 });
+
+const TIMEZONEDB_URL = 'http://api.timezonedb.com/v2.1';
 
 // turns coordinates into key strings used to bust the match new requests to cached values
 // might be a good idea to add a precision limit to reduce cache misses
@@ -50,23 +52,81 @@ async function reverseGeocode(lat, lon, query) {
     });
 }
 
-/**
- * Geolocates the address and returns the coordinates
- * @param {String} address target address
- * @returns {Object} structured data representing the location of the address
- */
-GeoLocationRPC.geolocate = async function (address) {
+async function rawGeolocate(address) {
     return await cache.wrap(address, async () => {
         logger.trace('Geocoding (not cached)', address);
         try {
             const res = await geocoder.geocode(address);
-            return { latitude: res[0].latitude, longitude: res[0].longitude };
+            if (res.length === 0 || !res[0]) throw Error('no results');
+            return res[0];
         } catch (e) {
             const message = `Geocoding (${address}) error: ${e.message}`;
             logger.warn(message);
             throw Error(`Failed to find location for ${address}`);
         }
     });
+}
+
+/**
+ * Geolocates the address and returns the coordinates
+ * @param {String} address target address
+ * @returns {Object} structured data representing the location of the address
+ */
+GeoLocationRPC.geolocate = async function (address) {
+    const raw = await rawGeolocate(address);
+    return { latitude: raw.latitude, longitude: raw.longitude };
+};
+
+/**
+ * Get information about the timezone of the provided address or location.
+ * You can provide either a list of two values representing the latitude and longitude location, or a string address to look up.
+ *
+ * @param {Union<Tuple<Latitude,Longitude>,String>} address target location - either a list representing [latitude, longitude], or an address string
+ * @returns {Object} information about the target's timezone
+ */
+GeoLocationRPC.timezone = async function (address) {
+    if (typeof(address) === 'string') {
+        address = await rawGeolocate(address);
+        address = [address.latitude, address.longitude];
+    }
+    const [latitude, longitude] = address;
+
+    return await cache.wrap(locString(latitude, longitude) + '.timezone', async () => {
+        logger.trace('timezone info (not cached)', latitude, longitude);
+        const res = await rp({
+            method: 'get',
+            uri: `${TIMEZONEDB_URL}/get-time-zone`,
+            qs: {
+                key: TimezoneDBKey.value,
+                format: 'json',
+                by: 'position',
+                lat: latitude,
+                lng: longitude,
+            },
+            json: true,
+        });
+        return {
+            abbr: res.abbreviation,
+            gmtOffset: res.gmtOffset / 3600,
+            daylightSavings: res.dst != 0, // != is intentional
+            localTime: res.formatted.split(' ')[1],
+            localTimestamp: res.timestamp,
+            countryCode: res.countryCode,
+            country: res.countryName,
+            zone: res.zoneName,
+        };
+    });
+};
+
+/**
+ * Get the street address of a given target location.
+ *
+ * @param {String} address the address string to look up
+ * @returns {String} the target street address
+ */
+GeoLocationRPC.streetAddress = async function (address) {
+    const info = await rawGeolocate(address);
+    return info.formattedAddress;
 };
 
 /**
