@@ -19,6 +19,11 @@ class ApiKey {
     }
 }
 
+module.exports.TimezoneDBKey = new ApiKey(
+    'TimezoneDB',
+    'https://timezonedb.com/register',
+    'TIMEZONEDB_KEY'
+);
 module.exports.NewYorkPublicLibraryKey = new ApiKey(
     'New York Public Library',
     'http://api.repo.nypl.org/sign_up' // key is 'Authentication Token' from account info

@@ -66,7 +66,7 @@ const dispToType = { Any: 'Any' }; // maps display name to internal name
 
 function getTypeParser(type) {
     if (!type) return undefined;
-    return types[type] || (input => types[type.name](input, type.params));
+    return typeof(type) !== 'object' ? types[type] : input => types[type.name](input, type.params);
 }
 
 const DEFINE_TYPE_FIELDS = [
@@ -254,6 +254,24 @@ defineType({
         if (input.length < min) throw new ParameterError(`List must contain at least ${min} items`);
         if (input.length > max) throw new ParameterError(`List must contain at most ${max} items`);
         return input;
+    },
+});
+
+defineType({
+    name: 'Tuple',
+    description: 'A list of a specific number of values of specific types',
+    baseType: 'Array',
+    parser: async (input, params) => {
+        if (input.length != params.length) throw new ParameterError(`Tuple expected ${params.length} values, but got ${input.length} values`);
+        const res = [];
+        for (let i = 0; i < params.length; ++i) {
+            try {
+                res.push(await getTypeParser(params[i])(input[i]));
+            } catch (e) {
+                throw new ParameterError(`Tuple item ${i+1}: ${e}`);
+            }
+        }
+        return res;
     },
 });
 
