@@ -15,6 +15,7 @@
  const { Level2Radar } = require('./libraries/nexrad-level-2-data/src/index');
  const { plot } = require('./libraries/nexrad-level-2-plot/src/index');
  const AWS = require('aws-sdk');
+ const types = require('../../input-types');
  let RADAR_LOCATIONS = require('./RadarLocations');
  
  const PRECISION = 7; // 6 or 5 is probably safe
@@ -41,6 +42,15 @@
  let map = null;
  let nexrad = [];
  let radarPlot = null;
+ 
+ // define mapTypes
+ const MAPTYPES = ['roadmap', 'terrain', 'satellite'];
+ types.defineType({
+     name: 'MapType',
+     description: 'Possible options for generating a google static map.',
+     baseType: 'Enum',
+     baseParams: MAPTYPES
+ });
  
  /**
   * Transform from xy to latlng.
@@ -438,11 +448,7 @@
   */
   NexradRadar._plotAllCompositesWrapper = async function(latitude, longitude, width, height, zoom, type) {
      let arr = await this.listRadars(latitude, longitude, width, height, zoom);
-     let tmp = [];
-     for(let i in arr) {
-         tmp.push(arr[i][0]);
-     }
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, tmp);
+     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, arr);
  }
  
  NexradRadar._clear = function() {
@@ -453,49 +459,13 @@
  }
  
  /**
-  * Get a road map image of the given region.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  */
- NexradRadar.plotMapRoad = async function(latitude, longitude, width, height, zoom) {
-     await this._plotMapWrapper(latitude, longitude, width, height, zoom, "road");
- };
- 
- /**
-  * Get a terrain map image of the given region.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  */
-  NexradRadar.plotMapTerrain = async function(latitude, longitude, width, height, zoom) {
-     await this._plotMapWrapper(latitude, longitude, width, height, zoom, "terrain");
- };
- 
- /**
-  * Get a satellite map image of the given region.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  */
-  NexradRadar.plotMapSatellite = async function(latitude, longitude, width, height, zoom) {
-     await this._plotMapWrapper(latitude, longitude, width, height, zoom, "satellite");
- };
- 
- /**
   * List all radars within the range of the current map.
   * @param {Latitude} latitude Latitude of center point
   * @param {Longitude} longitude Longitude of center point
   * @param {BoundedInteger<1>} width Image width
   * @param {BoundedInteger<1>} height Image height
   * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @returns {Array<Array<String>>} an array of radars
+  * @returns {Array<String>} an array of radars
   */
  NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
      this._configureMap(latitude, longitude, width, height, zoom, "terrain");
@@ -503,57 +473,16 @@
      let latMax = this._coordsAt(0, settings.height, settings).lat;
      let lngMin = this._coordsAt(settings.width / -2, 0, settings).lon;
      let lngMax = this._coordsAt(settings.width / 2, 0, settings).lon;
-     let res = [["stationName", "latitude", "longitude"]];
+     let res = [];
      for(let i in RADAR_LOCATIONS) {
          if(RADAR_LOCATIONS[i][0] > latMin
              && RADAR_LOCATIONS[i][0] < latMax
              && RADAR_LOCATIONS[i][1] > lngMin
              && RADAR_LOCATIONS[i][1] < lngMax) {
-             let tmp = [i, RADAR_LOCATIONS[i][0].toString(), RADAR_LOCATIONS[i][1].toString()];
-             res.push(tmp);
+             res.push(i);
          }
      }
-     this._clear();
      return res;
- }
- 
- /**
-  * Draw multiple hurricane plots onto the current road map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {Array<String>} radars Array of Radars.
-  */
- NexradRadar.plotCompositeRoad = async function(latitude, longitude, width, height, zoom, radars) {
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, "roadmap", radars);
- }
- 
- /**
-  * Draw multiple hurricane plots onto the current terrain map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {Array<String>} radars Array of Radars.
-  */
-  NexradRadar.plotCompositeTerrain = async function(latitude, longitude, width, height, zoom, radars) {
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, "terrain", radars);
- }
- 
- /**
-  * Draw multiple hurricane plots onto the current satellite map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {Array<String>} radars Array of Radars.
-  */
-  NexradRadar.plotCompositeSatellite = async function(latitude, longitude, width, height, zoom, radars) {
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, "satellite", radars);
  }
  
  /**
@@ -581,47 +510,34 @@
   */
  NexradRadar.plotAllRadars = async function(latitude, longitude, width, height, zoom) {
      let arr = await this.listRadars(latitude, longitude, width, height, zoom);
-     let tmp = [];
-     for(let i in arr) {
-         tmp.push(arr[i][0]);
-     }
-     await this.plotRadars(latitude, longitude, width, height, zoom, tmp);
+     await this.plotRadars(latitude, longitude, width, height, zoom, arr);
  }
  
  /**
-  * Draw all composites on a road map.
+  * Draw all composites on a map.
   * @param {Latitude} latitude Latitude of center point
   * @param {Longitude} longitude Longitude of center point
   * @param {BoundedInteger<1>} width Image width
   * @param {BoundedInteger<1>} height Image height
   * @param {BoundedInteger<1,25>} zoom Zoom level of map image
+  * @param {MapType} type Type of google map
   */
- NexradRadar.plotAllCompositesRoad = async function(latitude, longitude, width, height, zoom) {
-     await this._plotAllCompositesWrapper(latitude, longitude, width, height, zoom, "roadmap");
+ NexradRadar.plotAllComposites = async function(latitude, longitude, width, height, zoom, type) {
+     await this._plotAllCompositesWrapper(latitude, longitude, width, height, zoom, type);
  }
  
  /**
-  * Draw all composites on a terrain map.
+  * Draw all composites on a map.
   * @param {Latitude} latitude Latitude of center point
   * @param {Longitude} longitude Longitude of center point
   * @param {BoundedInteger<1>} width Image width
   * @param {BoundedInteger<1>} height Image height
   * @param {BoundedInteger<1,25>} zoom Zoom level of map image
+  * @param {Array<String>} radars Array of Radars.
+  * @param {MapType} type Type of google map
   */
-  NexradRadar.plotAllCompositesTerrain = async function(latitude, longitude, width, height, zoom) {
-     await this._plotAllCompositesWrapper(latitude, longitude, width, height, zoom, "terrain");
- }
- 
- /**
-  * Draw all composites on a satellite map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  */
-  NexradRadar.plotAllCompositesSatellite = async function(latitude, longitude, width, height, zoom) {
-     await this._plotAllCompositesWrapper(latitude, longitude, width, height, zoom, "satellite");
+  NexradRadar.plotComposites = async function(latitude, longitude, width, height, zoom, radars, type) {
+     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, radars);
  }
  
  
