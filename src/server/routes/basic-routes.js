@@ -69,6 +69,7 @@ module.exports = [
         Handler: async function(req, res) {
             logger.log('Sign up request:', req.body.Username, req.body.Email);
             var uname = req.body.Username,
+                password = req.body.Password,
                 email = req.body.Email;
 
             // Must have an email and username
@@ -92,6 +93,7 @@ module.exports = [
                 .then(user => {
                     if (!user) {
                         var newUser = Storage.users.new(uname, email);
+                        newUser.hash = password || null;
                         newUser.save();
                         return res.send('User Created!');
                     }
