@@ -374,14 +374,12 @@ async function updateTorIPs() {
     const url = 'https://check.torproject.org/torbulkexitlist';
     const resp = await axios({url});
     const ips = resp.data.split('\n');
-    console.log({ips});
     return torExitIPs = ips;
 }
 const day = 1000*60*60*24;
 updateTorIPs();
 setInterval(updateTorIPs, 1*day);
 function isTorIP(ip) {
-    console.log("CHECKING:", ip);
     return torExitIPs.includes(ip);
 }
 
