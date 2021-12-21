@@ -2,7 +2,8 @@ const utils = require('../../../../../assets/utils');
 
 describe(utils.suiteName(__filename), function() {
     const COVIDData = utils.reqSrc('services/procedures/covid-19/data');
-    const data = new COVIDData();
+    const Logger = utils.reqSrc('logger');
+    const data = new COVIDData(new Logger('test:covid-19:data'));
     const assert = require('assert');
 
     it('should parse early csv correctly', function() {
@@ -20,5 +21,10 @@ Anhui,Mainland China,1/22/2020 17:00,1,,\n`;
     it('should remove diacritics from "Réunion"', function() {
         const country = data.resolveCountry('Réunion');
         assert.equal(country, 'Reunion');
+    });
+
+    it('should return undefined if invalid date (not throw error)', async function() {
+        const result = await data.fetchDailyReport(new Date('2090'));
+        assert.equal(result, undefined);
     });
 });
