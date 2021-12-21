@@ -46,6 +46,7 @@ var Server = function(opts) {
     this.app.set('query parser', string => {
         return qs.parse(string);
     });
+    this.app.set('trust proxy', process.env.TRUST_PROXY === 'true');
 
     this._server = null;
 
