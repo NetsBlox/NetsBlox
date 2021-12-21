@@ -18,7 +18,7 @@ const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
 const Strategies = require('../api/core/strategies');
 const {RequestError} = require('../api/core/errors');
-const {isProfane} = middleware;
+const {isProfane, isTorIP} = middleware;
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
@@ -207,6 +207,10 @@ module.exports = [
         URL: '',  // login method
         Handler: async function(req, res) {
             const projectId = req.body.projectId;
+
+            if (isTorIP(req.ip)) {
+                return res.status(403).send('Login from Tor not allowed.');
+            }
 
             // Should check if the user has a valid cookie. If so, log them in with it!
             // Explicit login
