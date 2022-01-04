@@ -225,7 +225,7 @@ Device.prototype.removeClientSocket = function (socket) {
 };
 
 Device.prototype.sendToDevice = function (message) {
-    this.server.send(message, this.ip4_port, this.ip4_addr, function (err) {
+    this.server.send(message, this.ip4_port, this.ip4_addr, err => {
         if (err) {
             this._logger.log('send error ' + err);
         }
@@ -238,9 +238,9 @@ Device.prototype.receiveFromDevice = function (msgType, timeout) {
     }
     const callbacks = this.callbacks[msgType];
 
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         callbacks.push(resolve);
-        setTimeout(function () {
+        setTimeout(() => {
             const i = callbacks.indexOf(resolve);
             if (i >= 0) callbacks.splice(i, 1);
             reject(Error('response timeout'));
@@ -335,7 +335,7 @@ Device.prototype.addLabel = async function (device, args, clientId) {
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
-    
+
     throwIfErr(await response);
 
     return id;
@@ -362,7 +362,7 @@ Device.prototype.addButton = async function (device, args, clientId) {
 
     const text = Buffer.from(args[4], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -385,7 +385,7 @@ Device.prototype.addImageDisplay = async function (device, args, clientId) {
     message[26] = opts.landscape ? 1 : 0;
     message[27] = opts.fit;
     this.sendToDevice(Buffer.concat([message, idbuf]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -414,7 +414,7 @@ Device.prototype.addTextField = async function (device, args, clientId) {
 
     const text = Buffer.from(opts.text, 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -436,7 +436,7 @@ Device.prototype.addJoystick = async function (device, args, clientId) {
     message[25] = opts.landscape ? 1 : 0;
 
     this.sendToDevice(Buffer.concat([message, idbuf]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -460,7 +460,7 @@ Device.prototype.addTouchpad = async function (device, args, clientId) {
     message[30] = opts.landscape ? 1 : 0;
 
     this.sendToDevice(Buffer.concat([message, idbuf]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -485,7 +485,7 @@ Device.prototype.addSlider = async function (device, args, clientId) {
     message[31] = opts.readonly ? 1 : 0;
 
     this.sendToDevice(Buffer.concat([message, idbuf]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -513,7 +513,7 @@ Device.prototype.addToggle = async function (device, args, clientId) {
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, text]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -544,7 +544,7 @@ Device.prototype.addRadioButton = async function (device, args, clientId) {
 
     const text = Buffer.from(args[2], 'utf8');
     this.sendToDevice(Buffer.concat([message, idbuf, groupPrefix, group, text]));
-    
+
     throwIfErr(await response);
 
     device.guiIdToEvent[id] = opts.event;
@@ -558,7 +558,7 @@ Device.prototype.getImage = async function (device, args, clientId) {
     message.write('u', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).img;
 };
 Device.prototype.setImage = async function (device, args, clientId) {
@@ -572,7 +572,7 @@ Device.prototype.setImage = async function (device, args, clientId) {
 
     const img = await common.prepImageToSend(args[1]);
     this.sendToDevice(Buffer.concat([message, id, img]));
-    
+
     throwIfErr(await response);
 };
 Device.prototype.setText = async function (device, args, clientId) {
@@ -586,7 +586,7 @@ Device.prototype.setText = async function (device, args, clientId) {
 
     const text = Buffer.from(args[1], 'utf8');
     this.sendToDevice(Buffer.concat([message, id, text]));
-    
+
     throwIfErr(await response);
 };
 Device.prototype.getText = async function (device, args, clientId) {
@@ -597,7 +597,7 @@ Device.prototype.getText = async function (device, args, clientId) {
     message.write('h', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).text;
 };
 Device.prototype.getPosition = async function (device, args, clientId) {
@@ -608,7 +608,7 @@ Device.prototype.getPosition = async function (device, args, clientId) {
     message.write('J', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).res;
 };
 Device.prototype.getLevel = async function (device, args, clientId) {
@@ -619,7 +619,7 @@ Device.prototype.getLevel = async function (device, args, clientId) {
     message.write('E', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).level;
 };
 Device.prototype.setLevel = async function (device, args, clientId) {
@@ -631,7 +631,7 @@ Device.prototype.setLevel = async function (device, args, clientId) {
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message.writeFloatBE(args[1], 9);
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).res;
 };
 
@@ -642,9 +642,9 @@ Device.prototype.isPressed = async function (device, args, clientId) {
     const message = Buffer.alloc(9);
     message.write('V', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    
+
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).state;
 };
 
@@ -655,9 +655,9 @@ Device.prototype.getToggleState = async function (device, args, clientId) {
     const message = Buffer.alloc(9);
     message.write('W', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
-    
+
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).state;
 };
 Device.prototype.setToggleState = async function (device, args, clientId) {
@@ -668,9 +668,9 @@ Device.prototype.setToggleState = async function (device, args, clientId) {
     message.write('w', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     message[9] = args[1] ? 1 : 0;
-    
+
     this.sendToDevice(Buffer.concat([message, id]));
-    
+
     return throwIfErr(await response).state;
 };
 
@@ -681,7 +681,7 @@ Device.prototype.getOrientation = async function (device, args, clientId) {
     message.write('O', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 Device.prototype.getCompassHeading = async function (device, args, clientId) {
@@ -701,7 +701,7 @@ Device.prototype.getAccelerometer = async function (device, args, clientId) {
     message.write('A', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 Device.prototype.getFacingDirection = async function (device, args, clientId) {
@@ -715,7 +715,7 @@ Device.prototype.getGravity = async function (device, args, clientId) {
     message.write('G', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 
@@ -726,7 +726,7 @@ Device.prototype.getLinearAcceleration = async function (device, args, clientId)
     message.write('L', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 
@@ -737,7 +737,7 @@ Device.prototype.getGyroscope = async function (device, args, clientId) {
     message.write('Y', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 Device.prototype.getRotation = async function (device, args, clientId) {
@@ -757,7 +757,7 @@ Device.prototype.getGameRotation = async function (device, args, clientId) {
     message.write('r', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 
@@ -768,7 +768,7 @@ Device.prototype.getMagneticField = async function (device, args, clientId) {
     message.write('M', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals;
 };
 
@@ -789,7 +789,7 @@ Device.prototype.getProximity = async function (device, args, clientId) {
     message.write('P', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals[0];
 };
 Device.prototype.getStepCount = async function (device, args, clientId) {
@@ -809,7 +809,7 @@ Device.prototype.getLightLevel = async function (device, args, clientId) {
     message.write('l', 0, 1);
     message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
     this.sendToDevice(message);
-    
+
     return throwIfErr(await response).vals[0];
 };
 
@@ -857,7 +857,7 @@ Device.prototype.sendToClient = function (msgType, content) {
     if (this.callbacks[msgType]) {
         const callbacks = this.callbacks[msgType];
         delete this.callbacks[msgType];
-        callbacks.forEach(function (callback) {
+        callbacks.forEach(callback => {
             callback(content);
         });
         callbacks.length = 0;
