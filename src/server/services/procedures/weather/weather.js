@@ -153,7 +153,6 @@ weather.icon = function(latitude, longitude){
         });
 };
 
-
 weather.COMPATIBILITY =  {
     windAngle: {
         latitude: 'lat',

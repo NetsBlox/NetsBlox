@@ -29,8 +29,10 @@
  const PIXELWIDTH = RANGE / (NEXRAD_SIZE / 2);
  // bucket name for aws nexrad service
  const BUCKET = 'noaa-nexrad-level2';
+
+
  // configure aws-sdk
- AWS.config.update({accessKeyId: 'AKIAULYK6YJBMWQW6FIU', secretAccessKey: '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', region: 'us-east-1'});
+ AWS.config.update({accessKeyId: process.env.AWS_ID, secretAccessKey: process.env.AWS_KEY, region: 'us-east-1'});
  const s3 = new AWS.S3();
  
  // We will rely on the default maxsize limit of the cache
@@ -320,6 +322,7 @@
   * @param {String} data  content of the NEXRAD file from downloader.
   */
  NexradRadar._addHurricane = async function(radar, data) {
+     console.log(1111111111);
      let latCen = RADAR_LOCATIONS[radar][0];
      let lngCen = RADAR_LOCATIONS[radar][1];
      let boundingBox = this._getBoundingBox(latCen, lngCen, RANGE);
@@ -383,21 +386,6 @@
  };
  
  /**
-  * Get a map image of the given region.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {String} type Type of the map
-  */
-  NexradRadar._plotMapWrapper = async function(latitude, longitude, width, height, zoom, type) {
-     await this._plotMap(latitude, longitude, width, height, zoom, type);
-     await this._draw(map);
-     this._clear();
- };
- 
- /**
   * Draw multiple hurricane plots onto the current map.
   * @param {Latitude} latitude Latitude of center point
   * @param {Longitude} longitude Longitude of center point
@@ -439,8 +427,12 @@
      }
      await this._downloadNexrads(radars);
      for(let i = 0; i < nexrad.length; ++i) {
+        await this._addHurricane(nexrad[i][0], nexrad[i][1]);
+    }
+    /*
+     for(let i = 0; i < nexrad.length; ++i) {
          await this._addHurricane(nexrad[i][0], nexrad[i][1]);
-     }
+     }*/
  }
  
  /**
@@ -515,26 +507,12 @@
   * @param {MapType} type Type of google map
   */
   NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, radars, type) {
+      for(let i = 0; i < radars.length; ++i) {
+          radars[i] = radars[i].toUpperCase();
+      }
      await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, radars);
  }
- 
- 
- // Map of argument name to old field name
- NexradRadar.COMPATIBILITY = {
-     path: 'staticmap',
-     arguments: {
-         getMap: {
-             latitude: 'lat',
-             longitude: 'lon'
-         },
-         getXFromLongitude: {
-             longitude: 'lng'
-         },
-         getYFromLatitude: {
-             latitude: 'lat'
-         }
-     }
- };
+
  
  module.exports = NexradRadar;
  
