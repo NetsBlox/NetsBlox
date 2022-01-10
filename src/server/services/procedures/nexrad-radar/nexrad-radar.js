@@ -54,13 +54,6 @@
      baseParams: MAPTYPES
  });
  
- /**
-  * Transform from xy to latlng.
-  * @param {Number} x x coordinate of the image
-  * @param {Number} y y coordinate of the image
-  * @param {Object} map settings of the map
-  * @returns {Array} latlng coordinates
-  */
  NexradRadar._coordsAt = function(x, y, map) {
      x = Math.ceil(x / map.scale);
      y = Math.ceil(y / map.scale);
@@ -74,13 +67,6 @@
      return coords;
  };
  
- /**
-  * Transform from latlng to xy.
-  * @param {Latitude} lat latitiude of the pixel
-  * @param {Longitude} lon longitude of the pixel
-  * @param {Object} settings of the map
-  * @returns {Array} xy coordinates of the pixel
-  */
  NexradRadar._pixelsAt = function(lat, lon, map) {
      // current latlon in px
      let curPx = merc.px([map.center.lon, map.center.lat], map.zoom);
@@ -93,21 +79,10 @@
      return pixelsXY;
  };
  
- /**
-  * ParseFloat a number based on a given percision.
-  * @param {Number} number the number to be parsed
-  * @param {Number} precisionLimit the given precision
-  * @returns {Number} the parsed number
-  */
  NexradRadar._toPrecision = function(number, precisionLimit) {
      return parseFloat(number).toFixed(precisionLimit);
  };
  
- /**
-  * Set the parameters for google static map.
-  * @param {Object} options settings of the map
-  * @returns {String} googleParams
-  */
  NexradRadar._getGoogleParams = function(options) {
      const params = {
          size: `${options.width}x${options.height}`,
@@ -119,14 +94,7 @@
      };
      return utils.encodeQueryData(params, false);
  };
- /**
-  * Get the distance between two points in LatLng
-  * @param   {Latitude} lat1 latitude of the first point
-  * @param   {Longitude} lon1 longitude of the first point
-  * @param   {Latitude} lat2 latitude of the second point
-  * @param   {Longitude}lon2 longitude of the second point
-  * @returns {Number} distance in km
-  */
+
  NexradRadar._getDistanceFromLatLonInKm = function(lat1, lon1, lat2, lon2) {
      let p = 0.017453292519943295;    // Math.PI / 180
      let c = Math.cos;
@@ -136,59 +104,40 @@
      return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
  }
  
- /**
-  * Get the bounding box of the current LatLng with a given distance.
-  * @param   {Number} fsLatitude latitude
-  * @param   {Number} fsLongitude longitude
-  * @param   {Number} fiDistanceInKM distance from center in km
-  * @returns {Object} boundingBox
-  */
  NexradRadar._getBoundingBox = function(fsLatitude, fsLongitude, fiDistanceInKM) {
- 
      if (fiDistanceInKM === null || fiDistanceInKM === undefined || fiDistanceInKM === 0)
          fiDistanceInKM = 1;
- 
      let MIN_LAT, MAX_LAT, MIN_LON, MAX_LON, ldEarthRadius, ldDistanceInRadius, lsLatitudeInDegree, lsLongitudeInDegree,
          lsLatitudeInRadius, lsLongitudeInRadius, lsMinLatitude, lsMaxLatitude, lsMinLongitude, lsMaxLongitude, deltaLon;
- 
      const degreeToRadius = (num) => {
          return num * (Math.PI / 180);
      }
      const radiusToDegree = (rad) => {
          return (180 * rad) / Math.PI;
      }
- 
      // coordinate limits
      MIN_LAT = degreeToRadius(-90);
      MAX_LAT = degreeToRadius(90);
      MIN_LON = degreeToRadius(-180);
      MAX_LON = degreeToRadius(180);
- 
      // Earth's radius (km)
      ldEarthRadius = 6378.1;
- 
      // angular distance in radians on a great circle
      ldDistanceInRadius = fiDistanceInKM / ldEarthRadius;
- 
      // center point coordinates (deg)
      lsLatitudeInDegree = fsLatitude;
      lsLongitudeInDegree = fsLongitude;
- 
      // center point coordinates (rad)
      lsLatitudeInRadius = degreeToRadius(lsLatitudeInDegree);
      lsLongitudeInRadius = degreeToRadius(lsLongitudeInDegree);
- 
      // minimum and maximum latitudes for given distance
      lsMinLatitude = lsLatitudeInRadius - ldDistanceInRadius;
      lsMaxLatitude = lsLatitudeInRadius + ldDistanceInRadius;
- 
      // minimum and maximum longitudes for given distance
      lsMinLongitude = void 0;
      lsMaxLongitude = void 0;
- 
      // define deltaLon to help determine min and max longitudes
      deltaLon = Math.asin(Math.sin(ldDistanceInRadius) / Math.cos(lsLatitudeInRadius));
- 
      if (lsMinLatitude > MIN_LAT && lsMaxLatitude < MAX_LAT) {
          lsMinLongitude = lsLongitudeInRadius - deltaLon;
          lsMaxLongitude = lsLongitudeInRadius + deltaLon;
@@ -199,7 +148,6 @@
              lsMaxLongitude = lsMaxLongitude - 2 * Math.PI;
          }
      }
- 
      // a pole is within the given distance
      else {
          lsMinLatitude = Math.max(lsMinLatitude, MIN_LAT);
@@ -207,7 +155,6 @@
          lsMinLongitude = MIN_LON;
          lsMaxLongitude = MAX_LON;
      }
- 
      return {
          minLat: radiusToDegree(lsMinLatitude),
          minLng: radiusToDegree(lsMinLongitude),
@@ -216,15 +163,6 @@
      };
  }
  
- /**
-  * Configure a google static map.
-  * @param   {Latitude} latitude latitude of the center
-  * @param   {Longitude} longitude longitude of the center
-  * @param   {Number} width width of the map
-  * @param   {Number} height height of the map
-  * @param   {Number} zoom zoom level of the map
-  * @param   {String} type Map type
-  */
  NexradRadar._configureMap = function(latitude, longitude, width, height, zoom, type) {
      const scale = width <= 640 && height <= 640 ? 1 : 2;
      settings = {
@@ -240,12 +178,8 @@
      };
  }    
  
- /**
-  * A helper method for downloadNexrad that downloads for a single radar station.
-  * @param {String} radar name of NEXRAD radar.
-  */
  NexradRadar._downloadSingle = async function(radar) {
-     if(RADAR_LOCATIONS[radar] === undefined) return;
+     if(RADAR_LOCATIONS[radar] === undefined) return "";
      const today = new Date();
      const tomorrow = new Date(today.getTime() + (24 * 60 * 60 * 1000));
      let params = {
@@ -267,7 +201,7 @@
                  nexradKey = dataToday.Contents[dataToday.Contents.length - 2].Key;
              }
              let nexradToday = await s3.getObject({Bucket: BUCKET, Key: nexradKey}).promise();
-             nexrad.push([radar, nexradToday.Body]);
+             return nexradToday.Body;
          }
      }
      else {
@@ -276,26 +210,11 @@
              nexradKey = dataTomorrow.Contents[dataTomorrow.Contents.length - 2].Key;
          }
          let nexradTomorrow = await s3.getObject({Bucket: BUCKET, Key: nexradKey}).promise();
-         nexrad.push([radar, nexradTomorrow.Body]);
+         return nexradTomorrow.Body;
      }
+     return "";
  }
  
- /**
-  * An auto-downloader of up-to-date NEXRAD files.
-  * @param {Array} radars the radars whose up-to-date files we want to download.
-  */
- NexradRadar._downloadNexrads = async function(radars) {
-     nexrad = [];
-     let arr = [];
-     for(let i = 0; i < radars.length; ++i) {
-         arr.push(this._downloadSingle(radars[i]));
-     }
-     await Promise.all(arr);
- }
- 
- /**
-  * Add the google static map.
-  */
  NexradRadar._addMap = async function() {
      const queryString = this._getGoogleParams(settings);
      const cacheKey = JSON.stringify(settings);
@@ -303,26 +222,15 @@
      map = await JIMP.read(data);
  }
  
- /**
-  * Parse a hurricane plot.
-  * @param {String} data nexrad data from downloader.
-  * @returns {Object} a canvas object of nexrad plot.
-  */
- NexradRadar._parseNexrad = async function(data) {
-     const tmp = new Level2Radar(data);
-     const nexradPlot = plot(tmp, 'REF', {background: 'white'}).REF.canvas;
-     return (nexradPlot
-         .getContext('2d')
-         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
+ NexradRadar._parseNexrad = function(data) {
+    const tmp = new Level2Radar(data);
+    const nexradPlot = plot(tmp, 'REF', {background: 'white'}).REF.canvas;
+    return (nexradPlot
+        .getContext('2d')
+        .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
  }
  
- /**
-  * Add a single hurricane plot onto the current google static map.
-  * @param {String} radar name of NEXRAD radar.
-  * @param {String} data  content of the NEXRAD file from downloader.
-  */
- NexradRadar._addHurricane = async function(radar, data) {
-     console.log(1111111111);
+ NexradRadar._addHurricane = async function(radar, plot) {
      let latCen = RADAR_LOCATIONS[radar][0];
      let lngCen = RADAR_LOCATIONS[radar][1];
      let boundingBox = this._getBoundingBox(latCen, lngCen, RANGE);
@@ -330,9 +238,6 @@
      let xMax = this._pixelsAt(0, boundingBox.maxLng, settings).x;
      let yMin = this._pixelsAt(boundingBox.minLat, 0, settings).y;
      let yMax = this._pixelsAt(boundingBox.maxLat, 0, settings).y;
-     // plot nexrad first
-     let nexradPlot = await this._parseNexrad(data);
-     let plot = await JIMP.read(nexradPlot);
      for (let i = xMin; i <= xMax; ++i) {
          for (let j = yMin; j <= yMax; ++j) {
              let mapX = Math.floor(i / settings.scale) + settings.width / 2;
@@ -356,11 +261,6 @@
      }
  }
  
- /**
-  * Draw the final plot.
-  * @param {Object} imageData Data of the image
-  * return {Image} the displayed image
-  */
   NexradRadar._draw = async function(imageData) {
      const imageBuffer = await new Promise((resolve, reject) => {
          imageData.quality(100).getBuffer(JIMP.MIME_JPEG, (err, buffer) => {
@@ -370,83 +270,12 @@
      });
      return this._sendImageBuffer(imageBuffer);
  }
- 
- /**
-  * Get a map image of the given region.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {String} type Map type
-  */
-  NexradRadar._plotMap = async function(latitude, longitude, width, height, zoom, type) {
-     this._configureMap(latitude, longitude, width, height, zoom, type);
-     await this._addMap();
- };
- 
- /**
-  * Draw multiple hurricane plots onto the current map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {String} type Type of the map
-  * @param {Array<String>} radars Array of Radars.
-  */
-  NexradRadar._plotCompositeWrapper = async function(latitude, longitude, width, height, zoom, type, radars) {
-    if(type !== 'none') {
-        await this._plotMap(latitude, longitude, width, height, zoom, type);
-        await this._plotRadars(latitude, longitude, width, height, zoom, radars);
-        await map.composite(radarPlot, 0, 0);
-        await this._draw(map);
-    }
-    else {
-        await this._plotRadars(latitude, longitude, width, height, zoom, radars);
-        await this._draw(radarPlot);
-    }
-    this._clear();
- }
- 
- /**
-  * Draw multiple hurricane plots.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {Array<String>} radars Array of Radars.
-  */
-  NexradRadar._plotRadars = async function(latitude, longitude, width, height, zoom, radars) {
-     this._configureMap(latitude, longitude, width, height, zoom, "terrain");
-     radarPlot = await new JIMP(settings.width, settings.height, 0x0);
-     if(radars.length === 0) {
-         await this._draw(radarPlot);
-         return;
-     }
-     await this._downloadNexrads(radars);
-     for(let i = 0; i < nexrad.length; ++i) {
-        await this._addHurricane(nexrad[i][0], nexrad[i][1]);
-    }
-    /*
-     for(let i = 0; i < nexrad.length; ++i) {
-         await this._addHurricane(nexrad[i][0], nexrad[i][1]);
-     }*/
- }
- 
- /**
-  * Draw all composites on a road map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {String} type Type of the map
-  */
-  NexradRadar._plotAllCompositesWrapper = async function(latitude, longitude, width, height, zoom, type) {
-     let arr = await this.listRadars(latitude, longitude, width, height, zoom);
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, arr);
+
+ NexradRadar._plotSingleRadar = async function(radar) {
+    let radarData = await this._downloadSingle(radar);
+    if(radarData === "") return;
+    let radarPlot = await JIMP.read(await this._parseNexrad(radarData));
+    await this._addHurricane(radar, radarPlot);
  }
  
  NexradRadar._clear = function() {
@@ -466,7 +295,7 @@
   * @returns {Array<String>} an array of radars
   */
  NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
-     this._configureMap(latitude, longitude, width, height, zoom, "terrain");
+    this._configureMap(latitude, longitude, width, height, zoom, 'terrain');
      let latMin = this._coordsAt(0, settings.height / -2, settings).lat;
      let latMax = this._coordsAt(0, settings.height, settings).lat;
      let lngMin = this._coordsAt(settings.width / -2, 0, settings).lon;
@@ -493,7 +322,17 @@
   * @param {MapType} type Type of google map
   */
  NexradRadar.plotAllRadarImages = async function(latitude, longitude, width, height, zoom, type) {
-     await this._plotAllCompositesWrapper(latitude, longitude, width, height, zoom, type);
+    let radars = await this.listRadars(latitude, longitude, width, height, zoom);
+    await this._configureMap(latitude, longitude, width, height, zoom, type);
+     radarPlot = await new JIMP(settings.width, settings.height, 0x0);
+     await Promise.all(radars.map(radar => this._plotSingleRadar(radar)));
+     if(type !== 'none') {
+        await this._addMap();
+        await map.composite(radarPlot, 0, 0);
+        await this._draw(map);
+     }
+     else await this._draw(radarPlot);
+     this._clear();
  }
  
  /**
@@ -507,12 +346,16 @@
   * @param {MapType} type Type of google map
   */
   NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, radars, type) {
-      for(let i = 0; i < radars.length; ++i) {
-          radars[i] = radars[i].toUpperCase();
-      }
-     await this._plotCompositeWrapper(latitude, longitude, width, height, zoom, type, radars);
+    await this._configureMap(latitude, longitude, width, height, zoom, type);
+    radarPlot = await new JIMP(settings.width, settings.height, 0x0);
+    await Promise.all(radars.map(radar => this._plotSingleRadar(radar)));
+    if(type !== 'none') {
+       await this._addMap();
+       await map.composite(radarPlot, 0, 0);
+       await this._draw(map);
+    }
+    else await this._draw(radarPlot);
+    this._clear();
  }
-
  
  module.exports = NexradRadar;
- 

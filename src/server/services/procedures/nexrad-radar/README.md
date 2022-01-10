@@ -6,24 +6,11 @@ Nexrad Radar Services plots REF images on a google static map.
 
     nexrad-radar
         |—— nexrad-radar.js                         // source code
-        |—— draft.js                                // a draft for development
         |—— RadarLocations.js                       // latlng of all radars
         |—— README.md
         |—— libraries
             |—— nexrad-level-2-data               
             |—— nexrad-level-2-plot
-
-## Questions
-
-    1. What functions should be public to the users? Right now Nexrad Radar Services support setting up the map, listing
-       radars, plotting some radars, and plotting all radars. What are some other functionalities that should be added?
-
-    2. The services have to be run in a specific order: setMap --> listRadars --> plotRadars / plotAllRadars. Is this a
-       good practice? If so, what is a good way to alert the user when he/she runs the functions in the wrong order?
-
-    3. I haven't implemented caching functionalities. Is the ability to cache the plot necessary? 
-
-    4. I downgraded jimp to an older version so that some functionalities can work. Is this OK?
 
 ## Process of Projection
 
