@@ -2,20 +2,19 @@
  * The Nexrad Rader Service provides access to the nexrad-level2 REF plots.
  * For more information, check out https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00345
  *
- * @service
  */
  'use strict';
 
- const utils = require('../utils');
- const ApiConsumer = require('../utils/api-consumer');
- const {GoogleMapsKey} = require('../utils/api-key');
+ const utils = require('../../utils');
+ const ApiConsumer = require('../../utils/api-consumer');
+ const {GoogleMapsKey} = require('../../utils/api-key');
  const SphericalMercator = require('sphericalmercator');
  const merc = new SphericalMercator({size:256});
  const JIMP = require('jimp');
- const { Level2Radar } = require('./libraries/nexrad-level-2-data/src/index');
- const { plot } = require('./libraries/nexrad-level-2-plot/src/index');
+ const { Level2Radar } = require('nexrad-level-2-data');
+ const { plot } = require('nexrad-level-2-plot');
  const AWS = require('aws-sdk');
- const types = require('../../input-types');
+ const types = require('../../../input-types');
  let RADAR_LOCATIONS = require('./RadarLocations');
  
  const PRECISION = 7; // 6 or 5 is probably safe
@@ -44,15 +43,28 @@
  let map = null;
  let nexrad = [];
  let radarPlot = null;
- 
- // define mapTypes
- const MAPTYPES = ['none', 'roadmap', 'terrain', 'satellite'];
- types.defineType({
-     name: 'MapType',
-     description: 'Possible options for generating a google static map.',
-     baseType: 'Enum',
-     baseParams: MAPTYPES
- });
+
+// define mapTypes
+const MAPTYPES = ['none', 'roadmap', 'terrain', 'satellite'];
+types.defineType({
+    name: 'MapType',
+    description: 'Possible options for generating a google static map.',
+    baseType: 'Enum',
+    baseParams: MAPTYPES
+});
+
+ const renderJIMPImage = async (data, width, height) => {
+    let image = await new JIMP(width, height);
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
+            const dataIndex = (y * width * 4) + (x * 4);
+            if (!(data[dataIndex] === 0 && data[dataIndex + 1] === 0 && data[dataIndex + 2] === 0 && data[dataIndex + 3] === 0)) {
+                image.setPixelColour(JIMP.rgbaToInt(data[dataIndex], data[dataIndex + 1], data[dataIndex + 2], data[dataIndex + 3]), x, y);
+            }
+        }
+    }
+    return image;
+}
  
  NexradRadar._coordsAt = function(x, y, map) {
      x = Math.ceil(x / map.scale);
@@ -224,7 +236,7 @@
  
  NexradRadar._parseNexrad = function(data) {
     const tmp = new Level2Radar(data);
-    const nexradPlot = plot(tmp, 'REF', {background: 'white'}).REF.canvas;
+    const nexradPlot = plot(tmp, 'REF', {background: 'white', elevation: 1}).REF.canvas;
     return (nexradPlot
         .getContext('2d')
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
@@ -261,21 +273,22 @@
      }
  }
  
-  NexradRadar._draw = async function(imageData) {
+  NexradRadar._draw = async function(imageData, response) {
      const imageBuffer = await new Promise((resolve, reject) => {
          imageData.quality(100).getBuffer(JIMP.MIME_JPEG, (err, buffer) => {
              if (err) reject(err);
              else resolve(buffer);
          });
      });
-     return this._sendImageBuffer(imageBuffer);
+     return utils.sendImageBuffer(response, imageBuffer);
  }
 
  NexradRadar._plotSingleRadar = async function(radar) {
     let radarData = await this._downloadSingle(radar);
     if(radarData === "") return;
-    let radarPlot = await JIMP.read(await this._parseNexrad(radarData));
-    await this._addHurricane(radar, radarPlot);
+    let tmp = await this._parseNexrad(radarData);
+    let radarImage = await renderJIMPImage(tmp.data, NEXRAD_SIZE, NEXRAD_SIZE);
+    await this._addHurricane(radar, radarImage);
  }
  
  NexradRadar._clear = function() {
@@ -284,17 +297,8 @@
      nexrad = [];
      radarPlot = null;
  }
- 
- /**
-  * List all radars within the range of the current map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @returns {Array<String>} an array of radars
-  */
- NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
+
+ NexradRadar._listRadars = function(latitude, longitude, width, height, zoom) {
     this._configureMap(latitude, longitude, width, height, zoom, 'terrain');
      let latMin = this._coordsAt(0, settings.height / -2, settings).lat;
      let latMax = this._coordsAt(0, settings.height, settings).lat;
@@ -312,49 +316,30 @@
      return res;
  }
 
- /**
-  * Draw all composites on a map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {MapType} type Type of google map
-  */
- NexradRadar.plotAllRadarImages = async function(latitude, longitude, width, height, zoom, type) {
-    let radars = await this.listRadars(latitude, longitude, width, height, zoom);
+ NexradRadar._plotAllRadarImages = async function(latitude, longitude, width, height, zoom, type, response) {
+    let radars = await this._listRadars(latitude, longitude, width, height, zoom);
     await this._configureMap(latitude, longitude, width, height, zoom, type);
      radarPlot = await new JIMP(settings.width, settings.height, 0x0);
      await Promise.all(radars.map(radar => this._plotSingleRadar(radar)));
      if(type !== 'none') {
         await this._addMap();
         await map.composite(radarPlot, 0, 0);
-        await this._draw(map);
+        await this._draw(map, response);
      }
-     else await this._draw(radarPlot);
+     else await this._draw(radarPlot, response);
      this._clear();
  }
  
- /**
-  * Draw all composites on a map.
-  * @param {Latitude} latitude Latitude of center point
-  * @param {Longitude} longitude Longitude of center point
-  * @param {BoundedInteger<1>} width Image width
-  * @param {BoundedInteger<1>} height Image height
-  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
-  * @param {Array<String>} radars Array of Radars.
-  * @param {MapType} type Type of google map
-  */
-  NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, radars, type) {
+  NexradRadar._plotRadarImages = async function(latitude, longitude, width, height, zoom, radars, type, response) {
     await this._configureMap(latitude, longitude, width, height, zoom, type);
     radarPlot = await new JIMP(settings.width, settings.height, 0x0);
     await Promise.all(radars.map(radar => this._plotSingleRadar(radar)));
     if(type !== 'none') {
        await this._addMap();
        await map.composite(radarPlot, 0, 0);
-       await this._draw(map);
+       await this._draw(map, response);
     }
-    else await this._draw(radarPlot);
+    else await this._draw(radarPlot, response);
     this._clear();
  }
  

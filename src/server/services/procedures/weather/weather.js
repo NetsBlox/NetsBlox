@@ -19,6 +19,9 @@ const geolib = require('geolib');
 const weather = new ApiConsumer('Weather', 'http://api.openweathermap.org/data/2.5/weather', {cache: {ttl: 60}});
 ApiConsumer.setRequiredApiKey(weather, OpenWeatherMapKey);
 
+const NexradRadar = require('./nexrad-radar/nexrad-radar');
+
+
 const isWithinMaxDistance = function(result, lat, lng) {
     var distance = geolib.getDistance(
         {latitude: lat, longitude: lng},
@@ -152,6 +155,47 @@ weather.icon = function(latitude, longitude){
             return this._sendImage(queryOpts);
         });
 };
+
+ /**
+  * List all radars within the range of the current map.
+  * @param {Latitude} latitude Latitude of center point
+  * @param {Longitude} longitude Longitude of center point
+  * @param {BoundedInteger<1>} width Image width
+  * @param {BoundedInteger<1>} height Image height
+  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
+  * @returns {Array<String>} an array of radars
+  */
+  weather.listRadars = function(latitude, longitude, width, height, zoom) {
+    return NexradRadar._listRadars(latitude, longitude, width, height, zoom);
+  } 
+
+  /**
+  * Draw all composites on a map.
+  * @param {Latitude} latitude Latitude of center point
+  * @param {Longitude} longitude Longitude of center point
+  * @param {BoundedInteger<1>} width Image width
+  * @param {BoundedInteger<1>} height Image height
+  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
+  * @param {MapType} type Type of google map
+  */
+ weather.plotAllRadarImages = async function(latitude, longitude, width, height, zoom, type) {
+    return NexradRadar._plotAllRadarImages(latitude, longitude, width, height, zoom, type, this.response);
+ }   
+
+ /**
+  * Draw all composites on a map.
+  * @param {Latitude} latitude Latitude of center point
+  * @param {Longitude} longitude Longitude of center point
+  * @param {BoundedInteger<1>} width Image width
+  * @param {BoundedInteger<1>} height Image height
+  * @param {BoundedInteger<1,25>} zoom Zoom level of map image
+  * @param {Array<String>} radars Array of Radars.
+  * @param {MapType} type Type of google map
+  */
+  weather.plotRadarImages = async function(latitude, longitude, width, height, zoom, radars, type) {
+      return NexradRadar._plotRadarImages(latitude, longitude, width, height, zoom, radars, type, this.response)
+  }
+
 
 weather.COMPATIBILITY =  {
     windAngle: {

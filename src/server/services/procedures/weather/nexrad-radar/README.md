@@ -8,9 +8,6 @@ Nexrad Radar Services plots REF images on a google static map.
         |—— nexrad-radar.js                         // source code
         |—— RadarLocations.js                       // latlng of all radars
         |—— README.md
-        |—— libraries
-            |—— nexrad-level-2-data               
-            |—— nexrad-level-2-plot
 
 ## Process of Projection
 
@@ -20,15 +17,11 @@ To paste a nexrad plot onto a static google map, we follow these steps:
         1) the central LatLng of the nexrad radar can be acquired from /utils/constants.js
         2) the bounding box is always 920km x 920km, the source is from nexrad-level-2-plot:
 
-![230km](./readmeImgs/230km.png)
-
     2. transform the bounding box from LatLng to XY
         1) we use the helper functions in netsblox.js to accomplish this
     
     3. for each pixel xy within the bounding box, transform it back to LatLng, get the corresponding pixel on nexrad plot from Latlng, paste the color of that pixel onto xy
         1) nexrad plot is just plain 2D, because nexrad-level-2-plot does not perform any additional processing when it draws the plot
-
-![draw](./readmeImgs/draw.png)
 
            "ctx.strokeStyle = palette[Math.round(thisSample * paletteScale)];" sets the color of the arc
 
