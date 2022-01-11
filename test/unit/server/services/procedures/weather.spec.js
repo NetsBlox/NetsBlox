@@ -11,6 +11,6 @@ describe(utils.suiteName(__filename), function() {
         ['icon', ['latitude', 'longitude']],
         ['listRadars', ['latitude', 'longitude', 'width', 'height', 'zoom']],
         ['plotAllRadarImages', ['latitude', 'longitude', 'width', 'height', 'zoom', 'type']],
-        ['plotRadarImages', ['latitude', 'longitude', 'width', 'height', 'zoom', 'radars', 'type']],
+        ['plotRadarImages', ['latitude', 'longitude', 'width', 'height', 'zoom', 'radars', 'type']]
     ]);
 });
