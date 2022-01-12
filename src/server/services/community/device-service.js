@@ -1,5 +1,6 @@
 const createLogger = require('../procedures/utils/logger');
 const IoTScapeServices = require('../procedures/iotscape/iotscape-services');
+const IoTScapeDevices = require('../procedures/iotscape/iotscape-devices');
 const IoTScape = require('../procedures/iotscape/iotscape');
 
 /**
@@ -44,7 +45,7 @@ class DeviceService {
         // Default methods have special implementations
         if(methodSpec.name === 'getDevices'){
             this[methodSpec.name] = async function() {
-                return IoTScapeServices.getDevices(this.serviceName);
+                return IoTScapeDevices.getDevices(this.serviceName);
             };
         } else if(methodSpec.name === 'listen'){
             this[methodSpec.name] = async function() {
@@ -63,8 +64,9 @@ class DeviceService {
                 return IoTScapeServices.getMethods(this.serviceName);
             };
         } else {
-            this[methodSpec.name] = async function() {
-                return await IoTScape.send(this.serviceName, arguments[0], [methodSpec.name, arguments[1]].join(' '));
+            this[methodSpec.name] = async function () {
+                console.dir(arguments);
+                return await IoTScape.send(this.serviceName, arguments[0], [methodSpec.name, ...Object.values(arguments).splice(1)].join(' '));
             };
         }
     }
