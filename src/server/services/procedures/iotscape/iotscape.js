@@ -52,7 +52,7 @@ IoTScape.getDevices = function(service){
         throw new Error('Service not found');
     }
     
-    return IoTScapeServices.getDevices(service);
+    return IoTScapeDevices.getDevices(service);
 };
 
 /**
@@ -74,7 +74,7 @@ IoTScape.getMessageTypes = function(service){
 
 /**
  * List the methods associated with a service
- * @param {string} service Name of service to get methods for
+ * @param {String} service Name of service to get methods for
  */
 IoTScape.getMethods = function(service){
     if(!IoTScapeServices.serviceExists(service)){
