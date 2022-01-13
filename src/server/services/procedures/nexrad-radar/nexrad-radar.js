@@ -300,10 +300,14 @@ NexradRadar._plotSingleRadar = async function(radar, radarPlot, settings) {
 NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
     const settings = this._configureMap(latitude, longitude, width, height, zoom, 'terrain');
 
-    const latMin = this._coordsAt(0, settings.height / -2, settings).lat;
-    const latMax = this._coordsAt(0, settings.height, settings).lat;
-    const lngMin = this._coordsAt(settings.width / -2, 0, settings).lon;
-    const lngMax = this._coordsAt(settings.width / 2, 0, settings).lon;
+    let latMin = this._coordsAt(0, settings.height / -2, settings).lat;
+    let latMax = this._coordsAt(0, settings.height, settings).lat;
+    let lngMin = this._coordsAt(settings.width / -2, 0, settings).lon;
+    let lngMax = this._coordsAt(settings.width / 2, 0, settings).lon;
+    latMin = this._getBoundingBox(latMin, lngMin, RANGE).minLat;
+    latMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLat;
+    lngMin = this._getBoundingBox(latMin, lngMin, RANGE).minLng;
+    lngMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLng;
 
     const res = [];
     for (const i in RADAR_LOCATIONS) {
