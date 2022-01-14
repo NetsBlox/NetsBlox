@@ -17,6 +17,7 @@ const { plot } = require('nexrad-level-2-plot');
 const AWS = require('aws-sdk');
 const types = require('../../input-types');
 const RADAR_LOCATIONS = require('./RadarLocations');
+const _ = require('lodash');
 
 const PRECISION = 7; // 6 or 5 is probably safe
 // url for google static map
@@ -170,7 +171,7 @@ NexradRadar._getBoundingBox = function(fsLatitude, fsLongitude, fiDistanceInKM) 
     };
 };
 
-NexradRadar._configureMap = function(latitude, longitude, width, height, zoom, type) {
+NexradRadar._configureMap = function(latitude, longitude, width, height, zoom, mapType) {
     const scale = width <= 640 && height <= 640 ? 1 : 2;
     return {
         center: {
@@ -181,7 +182,7 @@ NexradRadar._configureMap = function(latitude, longitude, width, height, zoom, t
         height: (height / scale),
         zoom: zoom,
         scale,
-        mapType: type
+        mapType,
     };
 };
 
@@ -259,8 +260,7 @@ NexradRadar._addHurricane = async function(radar, plot, radarPlot, settings) {
                 let disY = this._getDistanceFromLatLonInKm(lat, lngCen, latCen, lngCen);
                 let y = Math.round(disY / PIXELWIDTH);
                 if (lat < latCen) y *= -1;
-                // int for white === 4294967295
-                if (plot.getPixelColor(x + (NEXRAD_SIZE / 2), (NEXRAD_SIZE / 2) - y) !== 4294967295) {
+                if (plot.getPixelColor(x + (NEXRAD_SIZE / 2), (NEXRAD_SIZE / 2) - y) !== 0xffffffff) {
                     radarPlot.setPixelColor(plot.getPixelColor(x + (NEXRAD_SIZE / 2), (NEXRAD_SIZE / 2) - y), mapX, mapY);
                 }
             }
@@ -276,15 +276,6 @@ NexradRadar._draw = async function(imageData, response) {
         });
     });
     return utils.sendImageBuffer(response, imageBuffer);
-};
-
-NexradRadar._plotSingleRadar = async function(radar, radarPlot, settings) {
-    const radarData = await this._downloadSingle(radar);
-    if (radarData === '') return;
-
-    const tmp = await this._parseNexrad(radarData);
-    const radarImage = await renderJIMPImage(tmp.data, NEXRAD_SIZE, NEXRAD_SIZE);
-    await this._addHurricane(radar, radarImage, radarPlot, settings);
 };
 
 /**
@@ -327,18 +318,23 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
  * @param {BoundedInteger<1>} width Image width
  * @param {BoundedInteger<1>} height Image height
  * @param {BoundedInteger<1,25>} zoom GoogleMaps zoom level
- * @param {MapType=} type Type of map background to use
+ * @param {MapType} mapType Type of map background to use
  * @param {Array<String>=} radars List of radars to render on the overlay. If not provided, renders all visible radars.
  * @returns {Image} The requested map with radar overlay
  */
-NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, type='none', radars=null) {
+NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, mapType, radars=null) {
     if (!radars) radars = await this.listRadars(latitude, longitude, width, height, zoom);
 
-    const settings = await this._configureMap(latitude, longitude, width, height, zoom, type);
+    const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
     const radarPlot = await new JIMP(settings.width, settings.height, 0x0);
-    await Promise.all(radars.map(radar => this._plotSingleRadar(radar, radarPlot, settings)));
 
-    if (type !== 'none') {
+    const allRadarsData = await Promise.all(radars.map(this._downloadSingle));
+    const [usedRadars, radarsData] = _.unzip(_.zip(radars, allRadarsData).filter(s => s[1]));
+    const radarsParsed = await Promise.all(radarsData.map(this._parseNexrad));
+    const radarsImgs = await Promise.all(radarsParsed.map(p => renderJIMPImage(p.data, NEXRAD_SIZE, NEXRAD_SIZE)));
+    await Promise.all(_.zip(usedRadars, radarsImgs).map(v => this._addHurricane(v[0], v[1], radarPlot, settings)));
+
+    if (mapType !== 'none') {
        const map = await this._getMap(settings);
        await map.composite(radarPlot, 0, 0);
        await this._draw(map, this.response);
