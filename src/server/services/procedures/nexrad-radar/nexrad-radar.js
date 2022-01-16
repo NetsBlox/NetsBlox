@@ -228,9 +228,15 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
-NexradRadar._filterRadars = async function(radars) {
+NexradRadar._filterRadars = async function(radars, settings) {
+    const cen = this._coordsAt(0, 0, settings);
+    radars.sort((a, b) => {
+        let disA = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[a][0], RADAR_LOCATIONS[a][1], cen.lat, cen.lon);
+        let disB = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[b][0], RADAR_LOCATIONS[b][1], cen.lat, cen.lon);
+        return disA - disB;
+    });
     for(let i = 0; i < radars.length; ++i) {
-        for(let j = i + 1; j < radars.length; ++j) {
+        for(let j = radars.length - 1; j > i; --j) {
             if(this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]) <= RANGE) {
                 radars.splice(j, 1);
             }
@@ -325,14 +331,14 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
  * @returns {Image} The requested map with radar overlay
  */
 NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, mapType, radars=null) {
+    const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
     if (!radars) {
         radars = await this.listRadars(latitude, longitude, width, height, zoom);
-        radars = await this._filterRadars(radars);
+        radars = await this._filterRadars(radars, settings);
     }
     else if(radars.length > 5) {
-        radars = await this._filterRadars(radars);
+        radars = await this._filterRadars(radars, settings);
     }
-    const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
     const radarPlot = await new JIMP(settings.width, settings.height, 0x0);
 
     const allRadarsData = await Promise.all(radars.map(this._downloadSingle));
