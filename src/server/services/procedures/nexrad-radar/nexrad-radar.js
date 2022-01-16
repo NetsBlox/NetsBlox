@@ -268,6 +268,17 @@ NexradRadar._addHurricane = async function(radar, plot, radarPlot, settings) {
     }
 };
 
+NexradRadar._filterRadars = async function(radars) {
+    for(let i = 0; i < radars.length; ++i) {
+        for(let j = i + 1; j < radars.length; ++j) {
+            if(this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]) <= RANGE) {
+                radars.splice(j, 1);
+            }
+        }
+    }
+    return radars;
+}
+
 NexradRadar._draw = async function(imageData, response) {
     const imageBuffer = await new Promise((resolve, reject) => {
         imageData.quality(100).getBuffer(JIMP.MIME_PNG, (err, buffer) => {
@@ -323,8 +334,13 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
  * @returns {Image} The requested map with radar overlay
  */
 NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, mapType, radars=null) {
-    if (!radars) radars = await this.listRadars(latitude, longitude, width, height, zoom);
-
+    if (!radars) {
+        radars = await this.listRadars(latitude, longitude, width, height, zoom);
+        radars = await this._filterRadars(radars);
+    }
+    else if(radars.length > 5) {
+        radars = await this._filterRadars(radars);
+    }
     const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
     const radarPlot = await new JIMP(settings.width, settings.height, 0x0);
 
