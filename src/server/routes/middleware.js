@@ -1,4 +1,7 @@
 // Dictionary of all middleware functions for netsblox routes.
+const Filter = require('bad-words');
+const axios = require('axios');
+const profaneChecker = new Filter();
 var server,
     sessionSecret = process.env.SESSION_SECRET || 'DoNotUseThisInProduction',
     Groups = require('../storage/groups'),
@@ -9,6 +12,7 @@ var server,
 const Q = require('q');
 const Users = require('../storage/users');
 const Storage = require('../storage/storage');
+const BannedAccounts = require('../storage/banned-accounts');
 const Strategies = require('../api/core/strategies');
 const mailer = require('../mailer');
 const WELCOME_HTML = (nbUser, snapUser) =>
@@ -71,10 +75,15 @@ function tryLogIn (req, res, cb, skipRefresh) {
     req.session = req.session || new Session(res);
     if (cookie) {
         logger.trace('validating cookie');
-        jwt.verify(cookie, sessionSecret, (err, token) => {
+        jwt.verify(cookie, sessionSecret, async (err, token) => {
             if (err) {
                 logger.error(`Error verifying jwt: ${err}`);
                 return cb(err);
+            }
+            const {username} = token;
+            const isBanned = await BannedAccounts.isBannedUsername(username);
+            if (isBanned) {
+                return cb(new Error('Account has been banned.'));
             }
 
             req.session.username = token.username;
@@ -354,6 +363,26 @@ var setUsername = function(req, res, cb) {
     return result;
 };
 
+function isProfane(text) {
+    const normalized = text.toLowerCase();
+    return profaneChecker.isProfane(normalized) ||
+        profaneChecker.list.find(badWord => normalized.includes(badWord.toLowerCase()));
+}
+
+let torExitIPs = [];
+async function updateTorIPs() {
+    const url = 'https://check.torproject.org/torbulkexitlist';
+    const resp = await axios({url});
+    const ips = resp.data.split('\n');
+    return torExitIPs = ips;
+}
+const day = 1000*60*60*24;
+updateTorIPs();
+setInterval(updateTorIPs, 1*day);
+function isTorIP(ip) {
+    return torExitIPs.includes(ip);
+}
+
 module.exports = {
     hasSocket,
     noCache,
@@ -369,11 +398,12 @@ module.exports = {
     isValidMember,
     memberIsNew,
     canManageMember,
+    isProfane,
+    isTorIP,
 
     // additional
     init: _server => {
         server = _server;
         logger = server._logger.fork('middleware');
-    },
-    COOKIE_ID
+    }, COOKIE_ID
 };
