@@ -41,7 +41,9 @@ class COVIDData {
             const dateString = this.getDateString(day);
             if (!skipDates.includes(dateString)) {
                 const report = await this.fetchDailyReport(day);
-                await this.importReport(report, day);
+                if (report) {
+                    await this.importReport(report, day);
+                }
             }
             day = nextDay(day);
         }
@@ -71,8 +73,12 @@ class COVIDData {
     async fetchDailyReport(date=new Date()) {
         date = date || new Date();
         const url = `${BASE_URL}${this.getDateString(date)}.csv`;
-        const {data} = await axios.get(url);
-        return data;
+        try {
+            const {data} = await axios.get(url);
+            return data;
+        } catch (err) {
+            this.logger.warn(`Unable to fetch report for ${date}. Skipping...`);
+        }
     }
 
     async importReport(report, date) {

@@ -80,6 +80,16 @@ common.gracefulPasswordParse = function(password) {
     return res;
 }
 
+async function jimp_to_jpeg(img, quality) {
+    // change this to getBufferAsync when we update to a newer jimp
+    return await new Promise((resolve, reject) => {
+        img.quality(quality).background(0xffffffff).getBuffer(jimp.MIME_JPEG, (err, buffer) => {
+            if (err) reject(err);
+            else resolve(buffer);
+        });
+    });
+}
+
 // given some image source, attempts to convert it into a buffer for sending over UDP.
 // if the image type is not recognized, throws an error.
 common.prepImageToSend = async function(raw) {
@@ -88,18 +98,26 @@ common.prepImageToSend = async function(raw) {
     let matches = raw.match(/^\s*\<costume .*image="data:image\/png;base64,([^"]+)".*\/\>\s*$/);
     if (matches) {
         const raw = Buffer.from(matches[1], 'base64');
-        const temp = await jimp.read(raw);
-        
-        // change this to getBufferAsync when we update to a newer jimp
-        const img = await new Promise((resolve, reject) => {
-            temp.quality(80).background(0xffffffff).getBuffer(jimp.MIME_JPEG, (err, buffer) => {
-                if (err) reject(err);
-                else resolve(buffer);
-            });
-        });
+        const img = await jimp.read(raw);
+        const [width, height] = [img.bitmap.width, img.bitmap.height];
+        logger.log(`orig image size ${width}x${height}`);
 
-        logger.log(`encoded image size: ${img.length}`);
-        return img;
+        let scale = Math.min(200000 / (width * height), 1.0);
+        let quality = 80;
+        for (let attempt = 1; attempt <= 8; ++attempt) {
+            const [new_width, new_height] = [ Math.round(width * scale), Math.round(height * scale) ];
+            const res = await jimp_to_jpeg(img.resize(new_width, new_height), quality);
+            logger.log(`attempt ${attempt}: resized to ${new_width}x${new_height} (byte size ${res.length})`);
+
+            if (res.length <= 50000) { // if it fits in 50KB, we'll call it good
+                logger.log(`resize success after ${attempt} attempts`);
+                return res;
+            }
+
+            scale *= 0.9;   // repeat with smaller image and lower quality until success
+            quality *= 0.9; // default scale/quality should work first try on most inputs
+        }
+        throw Error(`image scaling failure`);
     }
 
     throw Error('unsupported image type');

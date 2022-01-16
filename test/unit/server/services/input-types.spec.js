@@ -148,6 +148,47 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('Tuple', function() {
+        before(() => {
+            InputTypes.defineType({
+                name: 'SomeTupleA',
+                description: 'test',
+                baseType: 'Tuple',
+                baseParams: ['Integer'],
+            });
+            InputTypes.defineType({
+                name: 'SomeTupleB',
+                description: 'test',
+                baseType: 'Tuple',
+                baseParams: ['Integer', 'String'],
+            });
+            InputTypes.defineType({
+                name: 'SomeTupleC',
+                description: 'test',
+                baseType: 'Tuple',
+                baseParams: ['Integer', 'Array', 'String'],
+            });
+        });
+
+        it('should throw for non-array input', async () => {
+            await utils.shouldThrow(() => typesParser.SomeTupleA(12));
+            await utils.shouldThrow(() => typesParser.SomeTupleA('12'));
+            assert.deepStrictEqual(await typesParser.SomeTupleA(['12']), [12]);
+        });
+        it('should throw on wrong arity input', async () => {
+            await utils.shouldThrow(() => typesParser.SomeTupleB([]));
+            await utils.shouldThrow(() => typesParser.SomeTupleB(['12']));
+            assert.deepStrictEqual(await typesParser.SomeTupleB(['12', 'hello']), [12, 'hello']);
+            await utils.shouldThrow(() => typesParser.SomeTupleB(['12', 'hello', []]));
+        });
+        it('should accept only correct type sequence', async () => {
+            await utils.shouldThrow(() => typesParser.SomeTupleC(['12.4', [], 'hello']));
+            await utils.shouldThrow(() => typesParser.SomeTupleC(['12', '67', 'hello']));
+            await utils.shouldThrow(() => typesParser.SomeTupleC(['12', '67', 'hello']));
+            assert.deepStrictEqual(await typesParser.SomeTupleC(['12', ['finally'], 'hello']), [12, ['finally'], 'hello']);
+        });
+    });
+
     describe('Object', function() {
         it('should throw error if input has a pair of size 0', async () => {
             let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];
