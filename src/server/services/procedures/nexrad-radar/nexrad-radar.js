@@ -19,6 +19,8 @@ const types = require('../../input-types');
 const RADAR_LOCATIONS = require('./RadarLocations');
 const _ = require('lodash');
 
+const logger = require('../utils/logger')('NexradRadar');
+
 const PRECISION = 7; // 6 or 5 is probably safe
 const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap'; // url for google static map
 const NEXRAD_SIZE = 3600; // size of a nexrad radar image
@@ -228,7 +230,9 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
-NexradRadar._filterRadars = async function(radars, settings, zoom) {
+NexradRadar._filterRadars = async function(radars, settings) {
+    const beforeCount = radars.length;
+
     const cen = this._coordsAt(0, 0, settings);
     let bound = 0;
     if(zoom <= 4) bound = RANGE * 1.5;
@@ -239,13 +243,17 @@ NexradRadar._filterRadars = async function(radars, settings, zoom) {
         let disB = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[b][0], RADAR_LOCATIONS[b][1], cen.lat, cen.lon);
         return disB - disA;
     });
-    for(let i = 0; i < radars.length; ++i) {
-        for(let j = radars.length - 1; j > i; --j) {
-            if(this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]) <= bound) {
+
+    for (let i = 0; i < radars.length; ++i) {
+        for (let j = radars.length - 1; j > i; --j) {
+            const dist = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]);
+            if (dist <= bound) {
                 radars.splice(j, 1);
             }
         }
     }
+
+    logger.log(`radar filtering: ${beforeCount} -> ${radars.length}`);
     return radars;
 }
 
