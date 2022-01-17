@@ -230,7 +230,7 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
-NexradRadar._filterRadars = async function(radars, settings) {
+NexradRadar._filterRadars = async function(radars, settings, zoom) {
     const beforeCount = radars.length;
 
     const cen = this._coordsAt(0, 0, settings);
