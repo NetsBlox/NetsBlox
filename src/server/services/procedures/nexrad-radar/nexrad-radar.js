@@ -313,7 +313,6 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
     if(zoom === 1 || zoom === 2) {
         for (const i in RADAR_LOCATIONS) {
             res.push(i);
-            
         }
         return res;
     }
