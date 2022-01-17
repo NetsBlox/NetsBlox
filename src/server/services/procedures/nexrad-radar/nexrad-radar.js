@@ -228,16 +228,20 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
-NexradRadar._filterRadars = async function(radars, settings) {
+NexradRadar._filterRadars = async function(radars, settings, zoom) {
     const cen = this._coordsAt(0, 0, settings);
+    let bound = 0;
+    if(zoom <= 4) bound = RANGE * 1.5;
+    else if(zoom <= 8) bound = RANGE * 0.5;
+    else bound = RANGE * 0.3;
     radars.sort((a, b) => {
         let disA = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[a][0], RADAR_LOCATIONS[a][1], cen.lat, cen.lon);
         let disB = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[b][0], RADAR_LOCATIONS[b][1], cen.lat, cen.lon);
-        return disA - disB;
+        return disB - disA;
     });
     for(let i = 0; i < radars.length; ++i) {
         for(let j = radars.length - 1; j > i; --j) {
-            if(this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]) <= RANGE) {
+            if(this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]) <= bound) {
                 radars.splice(j, 1);
             }
         }
@@ -297,6 +301,14 @@ NexradRadar._draw = async function(imageData, response) {
  * @returns {Array<String>} list of radars with viible coverage
  */
 NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
+    const res = [];
+    if(zoom === 1 || zoom === 2) {
+        for (const i in RADAR_LOCATIONS) {
+            res.push(i);
+            
+        }
+        return res;
+    }
     const settings = this._configureMap(latitude, longitude, width, height, zoom, 'terrain');
 
     let latMin = this._coordsAt(0, settings.height / -2, settings).lat;
@@ -307,11 +319,10 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
     latMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLat;
     lngMin = this._getBoundingBox(latMin, lngMin, RANGE).minLng;
     lngMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLng;
-
-    const res = [];
+    
     for (const i in RADAR_LOCATIONS) {
         const [lat, lng] = RADAR_LOCATIONS[i];
-        if (lat > latMin && lat < latMax && lng > lngMin && lng < lngMax) {
+        if (lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax) {
             res.push(i);
         }
     }
@@ -334,10 +345,10 @@ NexradRadar.plotRadarImages = async function(latitude, longitude, width, height,
     const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
     if (!radars) {
         radars = await this.listRadars(latitude, longitude, width, height, zoom);
-        radars = await this._filterRadars(radars, settings);
+        radars = await this._filterRadars(radars, settings, zoom);
     }
     else if(radars.length > 5) {
-        radars = await this._filterRadars(radars, settings);
+        radars = await this._filterRadars(radars, settings, zoom);
     }
     const radarPlot = await new JIMP(settings.width, settings.height, 0x0);
 
