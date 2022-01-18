@@ -14,7 +14,7 @@ let feedParser = data => {
     let fieldMap = {};
     let channel = data.channel;
     for (var prop in channel) {
-        if (channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
+        if (!!Object.getOwnPropertyDescriptor(channel, prop) && prop.match(/field\d/)) {
             var matchGroup = prop.match(/field\d/)[0];
             fieldMap[matchGroup] = channel[matchGroup];
         }
@@ -24,7 +24,7 @@ let feedParser = data => {
             Time: new Date(entry.created_at),
         };
         for (let field in fieldMap) {
-            if (fieldMap.hasOwnProperty(field)) {
+            if (Object.getOwnPropertyDescriptor(fieldMap, field)) {
                 resultObj[fieldMap[field]] = entry[field];
             }
         }
@@ -80,7 +80,7 @@ thingspeakIoT._paginatedSearch = async function(path, query, limit=15) {
  * @param {Number=} limit
  */
 thingspeakIoT.searchByTag = function(tag, limit) {
-    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit).catch(this._handleError);;
+    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit).catch(this._handleError);
 };
 
 /**
@@ -92,7 +92,7 @@ thingspeakIoT.searchByTag = function(tag, limit) {
  * @param {Number=} limit
  */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
-    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit).catch(this._handleError);;
+    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit).catch(this._handleError);
 };
 
 /**
@@ -106,7 +106,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
  */
 thingspeakIoT.searchByTagAndLocation = async function(tag, latitude, longitude, distance, limit=15) {
     if (limit < 1) return [];
-    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000).catch(this._handleError);;
+    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000).catch(this._handleError);
 
     const items = [];
     for (const item of res) {
@@ -169,7 +169,7 @@ thingspeakIoT.channelDetails = async function(id) {
     details.total_entries = resp.channel.last_entry_id;
     details.fields = [];
     for(let prop in resp.channel) {
-        if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
+        if (!!Object.getOwnPropertyDescriptor(resp.channel, prop) && prop.match(/field\d/)) {
             let match = prop.match(/field\d/)[0];
             details.fields.push(resp.channel[match]);
         }
@@ -180,7 +180,7 @@ thingspeakIoT.channelDetails = async function(id) {
 };
 
 thingspeakIoT._handleError = function (err) {
-    throw new Error(err?.error?.error ?? "Error processing request.");
+    throw new Error(err?.error?.error ?? 'Error processing request.');
 };
 
 module.exports = thingspeakIoT;

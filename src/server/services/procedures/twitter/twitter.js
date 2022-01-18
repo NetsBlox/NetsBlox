@@ -166,12 +166,12 @@ TwitterConsumer._handleError = function (err) {
         } else {
             // In case of error without proper message
             console.dir(err);
-            throw new Error("Unable to process request");
+            throw new Error('Unable to process request');
         }
     }
-}
+};
 
-function rateCheck(response, res) {
+function rateCheck(response) {
     if (response.statusCode == 429) {
         throw new Error('Rate limit exceeded--wait before trying again');
     }
