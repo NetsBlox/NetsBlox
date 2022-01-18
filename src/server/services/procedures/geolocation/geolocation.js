@@ -115,6 +115,8 @@ GeoLocationRPC.timezone = async function (address) {
             country: res.countryName,
             zone: res.zoneName,
         };
+    }).catch(err => {
+        throw new Error(err?.error?.message ?? 'Error processing request');
     });
 };
 
