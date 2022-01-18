@@ -80,7 +80,7 @@ thingspeakIoT._paginatedSearch = async function(path, query, limit=15) {
  * @param {Number=} limit
  */
 thingspeakIoT.searchByTag = function(tag, limit) {
-    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit);
+    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit).catch(this._handleError);;
 };
 
 /**
@@ -92,7 +92,7 @@ thingspeakIoT.searchByTag = function(tag, limit) {
  * @param {Number=} limit
  */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
-    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit);
+    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit).catch(this._handleError);;
 };
 
 /**
@@ -106,7 +106,7 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) 
  */
 thingspeakIoT.searchByTagAndLocation = async function(tag, latitude, longitude, distance, limit=15) {
     if (limit < 1) return [];
-    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000);
+    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000).catch(this._handleError);;
 
     const items = [];
     for (const item of res) {
@@ -131,7 +131,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
             results: numResult,
         }),
     };
-    return this._sendStruct(queryOptions, feedParser);
+    return this._sendStruct(queryOptions, feedParser).catch(this._handleError);
 };
 
 /**
@@ -149,7 +149,7 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
             results: numResult,
         }),
     };
-    return this._sendStruct(queryOptions, feedParser);
+    return this._sendStruct(queryOptions, feedParser).catch(this._handleError);
 };
 
 /**
@@ -158,13 +158,13 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
  * @returns {Object} Channel details.
  */
 thingspeakIoT.channelDetails = async function(id) {
-    const data = await this._requestData({path: id + '.json'});
+    const data = await this._requestData({path: id + '.json'}).catch(this._handleError);
     let details = detailParser(data);
     const options = {
         path: id + '/feeds.json',
         queryString: '?results=10'
     };
-    const resp = await this._requestData(options);
+    const resp = await this._requestData(options).catch(this._handleError);
     details.updated_at = new Date(resp.channel.updated_at);
     details.total_entries = resp.channel.last_entry_id;
     details.fields = [];
@@ -177,6 +177,10 @@ thingspeakIoT.channelDetails = async function(id) {
     details.feeds = feedParser(resp);
     this._logger.info(`channel ${id} details`, details);
     return rpcUtils.jsonToSnapList(details);
+};
+
+thingspeakIoT._handleError = function (err) {
+    throw new Error(err?.error?.error ?? "Error processing request.");
 };
 
 module.exports = thingspeakIoT;
