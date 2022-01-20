@@ -30,14 +30,37 @@ async function hasDirectory(dir, subdir) {
 function isObject(type) {
     return type && type.name && type.name.toLowerCase() === 'object';
 }
+function linkType(dispName) {
+    return `\`${dispName} </docs/fundamentals/rpc-arg-types.html#${dispName}>\`__`
+}
 function getTypeString(type, link = false) {
-    if (type.name === undefined || type.params === undefined) return type.toString();
-    const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
-    
-    if (link) return INPUT_TYPES[type.name] ? `\`info </docs/fundamentals/rpc-arg-types.html#${name}>\`__` : '';
-    if (isObject(type)) return 'Object';
+    if (type.name === undefined) {
+        const rawName = type.toString();
+        if (!link) return rawName;
 
-    return type.params.length ? `${name}<${type.params.map(getTypeString).join(', ')}>` : name;
+        const ty = INPUT_TYPES[rawName];
+        if (!ty) return '';
+
+        return linkType(ty.displayName || rawName);
+    }
+
+    const params = type.params || [];
+    const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
+
+    if (link) {
+        const links = [];
+        if (INPUT_TYPES[type.name]) {
+            links.push(linkType(name));
+        }
+        for (const sub of params) {
+            const t = getTypeString(sub, true);
+            if (t && !links.includes(t)) links.push(t);
+        }
+        return links.join(' | ');
+    }
+
+    if (isObject(type)) return 'Object';
+    return params.length ? `${name}<${params.map(x => getTypeString(x)).join(', ')}>` : name;
 }
 function getParamString(param, link = false) {
     if (link) return param.type ? getTypeString(param.type, true) : '';
@@ -191,7 +214,7 @@ async function copyServiceDocs(serviceName, service) {
             if (files.includes('index.rst')) return;
         }
     }
-    
+
     if (needsDir) await fsp.mkdir(dest);
     await fsp.writeFile(path.join(dest, 'index.rst'), indexContent);
 }
@@ -207,13 +230,13 @@ function buildRPCString(serviceName, rpcName, rpc) {
         str += '    **Arguments:**\n\n';
         for (const arg of rpc.args) {
             const desc = arg.description ? `- ${arg.description}` : '';
-            str += `    - \`\`${arg.decl}\`\` ${arg.declLink} ${desc}\n`;
+            str += `    - \`\`${arg.decl}\`\` (${arg.declLink}) ${desc}\n`;
             if (!arg.fields) continue;
 
             str += '\n';
             for (const field of arg.fields) {
                 const desc = field.description ? `- ${field.description}` : '';
-                str += `        - \`\`${field.decl}\`\` ${field.declLink} ${desc}\n`;
+                str += `        - \`\`${field.decl}\`\` (${field.declLink}) ${desc}\n`;
             }
             str += '\n';
         }
@@ -222,7 +245,7 @@ function buildRPCString(serviceName, rpcName, rpc) {
 
     if (rpc.returns) {
         const desc = rpc.returns.description ? `- ${rpc.returns.description}` : '';
-        str += `    **Returns:** \`\`${rpc.returns.type}\`\` ${rpc.returns.typeLink} ${desc}\n\n`;
+        str += `    **Returns:** \`\`${rpc.returns.type}\`\` (${rpc.returns.typeLink}) ${desc}\n\n`;
     }
 
     return str;
