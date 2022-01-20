@@ -102,8 +102,8 @@ thingspeakIoT._paginatedSearch = async function(path, query, limit=15, pred=TRUE
  * Search for ThingSpeak channels by tag.
  *
  * @param {String} tag tag to search for
- * @param {Number=} limit max number of results to return
- * @param {Date=} updatedSince only include results which have (some) new data since this date
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
  * @returns {Array<Object>} search results
  */
 thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
@@ -116,9 +116,9 @@ thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
  *
  * @param {Latitude} latitude latitude to search near
  * @param {Longitude} longitude longitude to search near
- * @param {BoundedNumber<0>=} distance max distance from location.
- * @param {Number=} limit max number of results to return
- * @param {Date=} updatedSince only include results which have (some) new data since this date
+ * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
  * @returns {Array<Object>} search results
  */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, limit=15, updatedSince=null) {
@@ -132,9 +132,9 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, lim
  * @param {String} tag tag to search for
  * @param {Latitude} latitude latitude to search near
  * @param {Longitude} longitude longitude to search near
- * @param {BoundedNumber<0>=} distance max distance from location.
- * @param {Number=} limit max number of results to return
- * @param {Date=} updatedSince only include results which have (some) new data since this date
+ * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
  * @returns {Array<Object>} search results
  */
 thingspeakIoT.searchByTagAndLocation = function(tag, latitude, longitude, distance=100, limit=15, updatedSince=null) {
