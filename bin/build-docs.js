@@ -34,29 +34,34 @@ function linkType(dispName) {
     return `\`${dispName} </docs/fundamentals/rpc-arg-types.html#${dispName}>\`__`
 }
 function getTypeString(type, link = false) {
+    if (link === true) {
+        const links = [];
+        getTypeString(type, links);
+        return links.join(' | ');
+    }
+
     if (type.name === undefined) {
         const rawName = type.toString();
         if (!link) return rawName;
 
         const ty = INPUT_TYPES[rawName];
-        if (!ty) return '';
+        if (!ty) return;
 
-        return linkType(ty.displayName || rawName);
+        const res = linkType(ty.displayName || rawName);
+        if (!link.includes(res)) link.push(res);
+        return;
     }
 
     const params = type.params || [];
     const name = (INPUT_TYPES[type.name] || {}).displayName || type.name;
 
     if (link) {
-        const links = [];
         if (INPUT_TYPES[type.name]) {
-            links.push(linkType(name));
+            const res = linkType(name);
+            if (!link.includes(res)) link.push(res);
         }
-        for (const sub of params) {
-            const t = getTypeString(sub, true);
-            if (t && !links.includes(t)) links.push(t);
-        }
-        return links.join(' | ');
+        for (const sub of params) getTypeString(sub, link);
+        return;
     }
 
     if (isObject(type)) return 'Object';
