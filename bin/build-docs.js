@@ -31,7 +31,7 @@ function isObject(type) {
     return type && type.name && type.name.toLowerCase() === 'object';
 }
 function linkType(dispName) {
-    return `\`${dispName} </docs/fundamentals/rpc-arg-types.html#${dispName}>\`__`
+    return `\`${dispName} </docs/fundamentals/rpc-arg-types.html#${dispName}>\`__`;
 }
 function getTypeString(type, link = false) {
     if (link === true) {
@@ -42,14 +42,12 @@ function getTypeString(type, link = false) {
 
     if (type.name === undefined) {
         const rawName = type.toString();
-        if (!link) return rawName;
-
         const ty = INPUT_TYPES[rawName];
-        if (!ty) return;
-
-        const res = linkType(ty.displayName || rawName);
-        if (!link.includes(res)) link.push(res);
-        return;
+        if (link && ty) {
+            const res = linkType(ty.displayName || rawName);
+            if (!link.includes(res)) link.push(res);
+        }
+        return rawName;
     }
 
     const params = type.params || [];
@@ -61,11 +59,11 @@ function getTypeString(type, link = false) {
             if (!link.includes(res)) link.push(res);
         }
         for (const sub of params) getTypeString(sub, link);
-        return;
     }
-
-    if (isObject(type)) return 'Object';
-    return params.length ? `${name}<${params.map(x => getTypeString(x)).join(', ')}>` : name;
+    else {
+        if (isObject(type)) return 'Object';
+        return params.length ? `${name}<${params.map(x => getTypeString(x)).join(', ')}>` : name;
+    }
 }
 function getParamString(param, link = false) {
     if (link) return param.type ? getTypeString(param.type, true) : '';
