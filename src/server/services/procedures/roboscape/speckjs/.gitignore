@@ -1,9 +1,0 @@
-.DS_Store
-*.swp
-*.log
-*.swo
-node_modules/
-coverage/
-.env
-.idea/
-cache
