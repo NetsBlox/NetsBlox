@@ -20,16 +20,11 @@ const RADAR_LOCATIONS = require('./RadarLocations');
 const _ = require('lodash');
 
 const PRECISION = 7; // 6 or 5 is probably safe
-// url for google static map
-const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap';
-// size of a nexrad radar image
-const NEXRAD_SIZE = 3600;
-// the range of nexrad-level-3-plot is 460km for radius
-const RANGE = 460;
-// the width of a pixel for nexrad-level-3-plot
-const PIXELWIDTH = RANGE / (NEXRAD_SIZE / 2);
-// bucket name for aws nexrad service
-const BUCKET = 'noaa-nexrad-level2';
+const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap'; // url for google static map
+const NEXRAD_SIZE = 3600; // size of a nexrad radar image
+const RANGE = 460; // the range of nexrad-level-3-plot is 460km for radius
+const PIXELWIDTH = RANGE / (NEXRAD_SIZE / 2); // the width of a pixel for nexrad-level-3-plot
+const BUCKET = 'noaa-nexrad-level2'; // bucket name for aws nexrad service
 
 // configure aws-sdk
 AWS.config.update({accessKeyId: 'AKIAULYK6YJBMWQW6FIU', secretAccessKey: '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', region: 'us-east-1'});
@@ -75,15 +70,10 @@ NexradRadar._coordsAt = function(x, y, map) {
 };
 
 NexradRadar._pixelsAt = function(lat, lon, map) {
-    // current latlon in px
-    let curPx = merc.px([map.center.lon, map.center.lat], map.zoom);
-    // new latlon in px
-    let targetPx = merc.px([lon, lat], map.zoom);
-    // difference in px
-    let pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])};
-    // adjust it to map's scale
-    pixelsXY = {x: pixelsXY.x * map.scale, y: pixelsXY.y * map.scale};
-    return pixelsXY;
+    const curPx = merc.px([map.center.lon, map.center.lat], map.zoom); // current latlon in px
+    const targetPx = merc.px([lon, lat], map.zoom); // new latlon in px
+    const pixelsXY = {x: (targetPx[0] - curPx[0]), y: -(targetPx[1] - curPx[1])}; // difference in px
+    return {x: pixelsXY.x * map.scale, y: pixelsXY.y * map.scale}; // adjust it to map's scale
 };
 
 NexradRadar._toPrecision = function(number, precisionLimit) {
@@ -238,32 +228,33 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
-NexradRadar._addHurricane = async function(radar, plot, radarPlot, settings) {
-    let latCen = RADAR_LOCATIONS[radar][0];
-    let lngCen = RADAR_LOCATIONS[radar][1];
-    let boundingBox = this._getBoundingBox(latCen, lngCen, RANGE);
-    let xMin = this._pixelsAt(0, boundingBox.minLng, settings).x;
-    let xMax = this._pixelsAt(0, boundingBox.maxLng, settings).x;
-    let yMin = this._pixelsAt(boundingBox.minLat, 0, settings).y;
-    let yMax = this._pixelsAt(boundingBox.maxLat, 0, settings).y;
+NexradRadar._addRadarPlot = async function(radar, plot, radarPlot, settings) {
+    const [latCen, lngCen] = RADAR_LOCATIONS[radar];
+    const boundingBox = this._getBoundingBox(latCen, lngCen, RANGE);
+
+    const c1 = this._pixelsAt(boundingBox.minLat, boundingBox.minLng, settings);
+    const c2 = this._pixelsAt(boundingBox.maxLat, boundingBox.maxLng, settings);
+    const xMin = c1.x, yMin = c1.y;
+    const xMax = c2.x, yMax = c2.y;
+
     for (let i = xMin; i <= xMax; ++i) {
+        const mapX = Math.floor(i / settings.scale) + settings.width / 2;
+        if (mapX < 0 || mapX > settings.width) continue;
+
+        const lng = this._coordsAt(i, 0, settings).lon;
+        const disX = this._getDistanceFromLatLonInKm(latCen, lng, latCen, lngCen);
+        const x = Math.sign(lng - lngCen) * Math.round(disX / PIXELWIDTH);
+
         for (let j = yMin; j <= yMax; ++j) {
-            let mapX = Math.floor(i / settings.scale) + settings.width / 2;
-            let mapY = settings.height / 2 - Math.floor(j / settings.scale);
-            // only consider xy within the boundaries of google map image
-            if (mapX >= 0 && mapX <= settings.width && mapY >= 0 && mapY <= settings.height) {
-                let lat = this._coordsAt(0, j, settings).lat;
-                let lng = this._coordsAt(i, 0, settings).lon;
-                let disX = this._getDistanceFromLatLonInKm(latCen, lng, latCen, lngCen);
-                let x = Math.round(disX / PIXELWIDTH);
-                if (lng < lngCen) x *= -1;
-                let disY = this._getDistanceFromLatLonInKm(lat, lngCen, latCen, lngCen);
-                let y = Math.round(disY / PIXELWIDTH);
-                if (lat < latCen) y *= -1;
-                if (plot.getPixelColor(x + (NEXRAD_SIZE / 2), (NEXRAD_SIZE / 2) - y) !== 0xffffffff) {
-                    radarPlot.setPixelColor(plot.getPixelColor(x + (NEXRAD_SIZE / 2), (NEXRAD_SIZE / 2) - y), mapX, mapY);
-                }
-            }
+            const mapY = settings.height / 2 - Math.floor(j / settings.scale);
+            if (mapY < 0 || mapY > settings.height) continue;
+
+            const lat = this._coordsAt(0, j, settings).lat;
+            const disY = this._getDistanceFromLatLonInKm(lat, lngCen, latCen, lngCen);
+            const y = Math.sign(lat - latCen) * Math.round(disY / PIXELWIDTH);
+
+            const pxColor = plot.getPixelColor(x + NEXRAD_SIZE / 2, NEXRAD_SIZE / 2 - y);
+            if (pxColor !== 0xffffffff) radarPlot.setPixelColor(pxColor, mapX, mapY);
         }
     }
 };
@@ -332,7 +323,7 @@ NexradRadar.plotRadarImages = async function(latitude, longitude, width, height,
     const [usedRadars, radarsData] = _.unzip(_.zip(radars, allRadarsData).filter(s => s[1]));
     const radarsParsed = await Promise.all(radarsData.map(this._parseNexrad));
     const radarsImgs = await Promise.all(radarsParsed.map(p => renderJIMPImage(p.data, NEXRAD_SIZE, NEXRAD_SIZE)));
-    await Promise.all(_.zip(usedRadars, radarsImgs).map(v => this._addHurricane(v[0], v[1], radarPlot, settings)));
+    await Promise.all(_.zip(usedRadars, radarsImgs).map(v => this._addRadarPlot(v[0], v[1], radarPlot, settings)));
 
     if (mapType !== 'none') {
        const map = await this._getMap(settings);
