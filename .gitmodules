@@ -2,6 +2,6 @@
 	path = src/browser
 	url = https://github.com/netsblox/Snap--Build-Your-Own-Blocks
 	branch = netsblox
-[submodule "src/server/rpc/procedures/roboscape/speckjs"]
-	path = src/server/rpc/procedures/roboscape/speckjs
-	url = https://github.com/hamidzr/speckjs
+[submodule "src/server/services/procedures/roboscape/speckjs"]
+	path = src/server/services/procedures/roboscape/speckjs
+	url = https://github.com/NetsBlox/speckjs.git
