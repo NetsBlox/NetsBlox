@@ -47,7 +47,7 @@ function detailParser(item) {
     return dat;
 }
 
-const TRUE = _ => true;
+const TRUE = () => true;
 function getUpdatedSincePred(updatedSince) {
     if (!updatedSince) return TRUE;
 
