@@ -6,32 +6,30 @@
  * @service
  */
 const ApiConsumer = require('../utils/api-consumer');
-const thingspeakIoT = new ApiConsumer('Thingspeak',
-    'https://api.thingspeak.com/channels/');
+const thingspeakIoT = new ApiConsumer('Thingspeak', 'https://api.thingspeak.com/channels/');
 const rpcUtils = require('../utils');
 
-let feedParser = data => {
-    let fieldMap = {};
-    let channel = data.channel;
-    for (var prop in channel) {
+function feedParser(data) {
+    const fieldMap = {};
+    const channel = data.channel;
+    for (const prop in channel) {
         if (channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
-            var matchGroup = prop.match(/field\d/)[0];
+            const matchGroup = prop.match(/field\d/)[0];
             fieldMap[matchGroup] = channel[matchGroup];
         }
     }
     return data.feeds.map(entry => {
-        let resultObj = {
+        const resultObj = {
             Time: new Date(entry.created_at),
         };
-        for (let field in fieldMap) {
+        for (const field in fieldMap) {
             if (fieldMap.hasOwnProperty(field)) {
                 resultObj[fieldMap[field]] = entry[field];
             }
         }
         return resultObj;
     });
-};
-
+}
 function detailParser(item) {
     const dat = {
         id: item.id,
@@ -49,73 +47,105 @@ function detailParser(item) {
     return dat;
 }
 
-thingspeakIoT._paginatedSearch = async function(path, query, limit=15) {
+const TRUE = () => true;
+function getUpdatedSincePred(updatedSince) {
+    if (!updatedSince) return TRUE;
+
+    const cutoff = updatedSince.getTime() / 1000;
+    const now = new Date().getTime() / 1000;
+
+    return async function (v) {
+        const meta = await thingspeakIoT._requestData({ path: `${v.id}/feeds/last_data_age.json` });
+        return now - +meta.last_data_age >= cutoff;
+    };
+}
+
+thingspeakIoT._paginatedSearch = async function(path, query, limit=15, pred=TRUE) {
     if (limit < 1) return [];
 
     query.page = 1;
     const first = await this._requestData({ path, queryString: rpcUtils.encodeQueryData(query) });
     const totalPages = Math.ceil(first.pagination.total_entries / first.pagination.per_page);
-    const pages = Math.min(totalPages, Math.ceil(limit / first.pagination.per_page));
-    
-    const requests = [];
-    for (query.page = 1; query.page <= pages; ++query.page) {
-        requests.push(this._requestData({ path, queryString: rpcUtils.encodeQueryData(query) }));
-    }
-    const results = await Promise.all(requests);
+    const pagesPerIter = 8;
 
-    const items = [];
-    for (const res of results) {
-        for (const item of res.channels) {
-            items.push(detailParser(item));
-            if (items.length >= limit) break;
+    const final = [];
+    for (let iter = 1; iter <= 128 && query.page <= totalPages; ++iter) {
+        const endPage = Math.min(query.page + pagesPerIter, totalPages);
+        const requests = [];
+        for (; query.page <= endPage; ++query.page) {
+            requests.push(this._requestData({ path, queryString: rpcUtils.encodeQueryData(query) }));
         }
+        const results = await Promise.all(requests);
+
+        const items = [];
+        for (const res of results) {
+            for (const item of res.channels) {
+                items.push(item);
+            }
+        }
+
+        const beforeInclude = final.length;
+        const keepFlags = await Promise.all(items.map(pred));
+        for (let i = 0; i < items.length; ++i) {
+            if (!keepFlags[i]) continue;
+            final.push(detailParser(items[i]));
+            if (final.length >= limit) return final;
+        }
+
+        const keptFrac = (final.length - beforeInclude) / items.length;
+        this._logger.info(`paginatedSearch - ${final.length} items after iter ${iter} (kept ${100 * keptFrac}%)`);
     }
-    return items;
+    return final;
 };
 
 /**
  * Search for ThingSpeak channels by tag.
  *
- * @param {String} tag
- * @param {Number=} limit
+ * @param {String} tag tag to search for
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
+ * @returns {Array<Object>} search results
  */
-thingspeakIoT.searchByTag = function(tag, limit) {
-    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit);
+thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
+    const pred = getUpdatedSincePred(updatedSince);
+    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit, pred);
 };
 
 /**
  * Search for channels by location.
  *
- * @param {Latitude} latitude
- * @param {Longitude} longitude
- * @param {BoundedNumber<0>=} distance
- * @param {Number=} limit
+ * @param {Latitude} latitude latitude to search near
+ * @param {Longitude} longitude longitude to search near
+ * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
+ * @returns {Array<Object>} search results
  */
-thingspeakIoT.searchByLocation = function(latitude, longitude, distance, limit) {
-    return this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance:  100 }, limit);
+thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, limit=15, updatedSince=null) {
+    const pred = getUpdatedSincePred(updatedSince);
+    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred);
 };
 
 /**
  * Search for channels by tag and location.
  *
- * @param {String} tag
- * @param {Latitude} latitude
- * @param {Longitude} longitude
- * @param {BoundedNumber<0>=} distance
- * @param {Number=} limit
+ * @param {String} tag tag to search for
+ * @param {Latitude} latitude latitude to search near
+ * @param {Longitude} longitude longitude to search near
+ * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {Number=} limit max number of results to return (default ``15``)
+ * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
+ * @returns {Array<Object>} search results
  */
-thingspeakIoT.searchByTagAndLocation = async function(tag, latitude, longitude, distance, limit=15) {
-    if (limit < 1) return [];
-    const res = await this._paginatedSearch('public.json', { latitude, longitude, distance: distance !== undefined ? distance : 100 }, 10000);
-
-    const items = [];
-    for (const item of res) {
-        if (item.tags.some(t => t.includes(tag))) {
-            items.push(item);
-            if (items.length >= limit) break;
+thingspeakIoT.searchByTagAndLocation = function(tag, latitude, longitude, distance=100, limit=15, updatedSince=null) {
+    const updatedSincePred = getUpdatedSincePred(updatedSince);
+    const pred = v => {
+        if ((v.tags || []).every(t => !(t.name || '').includes(tag))) {
+            return false;
         }
-    }
-    return items;
+        return updatedSincePred(v);
+    };
+    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred);
 };
 
 /**
@@ -125,7 +155,7 @@ thingspeakIoT.searchByTagAndLocation = async function(tag, latitude, longitude, 
  * @param {Number} numResult
  */
 thingspeakIoT.channelFeed = function(id, numResult) {
-    let queryOptions = {
+    const queryOptions = {
         path: id + '/feeds.json',
         queryString: '?' + rpcUtils.encodeQueryData({
             results: numResult,
@@ -142,7 +172,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
  * @param {String} apiKey Thingspeak API key
  */
 thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
-    let queryOptions = {
+    const queryOptions = {
         path: id + '/feeds.json',
         queryString: '?' + rpcUtils.encodeQueryData({
             api_key: apiKey,
@@ -159,7 +189,7 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
  */
 thingspeakIoT.channelDetails = async function(id) {
     const data = await this._requestData({path: id + '.json'});
-    let details = detailParser(data);
+    const details = detailParser(data);
     const options = {
         path: id + '/feeds.json',
         queryString: '?results=10'
@@ -168,9 +198,9 @@ thingspeakIoT.channelDetails = async function(id) {
     details.updated_at = new Date(resp.channel.updated_at);
     details.total_entries = resp.channel.last_entry_id;
     details.fields = [];
-    for(let prop in resp.channel) {
+    for (const prop in resp.channel) {
         if (resp.channel.hasOwnProperty(prop) && prop.match(/field\d/)) {
-            let match = prop.match(/field\d/)[0];
+            const match = prop.match(/field\d/)[0];
             details.fields.push(resp.channel[match]);
         }
     }
