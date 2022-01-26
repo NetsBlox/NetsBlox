@@ -2,7 +2,7 @@ const types = require('../../input-types');
 const SUPPORTED_LANGUAGES = {
     English: 'en',
     Español: 'es',
-    //Magyar: 'hu',
+    Magyar: 'hu',
 };
 
 types.defineType({

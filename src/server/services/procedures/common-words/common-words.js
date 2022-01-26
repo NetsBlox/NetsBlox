@@ -6,14 +6,6 @@
  * @service
  */
 
-// TODO: filter out:
-//   - check against a dictionary?
-//   - remove profanity
-//   - only show languages that we can somewhat confidently filter out...
-//      - espanol?
-//      - english
-//      - hungarian?
-
 const CommonWords = {};
 const fs = require('fs');
 const path = require('path');
