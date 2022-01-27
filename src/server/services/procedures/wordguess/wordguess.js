@@ -41,6 +41,8 @@ WordGuess._cleanStates = function () {
     });
 };
 
+setInterval(WordGuess._cleanStates, 24 * 60 * 60 * 1000);
+
 /**
  * Choose a random word of a specific length
  * @param {BoundedInteger<3,20>} length Length of word to search for
