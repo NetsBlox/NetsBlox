@@ -4,6 +4,7 @@
  *
  * @alpha
  * @service
+ * @category Language
  */
 
 const CommonWords = {};
@@ -38,6 +39,23 @@ CommonWords.getLanguages = function() {
  */
 CommonWords.getWords = function(language, start=1, end=10) {
     return words[language].slice(start-1, end);
+};
+
+/**
+ * Get a (sub) list of common words in a given language.
+ *
+ * @param{SupportedLanguage} language
+ * @param{Function} query Search query
+ */
+CommonWords.findWords = async function(language, predicate) {
+    const matches = [];
+    for (let i = 0; i < words[language].length; i++) {
+        const word = words[language][i];
+        if (await predicate(word)) {
+            matches.push(word);
+        }
+    }
+    return matches;
 };
 
 module.exports = CommonWords;
