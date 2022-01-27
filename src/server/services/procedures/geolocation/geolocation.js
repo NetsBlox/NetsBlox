@@ -9,6 +9,7 @@ const {GoogleMapsKey, TimezoneDBKey} = require('../utils/api-key');
 const utils = require('../utils');
 const GeoLocationRPC = {};
 utils.setRequiredApiKey(GeoLocationRPC, GoogleMapsKey);
+const {RPCError} = utils;
 
 const logger = require('../utils/logger')('geolocation');
 const CacheManager = require('cache-manager');
@@ -115,6 +116,8 @@ GeoLocationRPC.timezone = async function (address) {
             country: res.countryName,
             zone: res.zoneName,
         };
+    }).catch(err => {
+        throw new RPCError(err?.error?.message);
     });
 };
 

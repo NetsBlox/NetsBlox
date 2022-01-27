@@ -8,6 +8,7 @@
 
 'use strict';
 const {TwitterKey} = require('../utils/api-key');
+const {RPCError} = require('../utils');
 const ApiConsumer = require('../utils/api-consumer');
 const TwitterConsumer = new ApiConsumer('Twitter', 'https://api.twitter.com/1.1/', {
     cache: {
@@ -15,14 +16,6 @@ const TwitterConsumer = new ApiConsumer('Twitter', 'https://api.twitter.com/1.1/
     }
 });
 ApiConsumer.setRequiredApiKey(TwitterConsumer, TwitterKey);
-
-function rateCheck(response, res) {
-    if (response.statusCode == 429) {
-        res.send('Rate limit exceeded--wait before trying again');
-        return true;
-    }
-    return false;
-}
 
 /**
  * Get tweets from a user
@@ -41,13 +34,7 @@ TwitterConsumer.recentTweets = function (screenName, count) {
         cacheKey: {method: 'recentTweets', screenName, count},
     }).then(res => {
         return res.map(tweet => `( ${tweet.retweet_count} RTs, ${tweet.favorite_count} Favs) ${tweet.text}`);
-    })
-        .catch(err => {
-            if (rateCheck(err, this.response)) {
-                return;
-            }
-            throw err;
-        });
+    }).catch(this._handleError.bind(this));
 };
 
 /**
@@ -64,12 +51,7 @@ TwitterConsumer.followers = function (screenName) {
             gzip: 'true'
         },
         cacheKey: {method: 'followers', screenName},
-    }, '.followers_count').catch(err => {
-        if (rateCheck(err, this.response)) {
-            return;
-        }
-        throw err;
-    });
+    }, '.followers_count').catch(this._handleError.bind(this));
 };
 
 /**
@@ -86,12 +68,7 @@ TwitterConsumer.tweets = function (screenName) {
             gzip: 'true'
         },
         cacheKey: {method: 'tweets', screenName},
-    }, '.statuses_count').catch(err => {
-        if (rateCheck(err, this.response)) {
-            return;
-        }
-        throw err;
-    });
+    }, '.statuses_count').catch(this._handleError.bind(this));
 };
 
 
@@ -113,13 +90,7 @@ TwitterConsumer.search = function (keyword, count) {
         cacheKey: {method: 'search', keyword, count},
     }).then(res => {
         return res.statuses.map(tweet => `( ${tweet.retweet_count} RTs, ${tweet.favorite_count} Favs) @${tweet.user.screen_name}: ${tweet.text}`);
-    })
-        .catch(err => {
-            if (rateCheck(err, this.response)) {
-                return;
-            }
-            throw err;
-        });
+    }).catch(this._handleError.bind(this));
 };
 
 
@@ -144,12 +115,7 @@ TwitterConsumer.tweetsPerDay = function (screenName) {
         var oldestDate = new Date(res[res.length - 1].created_at);
         var diffDays = Math.round(Math.abs((oldestDate.getTime() - dateToday.getTime()) / (oneDay)));
         return this.response.json(res.length / diffDays);
-    }).catch(err => {
-        if (rateCheck(err, this.response)) {
-            return;
-        }
-        throw err;
-    });
+    }).catch(this._handleError.bind(this));
 };
 
 /**
@@ -169,13 +135,7 @@ TwitterConsumer.favorites = function (screenName, count) {
         cacheKey: {method: 'favorites', screenName, count},
     }).then(res => {
         return res.map(fav => `@${fav.user.screen_name}: ${fav.text}`);
-    })
-        .catch(err => {
-            if (rateCheck(err, this.response)) {
-                return;
-            }
-            throw err;
-        });
+    }).catch(this._handleError.bind(this));
 };
 
 
@@ -193,12 +153,25 @@ TwitterConsumer.favoritesCount = function (screenName) {
             gzip: 'true'
         },
         cacheKey: {method: 'favoritesCount', screenName},
-    }, '.favourites_count').catch(err => {
-        if (rateCheck(err, this.response)) {
-            return;
-        }
-        throw err;
-    });
+    }, '.favourites_count').catch(this._handleError.bind(this));
 };
+
+/**
+ * Handle an error from a request
+ * @param {Object} err Error thrown from _sendAnswer
+ */
+TwitterConsumer._handleError = function (err) {
+    if (!rateCheck(err, this.response)) {
+        const errors = err.error?.errors || [];
+        throw new RPCError(errors[0]?.message);
+    }
+};
+
+function rateCheck(response) {
+    if (response.statusCode == 429) {
+        throw new Error('Rate limit exceeded--wait before trying again');
+    }
+    return false;
+}
 
 module.exports = TwitterConsumer;

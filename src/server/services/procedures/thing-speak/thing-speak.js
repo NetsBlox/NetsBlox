@@ -8,6 +8,7 @@
 const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('Thingspeak', 'https://api.thingspeak.com/channels/');
 const rpcUtils = require('../utils');
+const {RPCError} = rpcUtils;
 
 function feedParser(data) {
     const fieldMap = {};
@@ -22,6 +23,7 @@ function feedParser(data) {
         const resultObj = {
             Time: new Date(entry.created_at),
         };
+
         for (const field in fieldMap) {
             if (fieldMap.hasOwnProperty(field)) {
                 resultObj[fieldMap[field]] = entry[field];
@@ -108,7 +110,7 @@ thingspeakIoT._paginatedSearch = async function(path, query, limit=15, pred=TRUE
  */
 thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
     const pred = getUpdatedSincePred(updatedSince);
-    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit, pred);
+    return this._paginatedSearch('public.json', { tag: encodeURIComponent(tag) }, limit, pred).catch(this._handleError);
 };
 
 /**
@@ -123,7 +125,7 @@ thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
  */
 thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, limit=15, updatedSince=null) {
     const pred = getUpdatedSincePred(updatedSince);
-    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred);
+    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred).catch(this._handleError);
 };
 
 /**
@@ -145,7 +147,7 @@ thingspeakIoT.searchByTagAndLocation = function(tag, latitude, longitude, distan
         }
         return updatedSincePred(v);
     };
-    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred);
+    return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred).catch(this._handleError);
 };
 
 /**
@@ -161,7 +163,7 @@ thingspeakIoT.channelFeed = function(id, numResult) {
             results: numResult,
         }),
     };
-    return this._sendStruct(queryOptions, feedParser);
+    return this._sendStruct(queryOptions, feedParser).catch(this._handleError);
 };
 
 /**
@@ -179,7 +181,7 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
             results: numResult,
         }),
     };
-    return this._sendStruct(queryOptions, feedParser);
+    return this._sendStruct(queryOptions, feedParser).catch(this._handleError);
 };
 
 /**
@@ -188,13 +190,13 @@ thingspeakIoT.privateChannelFeed = function(id, numResult, apiKey) {
  * @returns {Object} Channel details.
  */
 thingspeakIoT.channelDetails = async function(id) {
-    const data = await this._requestData({path: id + '.json'});
+    const data = await this._requestData({path: id + '.json'}).catch(this._handleError);
     const details = detailParser(data);
     const options = {
         path: id + '/feeds.json',
         queryString: '?results=10'
     };
-    const resp = await this._requestData(options);
+    const resp = await this._requestData(options).catch(this._handleError);
     details.updated_at = new Date(resp.channel.updated_at);
     details.total_entries = resp.channel.last_entry_id;
     details.fields = [];
@@ -207,6 +209,10 @@ thingspeakIoT.channelDetails = async function(id) {
     details.feeds = feedParser(resp);
     this._logger.info(`channel ${id} details`, details);
     return rpcUtils.jsonToSnapList(details);
+};
+
+thingspeakIoT._handleError = function (err) {
+    throw new RPCError(err?.error?.error);
 };
 
 module.exports = thingspeakIoT;

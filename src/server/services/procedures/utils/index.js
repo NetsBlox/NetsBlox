@@ -116,6 +116,12 @@ const setRequiredApiKey = (service, apiKey) => {
     };
 };
 
+class RPCError extends Error {
+    constructor(message) {
+        super(message || 'An error occurred. Please try again later.');
+    }
+}
+
 module.exports = {
     getRoleNames,
     getRoleIds,
@@ -126,4 +132,5 @@ module.exports = {
     jsonToSnapList,
     isValidServiceName,
     setRequiredApiKey,
+    RPCError,
 };
