@@ -18,16 +18,19 @@ const dicFile = fs.readFileSync(path.join(__dirname, 'dict', 'en-custom.dic'));
 const affFile = fs.readFileSync(path.join(__dirname, 'dict','en-custom.aff'));
 const nodehun = new Nodehun(affFile, dicFile);    
 
-const GameState = {
-    Playing: 'Playing',
-    Won: 'Won',
-    Lost: 'Lost',
-};
   
 const WordGuess = {};
+WordGuess.serviceName = 'WordGuess';
 
 WordGuess._states = {
 
+};
+
+
+WordGuess._GameState = {
+    Playing: 'Playing',
+    Won: 'Won',
+    Lost: 'Lost',
 };
 
 const MAX_TIME = 24 * 60 * 60;
@@ -61,7 +64,7 @@ WordGuess.start = function (length = 5) {
     WordGuess._states[this.caller.clientId] = {
         time: Date.now(),
         word: WordGuess._getRandomCommonWord(length),
-        gamestate: GameState.Playing
+        gamestate: WordGuess._GameState.Playing
     };
 
     logger.log('Word is: ' + WordGuess._states[this.caller.clientId].word);
@@ -77,7 +80,7 @@ WordGuess.guess = function (word) {
         throw new RPCError('No game in progress');
     }
 
-    if (WordGuess._states[this.caller.clientId].gamestate != GameState.Playing) {
+    if (WordGuess._states[this.caller.clientId].gamestate != WordGuess._GameState.Playing) {
         throw new RPCError('Game already complete');        
     }
 
@@ -117,6 +120,11 @@ WordGuess.guess = function (word) {
         }
     }
 
+    // Check for won game
+    if (_.sum(matches) == word.length * 3) {
+        WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Won;
+    }
+
     return matches;
 };
 
@@ -129,11 +137,11 @@ WordGuess.giveUp = function () {
         throw new RPCError('No game in progress');
     }
 
-    if (WordGuess._states[this.caller.clientId].gamestate != GameState.Playing) {
+    if (WordGuess._states[this.caller.clientId].gamestate != WordGuess._GameState.Playing) {
         throw new RPCError('Game complete');        
     }
 
-    WordGuess._states[this.caller.clientId].gamestate = GameState.Lost;
+    WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Lost;
 
     return WordGuess._states[this.caller.clientId].word;
 };
