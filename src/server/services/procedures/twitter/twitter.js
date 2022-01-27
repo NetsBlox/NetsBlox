@@ -8,6 +8,7 @@
 
 'use strict';
 const {TwitterKey} = require('../utils/api-key');
+const {RPCError} = require('../utils');
 const ApiConsumer = require('../utils/api-consumer');
 const TwitterConsumer = new ApiConsumer('Twitter', 'https://api.twitter.com/1.1/', {
     cache: {
@@ -161,13 +162,8 @@ TwitterConsumer.favoritesCount = function (screenName) {
  */
 TwitterConsumer._handleError = function (err) {
     if (!rateCheck(err, this.response)) {
-        if (err.error?.errors?.length > 0) {
-            throw new Error(err.error.errors[0].message);
-        } else {
-            // In case of error without proper message
-            console.dir(err);
-            throw new Error('Unable to process request');
-        }
+        const errors = err.error?.errors || [];
+        throw new RPCError(errors[0]?.message);
     }
 };
 

@@ -9,6 +9,7 @@ const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('Thingspeak',
     'https://api.thingspeak.com/channels/');
 const rpcUtils = require('../utils');
+const {RPCError} = rpcUtils;
 
 let feedParser = data => {
     let fieldMap = {};
@@ -180,7 +181,7 @@ thingspeakIoT.channelDetails = async function(id) {
 };
 
 thingspeakIoT._handleError = function (err) {
-    throw new Error(err?.error?.error ?? 'Error processing request.');
+    throw new RPCError(err?.error?.error);
 };
 
 module.exports = thingspeakIoT;
