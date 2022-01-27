@@ -19,6 +19,8 @@ const types = require('../../input-types');
 const RADAR_LOCATIONS = require('./RadarLocations');
 const _ = require('lodash');
 
+const logger = require('../utils/logger')('NexradRadar');
+
 const PRECISION = 7; // 6 or 5 is probably safe
 const baseUrl = 'https://maps.googleapis.com/maps/api/staticmap'; // url for google static map
 const NEXRAD_SIZE = 3600; // size of a nexrad radar image
@@ -228,6 +230,33 @@ NexradRadar._parseNexrad = function(data) {
         .getImageData(0, 0, NEXRAD_SIZE, NEXRAD_SIZE));
 };
 
+NexradRadar._filterRadars = async function(radars, settings, zoom) {
+    const beforeCount = radars.length;
+
+    const cen = this._coordsAt(0, 0, settings);
+    let bound = 0;
+    if(zoom <= 4) bound = RANGE * 1.5;
+    else if(zoom <= 8) bound = RANGE * 0.5;
+    else bound = RANGE * 0.3;
+    radars.sort((a, b) => {
+        let disA = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[a][0], RADAR_LOCATIONS[a][1], cen.lat, cen.lon);
+        let disB = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[b][0], RADAR_LOCATIONS[b][1], cen.lat, cen.lon);
+        return disB - disA;
+    });
+
+    for (let i = 0; i < radars.length; ++i) {
+        for (let j = radars.length - 1; j > i; --j) {
+            const dist = this._getDistanceFromLatLonInKm(RADAR_LOCATIONS[radars[i]][0], RADAR_LOCATIONS[radars[i]][1], RADAR_LOCATIONS[radars[j]][0], RADAR_LOCATIONS[radars[j]][1]);
+            if (dist <= bound) {
+                radars.splice(j, 1);
+            }
+        }
+    }
+
+    logger.log(`radar filtering: ${beforeCount} -> ${radars.length}`);
+    return radars;
+}
+
 NexradRadar._addRadarPlot = async function(radar, plot, radarPlot, settings) {
     const [latCen, lngCen] = RADAR_LOCATIONS[radar];
     const boundingBox = this._getBoundingBox(latCen, lngCen, RANGE);
@@ -280,6 +309,13 @@ NexradRadar._draw = async function(imageData, response) {
  * @returns {Array<String>} list of radars with viible coverage
  */
 NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
+    const res = [];
+    if(zoom === 1 || zoom === 2) {
+        for (const i in RADAR_LOCATIONS) {
+            res.push(i);
+        }
+        return res;
+    }
     const settings = this._configureMap(latitude, longitude, width, height, zoom, 'terrain');
 
     let latMin = this._coordsAt(0, settings.height / -2, settings).lat;
@@ -290,11 +326,10 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
     latMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLat;
     lngMin = this._getBoundingBox(latMin, lngMin, RANGE).minLng;
     lngMax = this._getBoundingBox(latMax, lngMax, RANGE).maxLng;
-
-    const res = [];
+    
     for (const i in RADAR_LOCATIONS) {
         const [lat, lng] = RADAR_LOCATIONS[i];
-        if (lat > latMin && lat < latMax && lng > lngMin && lng < lngMax) {
+        if (lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax) {
             res.push(i);
         }
     }
@@ -314,9 +349,14 @@ NexradRadar.listRadars = function(latitude, longitude, width, height, zoom) {
  * @returns {Image} The requested map with radar overlay
  */
 NexradRadar.plotRadarImages = async function(latitude, longitude, width, height, zoom, mapType, radars=null) {
-    if (!radars) radars = await this.listRadars(latitude, longitude, width, height, zoom);
-
     const settings = await this._configureMap(latitude, longitude, width, height, zoom, mapType);
+    if (!radars) {
+        radars = await this.listRadars(latitude, longitude, width, height, zoom);
+        radars = await this._filterRadars(radars, settings, zoom);
+    }
+    else if(radars.length > 5) {
+        radars = await this._filterRadars(radars, settings, zoom);
+    }
     const radarPlot = await new JIMP(settings.width, settings.height, 0x0);
 
     const allRadarsData = await Promise.all(radars.map(this._downloadSingle));
