@@ -26,7 +26,6 @@ WordGuess._states = {
 
 };
 
-
 WordGuess._GameState = {
     Playing: 'Playing',
     Won: 'Won',
@@ -35,6 +34,9 @@ WordGuess._GameState = {
 
 const MAX_TIME = 24 * 60 * 60;
 
+/**
+ * Clean up old gamestates
+ */
 WordGuess._cleanStates = function () {
     WordGuess._states = _.pickBy(WordGuess._states, state => {
         return Date.now() - state.time < MAX_TIME;
@@ -100,6 +102,23 @@ WordGuess.guess = function (word) {
     WordGuess._states[this.caller.clientId].time = Date.now();
 
     // Match word
+    const matches = WordGuess._calculateMatches(realWord, word);
+
+    // Check for won game
+    if (_.sum(matches) == word.length * 3) {
+        WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Won;
+    }
+
+    return matches;
+};
+
+/**
+ * Calculate result for a guess in the game
+ * @param {String} realWord Secret word to match
+ * @param {String} word Word guessed by user
+ * @returns {Array} Array of integers corresponding to result
+ */
+WordGuess._calculateMatches = function(realWord, word) {
     let matches = [];
 
     // Find exact matches
@@ -120,11 +139,6 @@ WordGuess.guess = function (word) {
             matches[i] = 2;
             realWord[realWord.indexOf(word[i])] = '-';
         }
-    }
-
-    // Check for won game
-    if (_.sum(matches) == word.length * 3) {
-        WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Won;
     }
 
     return matches;
