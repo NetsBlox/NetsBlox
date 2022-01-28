@@ -61,6 +61,7 @@ WordGuess._getRandomCommonWord = function (length) {
 
 /**
  * Start the guessing game by having the computer choose a random word
+ * with the given length.
  * @param {BoundedInteger<3,10>=} length Length of word to search for (default ``5``)
  */
 WordGuess.start = function (length = 5) {
@@ -72,7 +73,11 @@ WordGuess.start = function (length = 5) {
 };
 
 /**
- * Make an attempt and receive feedback
+ * Guess the word. Returns a list where each item is the feedback for
+ * the corresponding character. Feedback is a "3" if the character is
+ * correct, "2" if it is correct but in the wrong place, and "1" if the
+ * letter is not present in the word.
+ *
  * @param {BoundedString<3,10>} word Guess for this round
  */
 WordGuess.guess = function (word) {
