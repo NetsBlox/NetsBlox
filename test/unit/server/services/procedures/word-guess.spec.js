@@ -1,4 +1,4 @@
-const WordGuess = require('../../../../../src/server/services/procedures/wordguess/wordguess');
+const WordGuess = require('../../../../../src/server/services/procedures/word-guess/word-guess');
 const utils = require('../../../../assets/utils');
 const RPCMock = require('../../../../assets/mock-service');
 const assert = require('assert');

@@ -7,7 +7,6 @@
 
 const fs = require('fs');
 const path = require('path');
-const logger = require('../utils/logger')('wordguess');
 const { Nodehun } = require('nodehun');
 const CommonWords = require('../common-words/common-words');
 const { RPCError } = require('../utils');
@@ -20,7 +19,6 @@ const nodehun = new Nodehun(affFile, dicFile);
 
   
 const WordGuess = {};
-WordGuess.serviceName = 'WordGuess';
 
 WordGuess._states = {
 
@@ -70,8 +68,6 @@ WordGuess.start = function (length = 5) {
         word: WordGuess._getRandomCommonWord(length),
         gamestate: WordGuess._GameState.Playing
     };
-
-    logger.log('Word is: ' + WordGuess._states[this.caller.clientId].word);
 };
 
 /**
@@ -131,11 +127,9 @@ WordGuess._calculateMatches = function(realWord, word) {
         }
     }
 
-    logger.log(realWord);
-
     // Find near-match
     for (let i = 0; i < realWord.length; i++) {
-        if (realWord.indexOf(word[i]) != -1) {
+        if (realWord.includes(word[i])) {
             matches[i] = 2;
             realWord[realWord.indexOf(word[i])] = '-';
         }
