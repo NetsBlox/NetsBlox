@@ -51,4 +51,9 @@ describe(utils.suiteName(__filename), function () {
 
         delete WordGuess._states[Object.keys(WordGuess._states)[0]];
     });
+
+    it('should return 3s when multiple letters are in correct places', function () {
+        const feedback = WordGuess._calculateMatches('crack', 'c__c_');
+        assert.deepEqual(feedback, [3, 1, 1, 3, 1]);
+    });
 });
