@@ -91,7 +91,7 @@ WordGuess.guess = function (word) {
     }
 
     // Reject words of wrong length
-    let realWord = WordGuess._states[this.caller.clientId].word.split('');
+    let realWord = WordGuess._states[this.caller.clientId].word;
     if (word.length != realWord.length) {
         throw new RPCError('Guess should have length ' + realWord.length);        
     }
@@ -121,13 +121,15 @@ WordGuess.guess = function (word) {
  * @returns {Array} Array of integers corresponding to result
  */
 WordGuess._calculateMatches = function(realWord, word) {
+    const realLetters = realWord.split('');
+
     let matches = [];
 
     // Find exact matches
     for (let i = 0; i < realWord.length; i++) {
-        if (word[i] == realWord[i]) {
+        if (word[i] == realLetters[i]) {
             matches.push(3);
-            realWord[i] = '-';
+            realLetters[i] = '-';
         } else {
             matches.push(1);
         }
@@ -135,9 +137,9 @@ WordGuess._calculateMatches = function(realWord, word) {
 
     // Find near-match
     for (let i = 0; i < realWord.length; i++) {
-        if (realWord.includes(word[i])) {
+        if (realLetters.includes(word[i])) {
             matches[i] = 2;
-            realWord[realWord.indexOf(word[i])] = '-';
+            realLetters[realWord.indexOf(word[i])] = '-';
         }
     }
 

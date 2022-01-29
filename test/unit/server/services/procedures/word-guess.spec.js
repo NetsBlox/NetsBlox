@@ -32,7 +32,7 @@ describe(utils.suiteName(__filename), function () {
 
     it('correct guess should win game', function () {
         wordguess.start(5);
-        assert(wordguess.guess(WordGuess._states[Object.keys(WordGuess._states)[0]].word));
+        assert.deepEqual(wordguess.guess(WordGuess._states[Object.keys(WordGuess._states)[0]].word), [3, 3, 3, 3, 3]);
         assert.equal(WordGuess._states[Object.keys(WordGuess._states)[0]].gamestate, WordGuess._GameState.Won);
         delete WordGuess._states[Object.keys(WordGuess._states)[0]];
     });
