@@ -67,7 +67,7 @@ describe(utils.suiteName(__filename), function () {
 
         wordguess.start(5);
         WordGuess._states[Object.keys(WordGuess._states)[0]].word = 'crack';
-        assert.deepEqual(wordguess.guess('crack'), [3, 3, 3, 3, 3]);
+        assert.deepEqual(wordguess.guess('beets'), [1, 1, 1, 1, 1]);
         delete WordGuess._states[Object.keys(WordGuess._states)[0]];
     });
     
