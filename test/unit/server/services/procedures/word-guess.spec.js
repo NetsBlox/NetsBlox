@@ -73,5 +73,8 @@ describe(utils.suiteName(__filename), function () {
     it('should return 3s when multiple letters are in correct places', function () {
         const feedback = WordGuess._calculateMatches('crack', 'c__c_');
         assert.deepEqual(feedback, [3, 1, 1, 3, 1]);
+
+        const feedback2 = WordGuess._calculateMatches('crack', 'ccccc');
+        assert.deepEqual(feedback2, [3, 1, 1, 3, 1]);
     });
 });
