@@ -139,7 +139,7 @@ WordGuess._calculateMatches = function(realWord, word) {
 
     // Find near-match
     for (let i = 0; i < realWord.length; i++) {
-        if (realLetters.includes(word[i])) {
+        if (matches[i] == 1 && realLetters.includes(word[i])) {
             matches[i] = 2;
             realLetters[realWord.indexOf(word[i])] = '-';
         }
