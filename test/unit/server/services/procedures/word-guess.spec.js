@@ -46,6 +46,9 @@ describe(utils.suiteName(__filename), function () {
         // Invalid word
         assert.throws(() => { wordguess.guess('aaaaa'); }, RPCError);
 
+        // Invalid word
+        assert.throws(() => { wordguess.guess('12345'); }, RPCError);
+
         // Valid attempt
         assert.doesNotThrow(() => { wordguess.guess('apple'); });
 
@@ -96,6 +99,20 @@ describe(utils.suiteName(__filename), function () {
         wordguess.start(5);
         WordGuess._states[Object.keys(WordGuess._states)[0]].word = 'crack';
         assert.deepEqual(wordguess.guess('chuck'), [3, 1, 1, 3, 3]);
+        delete WordGuess._states[Object.keys(WordGuess._states)[0]];
+    });
+
+    it('test case from akos', function () {
+        wordguess.start(5);
+        WordGuess._states[Object.keys(WordGuess._states)[0]].word = 'goods';
+        assert.deepEqual(wordguess.guess('bloom'), [1, 1, 3, 2, 1]);
+        assert.deepEqual(wordguess.guess('forte'), [1, 3, 1, 1, 1]);
+        assert.deepEqual(wordguess.guess('ought'), [2, 1, 2, 1, 1]);
+        assert.deepEqual(wordguess.guess('pains'), [1, 1, 1, 1, 3]);
+        assert.deepEqual(wordguess.guess('moron'), [1, 3, 1, 2, 1]);
+        assert.deepEqual(wordguess.guess('baron'), [1, 1, 1, 2, 1]);
+        assert.deepEqual(wordguess.guess('books'), [1, 3, 3, 1, 3]);
+        assert.deepEqual(wordguess.guess('goods'), [3, 3, 3, 3, 3]);
         delete WordGuess._states[Object.keys(WordGuess._states)[0]];
     });
 });

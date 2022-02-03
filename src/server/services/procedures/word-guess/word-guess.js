@@ -81,6 +81,8 @@ WordGuess.start = function (length = 5) {
  * @param {BoundedString<3,10>} word Guess for this round
  */
 WordGuess.guess = function (word) {
+    word = word.toLowerCase();
+
     // Check the user has an existing game
     if (!Object.keys(WordGuess._states).includes(this.caller.clientId)) {
         throw new RPCError('No game in progress');
@@ -97,7 +99,7 @@ WordGuess.guess = function (word) {
     }
 
     // Require word to be in dictionary
-    if (!nodehun.spellSync(word)) {
+    if (!word.match(/\p{L}+/gu) || !nodehun.spellSync(word)) {
         throw new RPCError('Invalid word');        
     }
 
@@ -137,7 +139,7 @@ WordGuess._calculateMatches = function(realWord, word) {
 
     // Find near-match
     for (let i = 0; i < realWord.length; i++) {
-        if (realLetters.includes(word[i])) {
+        if (matches[i] == 1 && realLetters.includes(word[i])) {
             matches[i] = 2;
             realLetters[realWord.indexOf(word[i])] = '-';
         }
