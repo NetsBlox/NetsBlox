@@ -25,17 +25,15 @@
  * 
  * @service
  */
+ 'use strict';
 
 /*
- * Based on the RoboScape procedure.
+ * Based on the RoboScape service.
  *
  * Environment variables:
  *  PHONE_IOT_PORT: set it to the UDP port (1976) to enable this module
- *  PHONE_IOT_MODE: sets the NetsBlox interface type, can be "security",
- *      "native" or "both" (default)
+ *  PHONE_IOT_MODE: sets the NetsBlox interface type, can be "security", "native" or "both" (default)
  */
-
-'use strict';
 
 const logger = require('../utils/logger')('PhoneIoT');
 const Device = require('./device');
@@ -357,8 +355,8 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
     /**
      * Adds an image display wit hthe given position and size.
-     * If not specified, an image display is ``readonly``, meaning that the user cannot modify its content.
-     * If (explicitly) not set to ``readonly``, then the user can click on the image display to change the image to a new picture from the camera.
+     * If not specified, an image display is by default ``readonly = true``, meaning that the user cannot modify its content.
+     * If (explicitly) set to ``readonly = false``, then the user can click on the image display to change the image to a new picture from the camera.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -369,7 +367,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Object=} options Additional options
      * @param {String=} options.id The id to use for the control. If not specified, a new one will be automatically generated.
      * @param {String=} options.event The name of a message type to be sent each time the user updates the content (only possible if ``readonly = false``). You must call :func:`PhoneIoT.listenToGUI` to actually receive these messages. If not specified, no event is sent. Message fields: ``id``.
-     * @param {Boolean=} options.readonly Specifies if the user is allowed to change the content (defaults to ``true``). Regardless of this setting, you can still modify the image programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
+     * @param {Boolean=} options.readonly If set to ``true`` (default), the user will not be able to edit the content; however, you will still be able to do so programmatically via :func:`PhoneIoT.setImage`. Defaults to ``true``.
      * @param {Boolean=} options.landscape If set to ``true``, rotates the image display ``90`` degrees around its top left corner.
      * @param {Fit=} options.fit The technique used to fit the image into the display, in case the image and the display have different aspect ratios. This can be ``fit`` (default), ``zoom``, or ``stretch``.
      * @returns {String} id of the created control
@@ -386,9 +384,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Adds a text field to the canvas.
      * These are typically used to display large blocks of text, or to accept input text from the user.
-     * If not set to ``readonly``, the user can click on the text field to change its content.
+     * Unless set to ``readonly = true``, the user can click on the text field to change its content.
      * 
-     * If you have a small amount of text you need to show and would otherwise make this control ``readonly``, consider using :func:`PhoneIoT.addLabel` instead.
+     * If you have a small amount of text you need to show and would otherwise make this control ``readonly = true``, consider using :func:`PhoneIoT.addLabel` instead.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -402,7 +400,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {String=} options.text This can be used to set the initial text of the text field once created. Defaults to empty if not specified.
      * @param {Color=} options.color The color of the text field border.
      * @param {Color=} options.textColor The text color of the text field.
-     * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to edit the content. However, you will still be free to do so programmatically. Defaults to ``false``.
+     * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to edit the content; however, you will still be free to do so programmatically. Defaults to ``false``.
      * @param {FontSize=} options.fontSize The size of the font to use for text (default ``1.0``).
      * @param {Align=} options.align The text alignment to use. This can be ``left`` (default), ``right``, or ``center``.
      * @param {Boolean=} options.landscape If set to ``true``, rotates the text field ``90`` degrees around its top left corner.
@@ -487,7 +485,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If you need values outside of this range, you can do a little math to map them to ``[0, 1]`` or vice versa.
      * 
      * You can read and write the value of a slider with :func:`PhoneIoT.getLevel` and :func:`PhoneIoT.setLevel`.
-     * Note that if the control is set to ``readonly``, the user cannot change the value, but you can still do so from code.
+     * Note that if the control is set to ``readonly = true``, the user cannot change the value, but you can still do so from code.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -501,7 +499,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {BoundedNumber<0,1>=} options.value The initial value of the slider (default ``0.0``).
      * @param {SliderStyle=} options.style Controls the appearance of the slider. Allowed values are ``slider`` (default) or ``progress``.
      * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
-     * @param {Boolean=} options.readonly ``true`` to disable the user from controlling the slider. This is especially usefull for progress bars.
+     * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the value by sliding; however, you are still able to change the value from code. This is especially useful for displaying progress bars such as for a long-running application. Defaults to ``false``.
      * @returns {String} id of the created control
      */
     PhoneIoT.prototype.addSlider = function (device, x, y, width, options) {
@@ -534,7 +532,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Color=} options.textColor The text color of the toggle.
      * @param {FontSize=} options.fontSize The size of the font to use for text (default ``1.0``). Note that this will also scale up the size of the toggle itself (not just the text).
      * @param {Boolean=} options.landscape If set to ``true``, rotates the toggle ``90`` degrees around its top left corner.
-     * @param {Boolean=} options.readonly If set to ``true``, prevents the user from clicking the toggle. However, you will still be free to update the state programmatically. Defaults to ``false``.
+     * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the state by clicking; however, you will still be free to do so from code. Defaults to ``false``.
      * @returns {String} id of the created control
      */
     PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
@@ -571,7 +569,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Color=} options.textColor The text color of the radio button.
      * @param {FontSize=} options.fontSize The size of the font to use for text (default ``1.0``). Note that this will also scale up the size of the radio button itself (not just the text).
      * @param {Boolean=} options.landscape If set to ``true``, rotates the radio button ``90`` degrees around its top left corner.
-     * @param {Boolean=} options.readonly If set to ``true``, prevents the user from clicking the radio button. However, you will still be free to update the state programmatically. Defaults to ``false``.
+     * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the state by clicking; however, you will still be free to do so from code. Defaults to ``false``.
      * @returns {String} id of the created control
      */
     PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
@@ -658,7 +656,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Set the current value (a single number) of a value-like control.
      * Currently, the only supported control is a slider, which sets the displayed value.
      * 
-     * Note that you can use this RPC even if the control is set to ``readonly`` mode (it's only readonly to the user).
+     * Note that you can use this RPC even if the control was set to ``readonly = true`` (readonly is only a restriction for the user).
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -1164,7 +1162,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Gets the displayed image of an image-like control with the given ID.
      * This can be used on any control that displays images, which is currently only image displays.
      * 
-     * This can be used to retrieve images from the mobile device's camera, by having the user store an image in an image display that has ``readonly = false``.
+     * This can be used to retrieve images from the mobile device's camera by having the user store an image in an image display that was set to ``readonly = false``.
      * See the ``readonly`` optional parameter of :func:`PhoneIoT.addImageDisplay`.
      * 
      * @category Display
