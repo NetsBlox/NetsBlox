@@ -189,6 +189,51 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('Date', function() {
+        const DATE_EPSILON_MS = 1000;
+        const assertDatesEq = (a, b) => {
+            const dist = Math.abs(+a - +b);
+            assert(Math.abs(+a - +b) < DATE_EPSILON_MS, `not (approx) equal: |${+a} - ${+b}| = ${dist}\n(${a} vs ${b})`);
+        };
+        const parse = typesParser.Date;
+
+        it('should allow normal date formats', async () => {
+            assertDatesEq(await parse('2020/10/3'), new Date('2020/10/3'));
+            assertDatesEq(await parse('  2020/10/3  '), new Date('2020/10/3'));
+            assertDatesEq(await parse(2353436446), new Date(2353436446));
+            assertDatesEq(await parse('2353436446'), new Date(2353436446));
+            assertDatesEq(await parse('  2353436446  '), new Date(2353436446));
+        });
+
+        it('should allow slightly extended unix timestamps', async () => {
+            assertDatesEq(await parse('+2353436446'), new Date(2353436446));
+            assertDatesEq(await parse('  +2353436446  '), new Date(2353436446));
+            assertDatesEq(await parse('  +  2353436446  '), new Date(2353436446));
+        });
+
+        it('should support meta times', async () => {
+            assertDatesEq(await parse('now'), new Date());
+            assertDatesEq(await parse('  now  '), new Date());
+            assertDatesEq(await parse('today'), new Date().setHours(0,0,0,0));
+            assertDatesEq(await parse('  today  '), new Date().setHours(0,0,0,0));
+        });
+
+        it('should support time offsets', async () => {
+            assertDatesEq(await parse('  2020/10/3   +12d'), new Date('2020/10/15'));
+            assertDatesEq(await parse('2020/10/3+12d'), new Date('2020/10/15'));
+            assertDatesEq(await parse(' 2020/10/3  +12d    -2day  '), new Date('2020/10/13'));
+            assertDatesEq(await parse(' 2020/10/3  +12d    -2day -1  week '), new Date('2020/10/6'));
+            assertDatesEq(await parse('  2020/10/3+12days-2d  '), new Date('2020/10/13'));
+            assertDatesEq(await parse('2353436446 +20m -10secs +4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('+2353436446 +20m -10secs +4000  ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('+  2353436446 +20m -10secs +4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('   +2353436446 +20  mins -10secs +4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('   +2353436446+   20m -10secs +4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('   +  2353436446 +20m -10secs +4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+            assertDatesEq(await parse('   +  2353436446+ 20m-10secs +  4000ms'), new Date(2353436446 + 20*60*1000 -10*1000 + 4000));
+        });
+    });
+
     describe('Object', function() {
         it('should throw error if input has a pair of size 0', async () => {
             let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];

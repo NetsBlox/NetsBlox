@@ -441,14 +441,71 @@ defineType({
     },
 });
 
+const TIME_MS = 1;
+const TIME_SEC = 1000 * TIME_MS;
+const TIME_MIN = 60 * TIME_SEC;
+const TIME_HR = 60 * TIME_MIN;
+const TIME_DAY = 24 * TIME_HR;
+const TIME_WEEK = 7 * TIME_DAY;
+const TIME_UNITS_MS = {
+    'ms': TIME_MS, 'msec': TIME_MS, 'msecs': TIME_MS, 'millisecond': TIME_MS, 'milliseconds': TIME_MS,
+    's': TIME_SEC, 'sec': TIME_SEC, 'secs': TIME_SEC, 'second': TIME_SEC, 'seconds': TIME_SEC,
+    'm': TIME_MIN, 'min': TIME_MIN, 'mins': TIME_MIN, 'minute': TIME_MIN, 'minutes': TIME_MIN,
+    'h': TIME_HR, 'hr': TIME_HR, 'hrs': TIME_HR,  'hour': TIME_HR, 'hours': TIME_HR,
+    'd': TIME_DAY, 'day': TIME_DAY, 'days': TIME_DAY,
+    'w': TIME_WEEK, 'week': TIME_WEEK, 'weeks': TIME_WEEK,
+};
+
 defineType({
     name: 'Date',
     description: 'A calendar date.',
-    baseType: 'Any',
+    baseType: 'String',
     parser: input => {
-        input = new Date(input);
-        if (isNaN(input.valueOf())) throw GENERIC_ERROR;
-        return input;
+        const grabNumber = input => {
+            const res = input.match(/^\s*([+-]?)\s*(\d+\.?\d*)\s*$/);
+            return res ? +`${res[1]}${res[2]}` : null;
+        };
+        const basicParser = (input, orElse) => {
+            const num = grabNumber(input);
+            const res = new Date(num !== null ? num : input);
+            if (!isNaN(+res)) return res;
+            if (orElse !== undefined) return orElse;
+            throw GENERIC_ERROR;
+        };
+
+        const MAX_DATE_LEN = 128;
+        let dateLen = Math.min(MAX_DATE_LEN, input.length);
+        let date = null;
+        for (; dateLen > 0; --dateLen) {
+            date = basicParser(input.slice(0, dateLen), null);
+            if (date) break;
+        }
+        if (!date) {
+            const meta = input.match(/^\s*(\w+)/);
+            if (!meta) return basicParser(input);
+
+            if (meta[1] === 'now') date = new Date();
+            else if (meta[1] === 'today') date = new Date().setHours(0, 0, 0, 0);
+            else return basicParser(input);
+            dateLen = meta[0].length;
+        }
+
+        let rest = input.slice(dateLen).trimLeft();
+        let datems = +date;
+        while (rest.length != 0) {
+            const delta = rest.match(/^([+-]?)\s*(\d+\.?\d*)\s*([^+-\s]*)/);
+            if (!delta) return basicParser(input);
+            if (delta[3].length === 0) throw Error(`Time offset "${delta[0]}" missing units`);
+
+            rest = rest.slice(delta[0].length).trimLeft();
+            const amount = +`${delta[1]}${delta[2]}`;
+            const unit = delta[3].toLowerCase();
+
+            const unitms = TIME_UNITS_MS[unit];
+            if (!unitms) throw Error(`Unknown Date time unit: "${delta[2]}"`);
+            datems += amount * unitms;
+        }
+        return new Date(datems);
     },
 });
 
