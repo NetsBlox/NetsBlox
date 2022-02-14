@@ -456,7 +456,7 @@ CloudVariables._getListenBucket = function (name) {
     let bucket = globalListeners[name];
     if (!bucket) bucket = globalListeners[name] = {};
     return bucket;
-}
+};
 CloudVariables._getUserListenBucket = function (name) {
     const user = this.caller.username;
     let userBucket = userListeners[user];
@@ -465,7 +465,7 @@ CloudVariables._getUserListenBucket = function (name) {
     let bucket = userBucket[name];
     if (!bucket) bucket = userBucket[name] = {};
     return bucket;
-}
+};
 
 /**
  * Registers your client to receive messages each time the variable value is updated.
