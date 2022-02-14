@@ -21,6 +21,12 @@ describe(utils.suiteName(__filename), function() {
         ['getUserVariable', ['name']],
         ['setUserVariable', ['name', 'value']],
         ['deleteUserVariable', ['name']],
+        ['lockAndGetVariable', ['name', 'password']],
+        ['setAndUnlockVariable', ['name', 'value', 'password']],
+        ['getAndSetVariable', ['name', 'value', 'password']],
+        ['getAndSetUserVariable', ['name', 'value']],
+        ['listenToVariable', ['name', 'msgType', 'password']],
+        ['listenToUserVariable', ['name', 'msgType']],
     ]);
 
     let counter = 0;
@@ -53,6 +59,16 @@ describe(utils.suiteName(__filename), function() {
                 .then(() => cloudvariables.deleteVariable(name))
                 .then(() => cloudvariables.getVariable(name))
                 .catch(err => assert(err.message.includes('not found')));
+        });
+
+        it('should gracefully fail to delete non-existant variables', async function() {
+            const name = newVar();
+            try {
+                await cloudvariables.deleteVariable(name);
+                assert(false, 'should have thrown');
+            } catch (e) {
+                assert(e.message.includes('not found'));
+            }
         });
 
         it('should not get/set variables w/ bad password', function() {

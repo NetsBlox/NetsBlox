@@ -10,6 +10,9 @@ const logger = require('../utils/logger')('cloud-variables');
 const Storage = require('../../storage');
 const Q = require('q');
 
+const globalListeners = {}; // map<var name, map<client id, [socket, msg name]>>
+const userListeners = {}; // map<user name, map<var name, map<client id, [socket, msg name]>>>
+
 let _collections = null;
 const getCollections = function() {
     if (!_collections) {
@@ -24,7 +27,6 @@ const ensureVariableExists = function(variable) {
     if (!variable) {
         throw new Error('Variable not found');
     }
-
 };
 
 let MAX_LOCK_AGE = 5 * 1000;
@@ -97,24 +99,29 @@ CloudVariables._setMaxLockAge = function(age) {  // for testing
  * @param {String=} password Password (if password-protected)
  * @returns {Any} the stored value
  */
-CloudVariables.getVariable = function(name, password) {
+CloudVariables.getVariable = async function(name, password) {
     const {sharedVars} = getCollections();
     const username = this.caller.username;
+    const variable = await sharedVars.findOne({name: name});
 
-    return sharedVars.findOne({name: name})
-        .then(variable => {
-            ensureVariableExists(variable);
-            ensureAuthorized(variable, password);
+    ensureVariableExists(variable);
+    ensureAuthorized(variable, password);
 
-            const query = {
-                $set: {
-                    lastReader: username,
-                    lastReadTime: new Date(),
-                }
-            };
-            return sharedVars.updateOne({_id: variable._id}, query)
-                .then(() => variable.value);
-        });
+    const query = {
+        $set: {
+            lastReader: username,
+            lastReadTime: new Date(),
+        }
+    };
+    await sharedVars.updateOne({_id: variable._id}, query);
+    return variable.value;
+};
+
+CloudVariables._sendUpdate = function(name, value, targets) {
+    for (const clientId in targets) {
+        const [socket, msgType] = targets[clientId];
+        socket.sendMessage(msgType, { name, value });
+    }
 };
 
 /**
@@ -124,31 +131,30 @@ CloudVariables.getVariable = function(name, password) {
  * @param {Any} value Value to store in variable
  * @param {String=} password Password (if password-protected)
  */
-CloudVariables.setVariable = function(name, value, password) {
+CloudVariables.setVariable = async function(name, value, password) {
     validateVariableName(name);
     validateContentSize(value);
 
     const {sharedVars} = getCollections();
     const username = this.caller.username;
+    const variable = await sharedVars.findOne({name: name});
 
-    return sharedVars.findOne({name: name})
-        .then(variable => {
-            ensureAuthorized(variable, password);
-            ensureOwnsMutex(variable, this.caller.clientId);
-            // Set both the password and value in case it gets deleted
-            // during this async fn...
-            const query = {
-                $set: {
-                    value,
-                    password,
-                    lastWriter: username,
-                    lastWriteTime: new Date(),
-                }
-            };
+    ensureAuthorized(variable, password);
+    ensureOwnsMutex(variable, this.caller.clientId);
 
-            return sharedVars.updateOne({name: name}, query, {upsert: true})
-                .then(() => 'OK');
-        });
+    // Set both the password and value in case it gets deleted
+    // during this async fn...
+    const query = {
+        $set: {
+            value,
+            password,
+            lastWriter: username,
+            lastWriteTime: new Date(),
+        }
+    };
+
+    await sharedVars.updateOne({name: name}, query, {upsert: true});
+    this._sendUpdate(name, value, globalListeners[name] || {});
 };
 
 /**
@@ -157,18 +163,18 @@ CloudVariables.setVariable = function(name, value, password) {
  * @param {String} name Variable to delete
  * @param {String=} password Password (if password-protected)
  */
-CloudVariables.deleteVariable = function(name, password) {
+CloudVariables.deleteVariable = async function(name, password) {
     const {sharedVars} = getCollections();
-    return sharedVars.findOne({name: name})
-        .then(variable => {
-            ensureAuthorized(variable, password);
+    const variable = await sharedVars.findOne({name: name});
 
-            // Clear the queued locks
-            const id = variable._id;
-            this._clearPendingLocks(id);
-            return sharedVars.deleteOne({_id: id});
-        })
-        .then(() => 'OK');
+    ensureVariableExists(variable);
+    ensureAuthorized(variable, password);
+
+    // Clear the queued locks
+    const id = variable._id;
+    this._clearPendingLocks(id);
+    await sharedVars.deleteOne({_id: id});
+    delete globalListeners[name];
 };
 
 /**
@@ -180,33 +186,31 @@ CloudVariables.deleteVariable = function(name, password) {
  * @param {String} name Variable to lock
  * @param {String=} password Password (if password-protected)
  */
-CloudVariables.lockVariable = function(name, password) {
+CloudVariables.lockVariable = async function(name, password) {
     validateVariableName(name);
 
     const {sharedVars} = getCollections();
     const username = this.caller.username;
     const clientId = this.caller.clientId;
+    const variable = await sharedVars.findOne({name: name});
 
-    return sharedVars.findOne({name: name})
-        .then(variable => {
-            ensureVariableExists(variable);
-            ensureAuthorized(variable, password);
-            // What if the block is killed before a lock can be acquired?
-            // Then should we close the connection on the client?
-            //
-            // If locked by someone else, then we need to queue the lock
-            // If it is already locked, we should block until we can obtain the lock
-            const lockOwner = getLockOwnerId(variable);
+    ensureVariableExists(variable);
+    ensureAuthorized(variable, password);
+    // What if the block is killed before a lock can be acquired?
+    // Then should we close the connection on the client?
+    //
+    // If locked by someone else, then we need to queue the lock
+    // If it is already locked, we should block until we can obtain the lock
+    const lockOwner = getLockOwnerId(variable);
 
-            if (lockOwner && lockOwner !== clientId) {
-                return this._queueLockFor(variable);
-            } else {
-                return this._applyLock(variable._id, clientId, username);
-            }
-        });
+    if (lockOwner && lockOwner !== clientId) {
+        await this._queueLockFor(variable);
+    } else {
+        await this._applyLock(variable._id, clientId, username);
+    }
 };
 
-CloudVariables._queueLockFor = function(variable) {
+CloudVariables._queueLockFor = async function(variable) {
     // Return a promise which will resolve when the lock is applied
     const deferred = Q.defer();
     const id = variable._id;
@@ -242,11 +246,11 @@ CloudVariables._queueLockFor = function(variable) {
 
     // We need to ensure that the variable still exists in case it was deleted
     // during the earlier queries
-    return this._checkVariableLock(id)
-        .then(() => deferred.promise);
+    await this._checkVariableLock(id);
+    return deferred.promise;
 };
 
-CloudVariables._applyLock = function(id, clientId, username) {
+CloudVariables._applyLock = async function(id, clientId, username) {
     const {sharedVars} = getCollections();
 
     const lock = {
@@ -261,15 +265,13 @@ CloudVariables._applyLock = function(id, clientId, username) {
     };
 
     setTimeout(() => this._checkVariableLock(id), MAX_LOCK_AGE+1);
-    return sharedVars.updateOne({_id: id}, query)
-        .then(res => {  // Ensure that the variable wasn't deleted during this application
-            logger.trace(`${clientId} locked variable ${id}`);
-            if (res.matchedCount === 0) {
-                throw new Error('Variable deleted');
-            }
+    const res = await sharedVars.updateOne({_id: id}, query);
 
-            return 'OK';
-        });
+    // Ensure that the variable wasn't deleted during this application
+    logger.trace(`${clientId} locked variable ${id}`);
+    if (res.matchedCount === 0) {
+        throw new Error('Variable deleted');
+    }
 };
 
 CloudVariables._clearPendingLocks = function(id) {
@@ -278,19 +280,17 @@ CloudVariables._clearPendingLocks = function(id) {
     delete this._queuedLocks[id];
 };
 
-CloudVariables._checkVariableLock = function(id) {
+CloudVariables._checkVariableLock = async function(id) {
     const {sharedVars} = getCollections();
+    const variable = await sharedVars.findOne({_id: id});
 
-    return sharedVars.findOne({_id: id})
-        .then(variable => {
-            if (!variable) {
-                logger.trace(`${id} has been deleted. Clearing locks.`);
-                return this._clearPendingLocks(id);
-            } else if (isLockStale(variable)) {
-                logger.trace(`releasing lock on ${id} (timeout).`);
-                return this._onUnlockVariable(id);
-            }
-        });
+    if (!variable) {
+        logger.trace(`${id} has been deleted. Clearing locks.`);
+        this._clearPendingLocks(id);
+    } else if (isLockStale(variable)) {
+        logger.trace(`releasing lock on ${id} (timeout).`);
+        await this._onUnlockVariable(id);
+    }
 };
 
 /**
@@ -302,49 +302,45 @@ CloudVariables._checkVariableLock = function(id) {
  * @param {String} name Variable to delete
  * @param {String=} password Password (if password-protected)
  */
-CloudVariables.unlockVariable = function(name, password) {
+CloudVariables.unlockVariable = async function(name, password) {
     validateVariableName(name);
 
     const {sharedVars} = getCollections();
     const {clientId} = this.caller;
+    const variable = await sharedVars.findOne({name: name});
 
-    return sharedVars.findOne({name: name})
-        .then(variable => {
-            ensureVariableExists(variable);
-            ensureAuthorized(variable, password);
-            ensureOwnsMutex(variable, clientId);
+    ensureVariableExists(variable);
+    ensureAuthorized(variable, password);
+    ensureOwnsMutex(variable, clientId);
 
-            if (!isLocked(variable)) {
-                throw new Error('Variable not locked');
-            }
+    if (!isLocked(variable)) {
+        throw new Error('Variable not locked');
+    }
 
-            const query = {
-                $set: {
-                    lock: null
-                }
-            };
+    const query = {
+        $set: {
+            lock: null
+        }
+    };
 
-            return sharedVars.updateOne({_id: variable._id}, query)
-                .then(result => {
-                    if(result.modifiedCount === 1) {
-                        logger.trace(`${clientId} unlocked ${name} (${variable._id})`);
-                    } else {
-                        logger.trace(`${clientId} tried to unlock ${name} but variable was deleted`);
-                    }
-                    return this._onUnlockVariable(variable._id);
-                })
-                .then(() => 'OK');
-        });
+    const result = await sharedVars.updateOne({_id: variable._id}, query);
+
+    if(result.modifiedCount === 1) {
+        logger.trace(`${clientId} unlocked ${name} (${variable._id})`);
+    } else {
+        logger.trace(`${clientId} tried to unlock ${name} but variable was deleted`);
+    }
+    await this._onUnlockVariable(variable._id);
 };
 
-CloudVariables._onUnlockVariable = function(id) {
+CloudVariables._onUnlockVariable = async function(id) {
     // if there is a queued lock, apply it
     if (this._queuedLocks.hasOwnProperty(id)) {
         const nextLock = this._queuedLocks[id].shift();
         const {clientId, username} = nextLock;
 
         // apply the lock
-        this._applyLock(id, clientId, username);
+        await this._applyLock(id, clientId, username);
         nextLock.promise.resolve();
         if (this._queuedLocks[id].length === 0) {
             delete this._queuedLocks[id];
@@ -357,25 +353,24 @@ CloudVariables._onUnlockVariable = function(id) {
  * @param {String} name Variable name
  * @returns {Any} the stored value
  */
-CloudVariables.getUserVariable = function(name) {
+CloudVariables.getUserVariable = async function(name) {
     const {userVars} = getCollections();
     const username = this.caller.username;
 
     ensureLoggedIn(this.caller);
-    return userVars.findOne({name: name, owner: username})
-        .then(variable => {
-            if (!variable) {
-                throw new Error('Variable not found');
-            }
+    const variable = await userVars.findOne({name: name, owner: username});
 
-            const query = {
-                $set: {
-                    lastReadTime: new Date(),
-                }
-            };
-            return userVars.updateOne({name, owner: username}, query)
-                .then(() => variable.value);
-        });
+    if (!variable) {
+        throw new Error('Variable not found');
+    }
+
+    const query = {
+        $set: {
+            lastReadTime: new Date(),
+        }
+    };
+    await userVars.updateOne({name, owner: username}, query);
+    return variable.value;
 };
 
 /**
@@ -383,7 +378,7 @@ CloudVariables.getUserVariable = function(name) {
  * @param {String} name Variable name
  * @param {Any} value Value to store in variable
  */
-CloudVariables.setUserVariable = function(name, value) {
+CloudVariables.setUserVariable = async function(name, value) {
     ensureLoggedIn(this.caller);
     validateVariableName(name);
     validateContentSize(value);
@@ -396,21 +391,115 @@ CloudVariables.setUserVariable = function(name, value) {
             lastWriteTime: new Date(),
         }
     };
-    return userVars.updateOne({name, owner: username}, query, {upsert: true})
-        .then(() => 'OK');
+    await userVars.updateOne({name, owner: username}, query, {upsert: true});
+    this._sendUpdate(name, value, (userListeners[username] || {})[name] || {});
 };
 
 /**
  * Delete the user variable for the current user.
  * @param {String} name Variable name
  */
-CloudVariables.deleteUserVariable = function(name) {
+CloudVariables.deleteUserVariable = async function(name) {
     const {userVars} = getCollections();
     const username = this.caller.username;
 
     ensureLoggedIn(this.caller);
-    return userVars.deleteOne({name: name, owner: username})
-        .then(() => 'OK');
+    await userVars.deleteOne({name: name, owner: username});
+    delete (userListeners[username] || {})[name];
+};
+
+/**
+ * Equivalent to calling :func:`CloudVariables.lockVariable` followed by :func:`CloudVariables.getVariable`.
+ * @param {String} name Variable name
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.lockAndGetVariable = async function(name, password) {
+    await this.lockVariable(name, password);
+    return await this.getVariable(name, password);
+};
+
+/**
+ * Equivalent to calling :func:`CloudVariables.setVariable` followed by :func:`CloudVariables.unlockVariable`.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.setAndUnlockVariable = async function(name, value, password) {
+    await this.setVariable(name, value, password);
+    await this.unlockVariable(name, password);
+};
+
+/**
+ * Sets the variable to the given value and returns the previous value.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.getAndSetVariable = async function(name, value, password) {
+    const res = await this.getVariable(name, password);
+    await this.setVariable(name, value, password);
+    return res;
+};
+
+/**
+ * Sets the variable to the given value and returns the previous value.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ */
+CloudVariables.getAndSetUserVariable = async function(name, value) {
+    const res = await this.getUserVariable(name);
+    await this.setUserVariable(name, value);
+    return res;
+};
+
+CloudVariables._getListenBucket = function (name) {
+    let bucket = globalListeners[name];
+    if (!bucket) bucket = globalListeners[name] = {};
+    return bucket;
+}
+CloudVariables._getUserListenBucket = function (name) {
+    const user = this.caller.username;
+    let userBucket = userListeners[user];
+    if (!userBucket) userBucket = userListeners[user] = {};
+
+    let bucket = userBucket[name];
+    if (!bucket) bucket = userBucket[name] = {};
+    return bucket;
+}
+
+/**
+ * Registers your client to receive messages each time the variable value is updated.
+ * ``name`` and ``password`` denote the variable to listen to.
+ * ``msgType`` is the name of the message that will be sent each time it is updated.
+ * 
+ * The variable must already exist prior to calling this RPC.
+ * Update events will cease when the variable is deleted.
+ * 
+ * **Message Fields**
+ * 
+ * - ``name`` - the name of the variable that was updated
+ * - ``value`` - the new value of the variable
+ * 
+ * @param {String} name Variable name
+ * @param {Any} msgType Message type to send each time the variable is updated
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.listenToVariable = async function(name, msgType, password) {
+    await this.getVariable(name, password); // ensure we can get the value
+    const bucket = this._getListenBucket(name);
+    bucket[this.socket.clientId] = [this.socket, msgType];
+};
+
+/**
+ * Identical to :func:`CloudVariables.listenToVariable` except that it listens for updates on a user variable.
+ * 
+ * @param {String} name Variable name
+ * @param {Any} msgType Message type to send each time the variable is updated
+ */
+CloudVariables.listenToUserVariable = async function(name, msgType) {
+    await this.getUserVariable(name); // ensure we can get the value
+    const bucket = this._getUserListenBucket(name);
+    bucket[this.socket.clientId] = [this.socket, msgType];
 };
 
 module.exports = CloudVariables;
