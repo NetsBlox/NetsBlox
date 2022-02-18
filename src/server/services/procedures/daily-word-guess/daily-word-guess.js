@@ -37,7 +37,8 @@ DailyWordGuess.guess = async function (word) {
  * @returns {String} Target word of daily game
  */
 DailyWordGuess.giveUp = function () {
-    
+    DailyWordGuess._setUserState(this.caller.clientId, { tries: 0 });
+    return DailyWordGuess._getDailyWord();
 };
 
 /**
@@ -45,7 +46,7 @@ DailyWordGuess.giveUp = function () {
  * @returns {Number} Number of attempts remaining
  */
 DailyWordGuess.triesRemaining = function () {
-    
+    return DailyWordGuess._getUserState(this.caller.clientId).tries;    
 };
 
 /**
@@ -63,8 +64,12 @@ DailyWordGuess.timeRemaining = function () {
 DailyWordGuess._getDailyWord = async function () {
     if (DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != new Date().getDate() && DailyWordGuess._dailyWordDate.getMonth() != new Date().getMonth())) {
         // Check if word of the day already in DB
+
+        let date = new Date();
+        date.setHours(0, 0, 0, 0);
+
         let existing = await DailyWordGuess._collection.findOne({
-            date: (new Date()).toDateString()
+            date
         });
 
         if (existing != null) {
@@ -73,9 +78,24 @@ DailyWordGuess._getDailyWord = async function () {
             DailyWordGuess._dailyWordDate = new Date(existing.date);
         } else {
             logger.log('Generating new word');
-            DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
+            
+            do {
+                DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
+
+                let oldDate = new Date(date);
+                oldDate.setFullYear(oldDate.getFullYear() - 1);
+
+                // Test if word already used in past year
+                existing = await DailyWordGuess._collection.findOne({
+                    word: DailyWordGuess._dailyWord,
+                    date: {
+                        '$gte' : oldDate
+                    }
+                });
+            } while (existing != null);
+            
             DailyWordGuess._collection.insertOne({
-                date: (new Date()).toDateString(),
+                date,
                 word: DailyWordGuess._dailyWord
             });
             DailyWordGuess._dailyWordDate = new Date();
@@ -88,6 +108,38 @@ DailyWordGuess._getDailyWord = async function () {
     }
 
     return DailyWordGuess._dailyWord;
+};
+
+/**
+ * Get the state of a client or create it if none exists
+ * @param {String} clientId ID of client to get state for
+ * @returns {Object} State of client
+ */
+DailyWordGuess._getUserState = function (clientId) {
+    if (!Object.keys(DailyWordGuess._states).includes(clientId)) {
+        DailyWordGuess._states[clientId] = {
+            tries: 6
+        };
+    }
+
+    return DailyWordGuess._states[clientId];
+};
+
+/**
+ * Update the state of a client or create it if none exists
+ * @param {String} clientId ID of client to get state for
+ * @returns {Object} State of client
+ */
+DailyWordGuess._setUserState = function (clientId, newState) {
+    if (!Object.keys(DailyWordGuess._states).includes(clientId)) {
+        DailyWordGuess._states[clientId] = {
+            tries: 6
+        };
+    }
+
+    Object.assign(DailyWordGuess._states[clientId], newState);
+
+    return DailyWordGuess._states[clientId];
 };
 
 module.exports = DailyWordGuess;
