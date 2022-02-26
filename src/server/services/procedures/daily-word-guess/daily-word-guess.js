@@ -1,3 +1,4 @@
+const { RPCError } = require('../utils');
 const WordGuess = require('../word-guess/word-guess');
 const GetStorage = require('./storage');
 const logger = require('../utils/logger')('daily-word-guess');
@@ -28,7 +29,18 @@ DailyWordGuess.guess = async function (word) {
     word = word.toLowerCase();
     let realWord = await DailyWordGuess._getDailyWord();
 
+    let prevState = DailyWordGuess._getUserState(this.caller.clientId);
+    
+    // Reject after game over
+    if(prevState.tries <= 0){
+        throw new RPCError("No attempts remaining");
+    }
+
     WordGuess._validateGuess(word, realWord);
+
+    // Remove a try
+    DailyWordGuess._setUserState(this.caller.clientId, { tries: prevState.tries - 1 });
+
     return WordGuess._calculateMatches(realWord, word);
 };
 
@@ -64,7 +76,6 @@ DailyWordGuess.timeRemaining = function () {
 DailyWordGuess._getDailyWord = async function () {
     if (DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != new Date().getDate() && DailyWordGuess._dailyWordDate.getMonth() != new Date().getMonth())) {
         // Check if word of the day already in DB
-
         let date = new Date();
         date.setHours(0, 0, 0, 0);
 
@@ -73,6 +84,7 @@ DailyWordGuess._getDailyWord = async function () {
         });
 
         if (existing != null) {
+            // Cache the word of the day
             logger.log('Existing word found');
             DailyWordGuess._dailyWord = existing.word;
             DailyWordGuess._dailyWordDate = new Date(existing.date);
