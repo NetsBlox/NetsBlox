@@ -33,7 +33,7 @@ DailyWordGuess.guess = async function (word) {
     
     // Reject after game over
     if(prevState.tries <= 0){
-        throw new RPCError("No attempts remaining");
+        throw new RPCError('No attempts remaining');
     }
 
     WordGuess._validateGuess(word, realWord);
