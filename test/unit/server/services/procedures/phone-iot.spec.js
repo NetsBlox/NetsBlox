@@ -41,6 +41,7 @@ describe(utils.suiteName(__filename), function() {
         ['getLocation', ['device']],
         ['getProximity', ['device']],
         ['getBearing', ['device']],
+        ['getGPSHeading', ['device']],
         ['getAltitude', ['device']],
         ['getStepCount', ['device']],
         ['getLightLevel', ['device']],

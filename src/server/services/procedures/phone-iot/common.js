@@ -148,7 +148,8 @@ common.SENSOR_PACKERS = {
     'microphoneLevel': vals => { return { volume: vals[0] }; },
     'proximity': vals => { return { distance: vals[0] }; },
     'stepCount': vals => { return { count: vals[0] }; },
-    'location': vals => { return { latitude: vals[0], longitude: vals[1], bearing: vals[2], altitude: vals[3] }; },
+    // also send 'bearing' for backwards compat - now correctly called 'heading'
+    'location': vals => { return { latitude: vals[0], longitude: vals[1], heading: vals[2], bearing: vals[2], altitude: vals[3] }; },
 };
 common.DEPRECATED_SENSORS = new Set([
     'rotation', 'gameRotation',
