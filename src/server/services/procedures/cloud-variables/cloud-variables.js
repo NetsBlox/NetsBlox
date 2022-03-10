@@ -10,8 +10,8 @@ const logger = require('../utils/logger')('cloud-variables');
 const Storage = require('../../storage');
 const Q = require('q');
 
-const globalListeners = {}; // map<var name, map<client id, [socket, msg name]>>
-const userListeners = {}; // map<user name, map<var name, map<client id, [socket, msg name]>>>
+const globalListeners = {}; // map<var name, map<client id, [socket, msg name, expiry timestamp]>>
+const userListeners = {}; // map<user name, map<var name, map<client id, [socket, msg name, expiry timestamp]>>>
 
 let _collections = null;
 const getCollections = function() {
@@ -118,9 +118,15 @@ CloudVariables.getVariable = async function(name, password) {
 };
 
 CloudVariables._sendUpdate = function(name, value, targets) {
+    const expired = [];
+    const now = +new Date();
     for (const clientId in targets) {
-        const [socket, msgType] = targets[clientId];
-        socket.sendMessage(msgType, { name, value });
+        const [socket, msgType, expiry] = targets[clientId];
+        if (now < expiry) socket.sendMessage(msgType, { name, value });
+        else expired.push(clientId);
+    }
+    for (const clientId of expired) {
+        delete targets[clientId];
     }
 };
 
@@ -439,11 +445,12 @@ CloudVariables._getUserListenBucket = function (name) {
  * @param {String} name Variable name
  * @param {String} msgType Message type to send each time the variable is updated
  * @param {String=} password Password (if password-protected)
+ * @param {Duration=} duration The maximum duration to listen for updates on the variable (default 1hr).
  */
-CloudVariables.listenToVariable = async function(name, msgType, password) {
+CloudVariables.listenToVariable = async function(name, msgType, password, duration = 60*60*1000) {
     await this.getVariable(name, password); // ensure we can get the value
     const bucket = this._getListenBucket(name);
-    bucket[this.socket.clientId] = [this.socket, msgType];
+    bucket[this.socket.clientId] = [this.socket, msgType, +new Date() + duration];
 };
 
 /**
@@ -451,11 +458,12 @@ CloudVariables.listenToVariable = async function(name, msgType, password) {
  * 
  * @param {String} name Variable name
  * @param {Any} msgType Message type to send each time the variable is updated
+ * @param {Duration=} duration The maximum duration to listen for updates on the variable (default 1hr).
  */
-CloudVariables.listenToUserVariable = async function(name, msgType) {
+CloudVariables.listenToUserVariable = async function(name, msgType, duration = 60*60*1000) {
     await this.getUserVariable(name); // ensure we can get the value
     const bucket = this._getUserListenBucket(name);
-    bucket[this.socket.clientId] = [this.socket, msgType];
+    bucket[this.socket.clientId] = [this.socket, msgType, +new Date() + duration];
 };
 
 module.exports = CloudVariables;

@@ -234,6 +234,16 @@ describe(utils.suiteName(__filename), function() {
         });
     });
 
+    describe('Duration', function() {
+        const parse = typesParser.Duration;
+
+        it('should parse chained durations', async () => {
+            assert.deepStrictEqual(await parse(' 12d  '), 12*24*60*60*1000);
+            assert.deepStrictEqual(await parse(' 12d  -  5    hrs  '), 12*24*60*60*1000 - 5*60*60*1000);
+            assert.deepStrictEqual(await parse(' 5s - 10s + 12ms'), 5*1000 - 10*1000 + 12);
+        });
+    });
+
     describe('Object', function() {
         it('should throw error if input has a pair of size 0', async () => {
             let rawInput = [[], ['a', 234],['name', 'Hamid'], ['connections', ['b','c','d']]];

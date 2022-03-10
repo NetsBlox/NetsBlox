@@ -21,8 +21,8 @@ describe(utils.suiteName(__filename), function() {
         ['getUserVariable', ['name']],
         ['setUserVariable', ['name', 'value']],
         ['deleteUserVariable', ['name']],
-        ['listenToVariable', ['name', 'msgType', 'password']],
-        ['listenToUserVariable', ['name', 'msgType']],
+        ['listenToVariable', ['name', 'msgType', 'password', 'duration']],
+        ['listenToUserVariable', ['name', 'msgType', 'duration']],
     ]);
 
     let counter = 0;
