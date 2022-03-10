@@ -21,10 +21,6 @@ describe(utils.suiteName(__filename), function() {
         ['getUserVariable', ['name']],
         ['setUserVariable', ['name', 'value']],
         ['deleteUserVariable', ['name']],
-        ['lockAndGetVariable', ['name', 'password']],
-        ['setAndUnlockVariable', ['name', 'value', 'password']],
-        ['getAndSetVariable', ['name', 'value', 'password']],
-        ['getAndSetUserVariable', ['name', 'value']],
         ['listenToVariable', ['name', 'msgType', 'password']],
         ['listenToUserVariable', ['name', 'msgType']],
     ]);
