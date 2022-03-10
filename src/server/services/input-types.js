@@ -456,6 +456,31 @@ const TIME_UNITS_MS = {
     'w': TIME_WEEK, 'week': TIME_WEEK, 'weeks': TIME_WEEK,
 };
 
+function parseDuration(input) {
+    input = input.trimLeft();
+    let res = 0;
+    while (input.length != 0) {
+        const delta = input.match(/^([+-]?)\s*(\d+\.?\d*)\s*([^+-\s]*)/);
+        if (!delta) throw Error(`Failed to parse ${input} as a duration`);
+        if (delta[3].length === 0) throw Error(`Time offset "${delta[0]}" missing units`);
+
+        input = input.slice(delta[0].length).trimLeft();
+        const amount = +`${delta[1]}${delta[2]}`;
+        const unit = delta[3].toLowerCase();
+
+        const unitms = TIME_UNITS_MS[unit];
+        if (!unitms) throw Error(`Unknown time unit: "${delta[2]}"`);
+        res += amount * unitms;
+    }
+    return res;
+}
+defineType({
+    name: 'Duration',
+    description: 'A length of time such as ``1min`` or ``5hr + 12s``',
+    baseType: 'String',
+    parser: parseDuration,
+});
+
 defineType({
     name: 'Date',
     description: 'A calendar date.',
@@ -490,22 +515,7 @@ defineType({
             dateLen = meta[0].length;
         }
 
-        let rest = input.slice(dateLen).trimLeft();
-        let datems = +date;
-        while (rest.length != 0) {
-            const delta = rest.match(/^([+-]?)\s*(\d+\.?\d*)\s*([^+-\s]*)/);
-            if (!delta) return basicParser(input);
-            if (delta[3].length === 0) throw Error(`Time offset "${delta[0]}" missing units`);
-
-            rest = rest.slice(delta[0].length).trimLeft();
-            const amount = +`${delta[1]}${delta[2]}`;
-            const unit = delta[3].toLowerCase();
-
-            const unitms = TIME_UNITS_MS[unit];
-            if (!unitms) throw Error(`Unknown Date time unit: "${delta[2]}"`);
-            datems += amount * unitms;
-        }
-        return new Date(datems);
+        return new Date(+date + parseDuration(input.slice(dateLen)));
     },
 });
 
