@@ -23,6 +23,10 @@ describe(utils.suiteName(__filename), function() {
         ['deleteUserVariable', ['name']],
         ['listenToVariable', ['name', 'msgType', 'password', 'duration']],
         ['listenToUserVariable', ['name', 'msgType', 'duration']],
+        ['lockAndGetVariable', ['name', 'password']],
+        ['setAndUnlockVariable', ['name', 'value', 'password']],
+        ['getAndSetVariable', ['name', 'value', 'password']],
+        ['getAndSetUserVariable', ['name', 'value']],
     ]);
 
     let counter = 0;

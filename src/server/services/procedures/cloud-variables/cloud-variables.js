@@ -466,4 +466,48 @@ CloudVariables.listenToUserVariable = async function(name, msgType, duration = 6
     bucket[this.socket.clientId] = [this.socket, msgType, +new Date() + duration];
 };
 
+/**
+ * Equivalent to calling :func:`CloudVariables.lockVariable` followed by :func:`CloudVariables.getVariable`.
+ * @param {String} name Variable name
+ * @param {String=} password Password (if password-protected)
+ */
+ CloudVariables.lockAndGetVariable = async function(name, password) {
+    await this.lockVariable(name, password);
+    return await this.getVariable(name, password);
+};
+
+/**
+ * Equivalent to calling :func:`CloudVariables.setVariable` followed by :func:`CloudVariables.unlockVariable`.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.setAndUnlockVariable = async function(name, value, password) {
+    await this.setVariable(name, value, password);
+    await this.unlockVariable(name, password);
+};
+
+/**
+ * Sets the variable to the given value and returns the previous value.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ * @param {String=} password Password (if password-protected)
+ */
+CloudVariables.getAndSetVariable = async function(name, value, password) {
+    const res = await this.getVariable(name, password);
+    await this.setVariable(name, value, password);
+    return res;
+};
+
+/**
+ * Sets the variable to the given value and returns the previous value.
+ * @param {String} name Variable name
+ * @param {Any} value Value to store in variable
+ */
+CloudVariables.getAndSetUserVariable = async function(name, value) {
+    const res = await this.getUserVariable(name);
+    await this.setUserVariable(name, value);
+    return res;
+};
+
 module.exports = CloudVariables;
