@@ -45,7 +45,7 @@ const common = require('./common');
 // v - image box updated
 // W - get toggle state
 // w - set toggle state
-// X - location (latlong + bearing + altitude)
+// X - location (latlong + heading + altitude)
 // Y - gyroscope
 // y - add custom radiobutton control
 // Z - add custom checkbox control
@@ -825,7 +825,7 @@ Device.prototype._getLocationRaw = async function (device, args, clientId) {
 Device.prototype.getLocation = async function (device, args, clientId) {
     return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals.slice(0, 2);
 };
-Device.prototype.getBearing = async function (device, args, clientId) {
+Device.prototype.getGPSHeading = async function (device, args, clientId) {
     return throwIfErr(await this._getLocationRaw(device, args, clientId)).vals[2];
 };
 Device.prototype.getAltitude = async function (device, args, clientId) {
@@ -1083,7 +1083,7 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'U') this._sendControlResult('addimagedisplay', message);
     else if (command === 'b') {
         const id = message.toString('utf8', 11);
-        this._fireRawCustomEvent(id, {id});
+        this._fireRawCustomEvent(id, { device: this.id, id });
     }
     else if (command === 'n') {
         if (message.length >= 24) {
@@ -1093,7 +1093,7 @@ Device.prototype.onMessage = function (message) {
                 this.controlUpdateTimestamps[id] = time;
 
                 const tag = parseClickTag(message[15]);
-                if (tag) this._fireRawCustomEvent(id, { id, x: message.readFloatBE(16), y: message.readFloatBE(20), tag });
+                if (tag) this._fireRawCustomEvent(id, { device: this.id, id, x: message.readFloatBE(16), y: message.readFloatBE(20), tag });
             }
         }
     }
@@ -1105,7 +1105,7 @@ Device.prototype.onMessage = function (message) {
                 this.controlUpdateTimestamps[id] = time;
 
                 const tag = parseClickTag(message[15]);
-                if (tag) this._fireRawCustomEvent(id, { id, level: message.readFloatBE(16), tag });
+                if (tag) this._fireRawCustomEvent(id, { device: this.id, id, level: message.readFloatBE(16), tag });
             }
         }
     }
@@ -1115,7 +1115,7 @@ Device.prototype.onMessage = function (message) {
             if (message.length >= 12 + idlen) {
                 const id = message.toString('utf8', 12, 12 + idlen);
                 const text = message.toString('utf8', 12 + idlen);
-                this._fireRawCustomEvent(id, {id, text});
+                this._fireRawCustomEvent(id, { device: this.id, id, text });
             }
         }
     }
@@ -1123,7 +1123,7 @@ Device.prototype.onMessage = function (message) {
         if (message.length >= 12) {
             const state = message[11] !== 0;
             const id = message.toString('utf8', 12, message.length);
-            this._fireRawCustomEvent(id, { id, state });
+            this._fireRawCustomEvent(id, { device: this.id, id, state });
         }
     }
     else if (command === 'W') this._sendBoolStateResult('getToggleState', 'toggleable', message);
