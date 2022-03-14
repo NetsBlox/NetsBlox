@@ -83,7 +83,8 @@ DailyWordGuess._getDailyWord = async function () {
     let date = new Date();
 
     // if daily word not found or out of date, and no promise already created
-    if ((DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != date.getDate() && DailyWordGuess._dailyWordDate.getMonth() != date.getMonth())) && (!DailyWordGuess._dailyWord || (DailyWordGuess._dailyWord && !DailyWordGuess._dailyWord.then))) {        
+    const dailyWordOld = DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != date.getDate() && DailyWordGuess._dailyWordDate.getMonth() != date.getMonth() && DailyWordGuess._dailyWordDate.getFullYear() != date.getFullYear());
+    if (dailyWordOld && (!DailyWordGuess._dailyWord || (DailyWordGuess._dailyWord && !DailyWordGuess._dailyWord.then))) {        
         // Check if word of the day already in DB
         date.setHours(0, 0, 0, 0);
 
