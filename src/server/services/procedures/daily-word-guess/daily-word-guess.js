@@ -79,54 +79,59 @@ DailyWordGuess._getDailyWord = async function () {
     if (DailyWordGuess._collection == null) {
         DailyWordGuess._collection = GetStorage().usedWords;
     }
+    
+    let date = new Date();
 
-    if (DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != new Date().getDate() && DailyWordGuess._dailyWordDate.getMonth() != new Date().getMonth())) {
+    // if daily word not found or out of date, and no promise already created
+    if ((DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != date.getDate() && DailyWordGuess._dailyWordDate.getMonth() != date.getMonth())) && (!DailyWordGuess._dailyWord || (DailyWordGuess._dailyWord && !DailyWordGuess._dailyWord.then))) {        
         // Check if word of the day already in DB
-        let date = new Date();
         date.setHours(0, 0, 0, 0);
 
-        let existing = await DailyWordGuess._collection.findOne({
-            date
-        });
+        DailyWordGuess._dailyWord = (async () => {
+            let existing = await DailyWordGuess._collection.findOne({
+                date
+            });
 
-        if (existing != null) {
-            // Cache the word of the day
-            logger.log('Existing word found');
-            DailyWordGuess._dailyWord = existing.word;
-            DailyWordGuess._dailyWordDate = new Date(existing.date);
-        } else {
-            logger.log('Generating new word');
+            if (existing != null) {
+                // Cache the word of the day
+                logger.log('Existing word found');
+                DailyWordGuess._dailyWord = existing.word;
+                DailyWordGuess._dailyWordDate = new Date(existing.date);
+            } else {
+                logger.log('Generating new word');
             
-            let oldDate = new Date(date);
-
-            do {
-                DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
-
+                // Earliest date to look for previous word use
+                let oldDate = new Date(date);
                 oldDate.setFullYear(oldDate.getFullYear() - 1);
 
-                // Test if word already used in past year
-                existing = await DailyWordGuess._collection.findOne({
-                    word: DailyWordGuess._dailyWord,
-                    date: {
-                        '$gte' : oldDate
-                    }
-                });
-            } while (existing != null);
+                // Generate new word
+                do {
+                    DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
+                
+                    // Test if word already used in past year
+                    existing = await DailyWordGuess._collection.findOne({
+                        word: DailyWordGuess._dailyWord,
+                        date: {
+                            '$gte': oldDate
+                        }
+                    });
+                } while (existing != null);
             
-            DailyWordGuess._collection.insertOne({
-                date,
-                word: DailyWordGuess._dailyWord
-            });
-            DailyWordGuess._dailyWordDate = date;
-        }
+                // Insert generated word in database
+                DailyWordGuess._collection.findOneAndUpdate({ date }, { $set: { date, word: DailyWordGuess._dailyWord } }, { upsert: true });
+                DailyWordGuess._dailyWordDate = date;
+            }
 
-        logger.log(`Word for ${DailyWordGuess._dailyWordDate.toDateString()}: ${DailyWordGuess._dailyWord}`);
+            logger.log(`Word for ${DailyWordGuess._dailyWordDate.toDateString()}: ${DailyWordGuess._dailyWord}`);
 
-        // Clear game states
-        DailyWordGuess._states = {};
+            // Clear game states
+            DailyWordGuess._states = {};
+
+            return DailyWordGuess._dailyWord;
+        })();
     }
 
-    return DailyWordGuess._dailyWord;
+    return await Promise.resolve(DailyWordGuess._dailyWord);
 };
 
 /**
