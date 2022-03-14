@@ -91,10 +91,11 @@ DailyWordGuess._getDailyWord = async function () {
         } else {
             logger.log('Generating new word');
             
+            let oldDate = new Date(date);
+            
             do {
                 DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
 
-                let oldDate = new Date(date);
                 oldDate.setFullYear(oldDate.getFullYear() - 1);
 
                 // Test if word already used in past year
@@ -110,7 +111,7 @@ DailyWordGuess._getDailyWord = async function () {
                 date,
                 word: DailyWordGuess._dailyWord
             });
-            DailyWordGuess._dailyWordDate = new Date();
+            DailyWordGuess._dailyWordDate = date;
         }
 
         logger.log(`Word for ${DailyWordGuess._dailyWordDate.toDateString()}: ${DailyWordGuess._dailyWord}`);
