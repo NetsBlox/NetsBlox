@@ -21,59 +21,52 @@ Example.getRoleNames = function() {
 Example.toString = function() {
     let roles = Object.keys(this._roles).map(name => this._roles[name]);
     const projectName = roles[0].RoomName;
-    // prepare the roles' code
-    let wrappedRoles = roles.map(role => {
-        return `<role name="${role.ProjectName}">` + role.SourceCode + role.Media + '</role>';
-    });
-    return `<room name="${projectName}" app="NetsBlox ${nbVersion}, http://netsblox.org">`
-    + wrappedRoles.join('') + '</room>';
+
+    let res = `<room name="${projectName}" app="NetsBlox ${nbVersion}, http://netsblox.org">`;
+    for (const role of roles) {
+        res += `<role name="${role.ProjectName}">${role.SourceCode}${role.Media}</role>`;
+    }
+    res += '</room>';
+
+    return res;
 };
 
-// Read in the directories
 fs.readdirSync(__dirname)
     .map(dir => path.join(__dirname, dir))
     .filter(name => fs.lstatSync(name).isDirectory())
-    // create pairs -> [dirname, [xml, files]]
-    .map(dir => [path.basename(dir), fs.readdirSync(dir)
-        .filter(name => path.extname(name) === '.xml')]
-    )
-    // create the example data objects
+    .map(dir => [path.basename(dir), fs.readdirSync(dir).filter(name => path.extname(name) === '.xml')])
     .map(pair => {
-        var result = Object.create(Example),
-            clients = pair[1];
+        const [dirname, clients] = pair;
+        const result = Object.create(Example);
 
-        result.RoomName = pair[0];
+        result.RoomName = dirname;
         result._roles = {};
-
-        // Add project source
-        for (var i = clients.length; i--;) {
-            result._roles[clients[i].replace('.xml', '')] =
-                fs.readFileSync(path.join(__dirname, pair[0], clients[i]), 'utf8');
+        result._projMedia = null;
+        for (const client of clients) {
+            const name = client.replace('.xml', '');
+            const content = fs.readFileSync(path.join(__dirname, dirname, client), 'utf8');
+            result._roles[name] = content;
         }
         return result;
     })
     .forEach(item => {
-        var roles = Object.keys(item._roles),
-            src;
-
         item.roles = {};
         item.services = [];
-        for (var i = roles.length; i--;) {
-            item.roles[roles[i]] = null;
+        for (const rolename in item._roles) {
+            item.roles[rolename] = null;
             // TODO: FIXME: the roles are not the correct format
-            src = item._roles[roles[i]];
+            const src = item._roles[rolename];
             item.services = item.services.concat(extractRpcs(src));
-            item._roles[roles[i]] = {
+            item._roles[rolename] = {
                 SourceCode: src,
-                ProjectName: roles[i],
+                ProjectName: rolename,
                 RoomName: item.RoomName,
                 Media: '<media></media>'
             };
 
         }
-        item.services = _.uniq(item.services); // keep only the unique services.
+        item.services = _.uniq(item.services);
 
-        // Add to examples dictionary
         examples[item.RoomName] = item;
     });
 
