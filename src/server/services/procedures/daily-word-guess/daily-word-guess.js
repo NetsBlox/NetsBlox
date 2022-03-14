@@ -12,7 +12,8 @@ const logger = require('../utils/logger')('daily-word-guess');
  */
 const DailyWordGuess = {};
 
-DailyWordGuess._collection = GetStorage().usedWords;
+
+DailyWordGuess._collection = null;
 DailyWordGuess._dailyWord = '';
 DailyWordGuess._dailyWordDate = null;
 DailyWordGuess._states = {};
@@ -74,6 +75,11 @@ DailyWordGuess.timeRemaining = function () {
  * Get the day's word
  */
 DailyWordGuess._getDailyWord = async function () {
+
+    if (DailyWordGuess._collection == null) {
+        DailyWordGuess._collection = GetStorage().usedWords;
+    }
+
     if (DailyWordGuess._dailyWordDate == null || (DailyWordGuess._dailyWordDate.getDate() != new Date().getDate() && DailyWordGuess._dailyWordDate.getMonth() != new Date().getMonth())) {
         // Check if word of the day already in DB
         let date = new Date();
@@ -92,7 +98,7 @@ DailyWordGuess._getDailyWord = async function () {
             logger.log('Generating new word');
             
             let oldDate = new Date(date);
-            
+
             do {
                 DailyWordGuess._dailyWord = WordGuess._getRandomCommonWord(5);
 
