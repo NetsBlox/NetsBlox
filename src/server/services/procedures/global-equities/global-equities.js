@@ -66,7 +66,7 @@
  }
  
  /**
-  * @param {String} searchString String to search matches
+  * @param {BoundedString<2>} searchString String to search matches
   * @return {Array} Array of results
   */
  GlobalEquities.symbolSearch = async function(searchString){
