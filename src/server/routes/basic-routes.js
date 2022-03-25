@@ -42,26 +42,29 @@ module.exports = [
         Method: 'get',
         URL: 'ResetPW',
         Handler: function(req, res) {
-            return res.status(400).send('ERROR: Password reset is temporarily disabled.');
-            //logger.log('password reset request:', req.query.Username);
-            //const username = req.query.Username;
+            if (isTorIP(req.ip)) {
+                return res.status(403).send('Password reset from Tor is not allowed.');
+            }
 
-            // Look up the email
-            //Storage.users.get(username)
-                //.then(user => {
-                    //if (user) {
-                        //delete user.hash;  // force tmp password creation
-                        //user.save();
-                        //return res.sendStatus(200);
-                    //} else {
-                        //logger.log('Could not find user to reset password (user "'+username+'")');
-                        //return res.status(400).send('ERROR: could not find user "'+username+'"');
-                    //}
-                //})
-                //.catch(e => {
-                    //logger.log('Server error when looking for user: "'+username+'". Error:', e);
-                    //return res.status(500).send('ERROR: ' + e);
-                //});
+            logger.log('password reset request:', req.query.Username);
+            const username = req.query.Username;
+
+             Look up the email
+            Storage.users.get(username)
+                .then(user => {
+                    if (user) {
+                        delete user.hash;  // force tmp password creation
+                        user.save();
+                        return res.sendStatus(200);
+                    } else {
+                        logger.log('Could not find user to reset password (user "'+username+'")');
+                        return res.status(400).send('ERROR: could not find user "'+username+'"');
+                    }
+                })
+                .catch(e => {
+                    logger.log('Server error when looking for user: "'+username+'". Error:', e);
+                    return res.status(500).send('ERROR: ' + e);
+                });
         }
     },
     {
@@ -73,7 +76,9 @@ module.exports = [
                 password = req.body.Password,
                 email = req.body.Email;
 
-            return res.status(400).send('ERROR: Account creation is temporarily disabled. If you would like to sign up, email brian.broll@gmail.com.');
+            if (isTorIP(req.ip)) {
+                return res.status(403).send('Sign up from Tor is not allowed.');
+            }
 
             // Must have an email and username
             if (!email || !uname) {
