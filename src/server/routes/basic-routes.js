@@ -73,6 +73,8 @@ module.exports = [
                 password = req.body.Password,
                 email = req.body.Email;
 
+            return res.status(400).send('ERROR: Account creation is temporarily disabled. If you would like to sign up, email brian.broll@gmail.com.');
+
             // Must have an email and username
             if (!email || !uname) {
                 logger.log('Invalid request to /SignUp');
