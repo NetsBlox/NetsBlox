@@ -49,7 +49,7 @@ module.exports = [
             logger.log('password reset request:', req.query.Username);
             const username = req.query.Username;
 
-             Look up the email
+            // Look up the email
             Storage.users.get(username)
                 .then(user => {
                     if (user) {
