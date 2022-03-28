@@ -14,11 +14,13 @@ const BugReporter = require('../bug-reporter');
 const Storage = require('../storage/storage');
 const Messages = require('../storage/messages');
 const BannedAcounts = require('../storage/banned-accounts');
+const ResetTokens = require('../storage/reset-tokens');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
 const Strategies = require('../api/core/strategies');
 const {RequestError} = require('../api/core/errors');
 const {isProfane, isAnonymizingIP} = middleware;
+const mailer = require('../mailer');
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
@@ -41,22 +43,59 @@ module.exports = [
     {
         Method: 'get',
         URL: 'ResetPW',
-        Handler: function(req, res) {
+        Handler: async function(req, res) {
             if (isAnonymizingIP(req.ip)) {
-                return res.status(403).send('Password reset not allowed.');
+                return res.status(403).send('ERROR: Password reset not allowed.');
             }
 
 
             logger.log('password reset request:', req.query.Username);
             const username = req.query.Username;
+            const user = await Storage.users.get(username);
+            if (!user) {
+                return res.status(404).send('ERROR: User not found.');
+            }
+
+            try {
+                const token = await ResetTokens.new(username);
+                const origin = `${process.env.SERVER_PROTOCOL || req.protocol}://${req.get('host')}`;
+                const url = `${origin}/api/DoResetPW?token=${token.value}&username=${encodeURIComponent(username)}`;
+
+                mailer.sendMail({
+                    to: user.email,
+                    subject: 'Password Reset Request',
+                    html: `<p>Hello ${username},<br/><br/>Please click the link below to reset your NetsBlox password:<br/><br/>`+
+                        url + '<br/><br/>If you did not make this request, feel free to ignore this email.'
+                });
+            } catch (err) {
+                console.log(err);
+                return res.status(400).send('ERROR: Unable to issue new token. Only one can be issued per hour.');
+            }
+        }
+    },
+    {
+        Method: 'get',
+        URL: 'DoResetPW',
+        Handler: function(req, res) {
+            if (isAnonymizingIP(req.ip)) {
+                return res.status(403).send('ERROR: Password reset not allowed.');
+            }
+
+
+            logger.log('password reset request:', req.query.Username);
+            const {username, token} = req.query;
 
             // Look up the email
             Storage.users.get(username)
-                .then(user => {
+                .then(async user => {
+                    if (!(await ResetTokens.isValidToken(username, token))) {
+                        return res.status(400).send('ERROR: Invalid token');
+                    }
+
                     if (user) {
                         delete user.hash;  // force tmp password creation
                         user.save();
-                        return res.sendStatus(200);
+                        return res.status(200).send(`Password has been reset. An email with the new password has been sent to ${user.email}`);
                     } else {
                         logger.log('Could not find user to reset password (user "'+username+'")');
                         return res.status(400).send('ERROR: could not find user "'+username+'"');
@@ -218,7 +257,7 @@ module.exports = [
             const projectId = req.body.projectId;
 
             if (isAnonymizingIP(req.ip)) {
-                return res.status(403).send('Login not allowed.');
+                return res.status(403).send('ERROR: Login not allowed.');
             }
 
             // Should check if the user has a valid cookie. If so, log them in with it!

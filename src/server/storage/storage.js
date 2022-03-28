@@ -10,6 +10,7 @@ var MongoClient = require('mongodb').MongoClient,
 const ServicesStorage = require('../services/storage');
 const OAuthStorage = require('./oauth');
 const BannedAccounts = require('./banned-accounts');
+const ResetTokens = require('./reset-tokens');
 const Libraries = require('./libraries');
 const ProjectActions = require('./project-actions');
 const Logger = require('../logger');
@@ -44,6 +45,7 @@ Storage.prototype.connect = function(mongoURI) {
             ServicesStorage.init(this._logger, db);
             OAuthStorage.init(this._logger, db);
             BannedAccounts.init(this._logger, db);
+            ResetTokens.init(this._logger, db);
 
             this._db = db;
             this._client = client;
