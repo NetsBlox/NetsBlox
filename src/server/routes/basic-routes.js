@@ -67,6 +67,7 @@ module.exports = [
                     html: `<p>Hello ${username},<br/><br/>Please click the link below to reset your NetsBlox password:<br/><br/>`+
                         url + '<br/><br/>If you did not make this request, feel free to ignore this email.'
                 });
+                return res.status(200).send('Password reset request successful!');
             } catch (err) {
                 logger.log(err);
                 return res.status(400).send('ERROR: Unable to issue new token. Only one can be issued per hour.');
