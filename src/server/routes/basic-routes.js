@@ -68,7 +68,7 @@ module.exports = [
                         url + '<br/><br/>If you did not make this request, feel free to ignore this email.'
                 });
             } catch (err) {
-                console.log(err);
+                logger.log(err);
                 return res.status(400).send('ERROR: Unable to issue new token. Only one can be issued per hour.');
             }
         }
