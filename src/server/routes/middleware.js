@@ -383,6 +383,20 @@ function isTorIP(ip) {
     return torExitIPs.includes(ip);
 }
 
+function isOperaVPN(ip) {
+    const addresses = [
+        '77.111.244.',
+        '77.111.245.',
+        '77.111.246.',
+        '77.111.247.',
+    ];
+    return !!addresses.find(addr => ip.startsWith(addr));
+}
+
+function isAnonymizingIP(ip) {
+    return isOperaVPN(ip) || isTorIP(ip);
+}
+
 module.exports = {
     hasSocket,
     noCache,
@@ -399,7 +413,7 @@ module.exports = {
     memberIsNew,
     canManageMember,
     isProfane,
-    isTorIP,
+    isAnonymizingIP,
 
     // additional
     init: _server => {

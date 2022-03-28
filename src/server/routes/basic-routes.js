@@ -18,7 +18,7 @@ const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
 const Strategies = require('../api/core/strategies');
 const {RequestError} = require('../api/core/errors');
-const {isProfane, isTorIP} = middleware;
+const {isProfane, isAnonymizingIP} = middleware;
 
 const ExternalAPI = {};
 UserAPI.concat(ProjectAPI, RoomAPI)
@@ -42,9 +42,10 @@ module.exports = [
         Method: 'get',
         URL: 'ResetPW',
         Handler: function(req, res) {
-            if (isTorIP(req.ip)) {
-                return res.status(403).send('Password reset from Tor is not allowed.');
+            if (isAnonymizingIP(req.ip)) {
+                return res.status(403).send('Password reset not allowed.');
             }
+
 
             logger.log('password reset request:', req.query.Username);
             const username = req.query.Username;
@@ -76,8 +77,8 @@ module.exports = [
                 password = req.body.Password,
                 email = req.body.Email;
 
-            if (isTorIP(req.ip)) {
-                return res.status(403).send('Sign up from Tor is not allowed.');
+            if (isAnonymizingIP(req.ip)) {
+                return res.status(403).send('Sign up is not allowed.');
             }
 
             // Must have an email and username
@@ -216,8 +217,8 @@ module.exports = [
         Handler: async function(req, res) {
             const projectId = req.body.projectId;
 
-            if (isTorIP(req.ip)) {
-                return res.status(403).send('Login from Tor not allowed.');
+            if (isAnonymizingIP(req.ip)) {
+                return res.status(403).send('Login not allowed.');
             }
 
             // Should check if the user has a valid cookie. If so, log them in with it!
