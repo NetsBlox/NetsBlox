@@ -414,7 +414,7 @@ Server.prototype.createRouter = function() {
             }
 
             router.route(api.URL)[method](async (req, res) => {
-                const isFromNetsBlox = 'x-netsblox-source' in req.headers;
+                const isFromNetsBlox = req.headers['x-source'] === 'NetsBlox';
                 if (isFromNetsBlox) {
                     logger.warn(`blocked NetsBlox-origin request to ${api.URL}`);
                     return res.status(403).send('ERROR: Operation is not allowed');
