@@ -222,7 +222,7 @@ britishmuseum.itemDetails = function(itemId){
             this._logger.trace(idealObj);
             return idealObj;
         } catch (e) {
-            this._logger.error('exception occured when creating resource structure', e);
+            this._logger.error('exception occurred when creating resource structure', e);
             return null;
         }
     }; // end of parser

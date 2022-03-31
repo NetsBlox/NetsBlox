@@ -28,7 +28,7 @@ In order to enable specific RPCs which use external APIs, you may have to set en
 The list of all the environment variables are explained in :doc:`rpc-support`.
 
 Note that addressing directories and files in windows is different from linux.
-For example the direcotry divider is ``\`` as opposted to ``/``.
+For example the directory divider is ``\`` as opposed to ``/``.
 
 Next, just navigate to ``localhost:8080`` in a web browser to try it out!
 

@@ -261,7 +261,7 @@ function mkextract () {
 
     /**
      * Read lines until they make a block
-     * Return parsed block once fullfilled or null otherwise
+     * Return parsed block once fulfilled or null otherwise
      */
     return function extract (line) {
         var result = null;

@@ -16,7 +16,7 @@ fdserial* xbee_open(int rxpin, int txpin, int mode);
 void xbee_close(fdserial* xbee);
 
 /**
- * Reads all characters untill no character is received within the
+ * Reads all characters until no character is received within the
  * given timeout in milliseconds.
  */
 void xbee_flush(fdserial* xbee, int timeout);

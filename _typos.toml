@@ -1,0 +1,40 @@
+[type.xml]
+extend-glob = ["*.xml"]
+check-file = false
+
+[type.jsonl]
+extend-glob = ["*.jsonl"]
+check-file = false
+
+[type.list]
+extend-glob = ["*.list"]
+check-file = false
+
+[type.csv]
+extend-glob = ["*.csv"]
+check-file = false
+
+[type.minjs]
+extend-glob = ["*.min.js"]
+check-file = false
+
+[files]
+extend-exclude = [
+    # auto-generated files
+    "package-lock.json",
+
+    # submodules
+    "src/browser/*",
+    "src/server/services/procedures/roboscape/speckjs/*",
+
+    # data files
+    "src/server/services/procedures/common-words/words/*.txt",
+    "src/server/services/procedures/hurricane-data/*.txt",
+    "src/server/services/procedures/ice-core-data/data/domec-deuterium/*.txt",
+    "src/server/services/procedures/nexrad-radar/RadarLocations.js",
+    "src/server/services/procedures/word-guess/dict/*.*",
+
+    # misc
+    "src/common/sha512.js",
+    "test/utils/sha512.js",
+]

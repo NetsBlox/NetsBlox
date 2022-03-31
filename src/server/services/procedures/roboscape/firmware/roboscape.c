@@ -129,7 +129,7 @@ void display_incoming()
     }
 }
 
-// used for configuation stage
+// used for configuration stage
 // sync communication with xbee module
 void com_sync(const char* cmd, int len, char* comment)
 {

@@ -449,7 +449,7 @@ int servo360_pidA(int p)
   // Derivative difference
   _fs[p].derivative = _fs[p].er - _fs[p].erP;
   
-  // Clamp itegral level
+  // Clamp integral level
   if(_fs[p].integral > _fs[p].iMax) _fs[p].integral = _fs[p].iMax;
   if(_fs[p].integral < _fs[p].iMin) _fs[p].integral = _fs[p].iMin;
 
@@ -477,7 +477,7 @@ int servo360_pidA(int p)
 // Velocity PID control
 // Calculated distance marches forward based on speed.  The control system 
 // calculates position error at 50 Hz by subtracting actual position from 
-// calcualted position.  This is the error that is the basis for the 
+// calculated position.  This is the error that is the basis for the 
 // P, I, and D calculations.   
 int servo360_pidV(int p)  
 {

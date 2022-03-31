@@ -133,11 +133,11 @@ ParallelDots.getSarcasmProbability = async function(text) {
 
 /**
  * Get the intent of the given text along with the confidence score.
- * This is returned as structed data with confidence levels for each of the following intents:
+ * This is returned as structured data with confidence levels for each of the following intents:
  * ``news``, ``query``, ``spam``, ``marketing``, and ``feedback``.
  *
  * @param {String} text text to analyze
- * @returns {Object} structed data with confidence levels for each intent
+ * @returns {Object} structured data with confidence levels for each intent
  */
 ParallelDots.getIntent = async function(text) {
     const result = await this._parallelDotsRequest('/intent', text);

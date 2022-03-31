@@ -1,6 +1,6 @@
 // The RPC Manager manages the contexts of rooms handles rpcs
 //
-// It will need to load RPC's from the RPC directory and then mantain a separate
+// It will need to load RPC's from the RPC directory and then maintain a separate
 // RPC context for each room.
 
 const fs = require('fs');

@@ -354,7 +354,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
         return this._passToDevice('addButton', arguments);
     };
     /**
-     * Adds an image display wit hthe given position and size.
+     * Adds an image display with the given position and size.
      * If not specified, an image display is by default ``readonly = true``, meaning that the user cannot modify its content.
      * If (explicitly) set to ``readonly = false``, then the user can click on the image display to change the image to a new picture from the camera.
      * 
@@ -552,7 +552,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     /**
      * Adds a radio button to the canvas.
      * Radio buttons are like toggles (checkboxes), except that they are organized into groups
-     * and the user can check at most one radion button from any given group.
+     * and the user can check at most one radio button from any given group.
      * These can be used to accept multiple-choice input from the user.
      * 
      * @category Display
@@ -984,7 +984,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Gets the current output of the gyroscope sensor, which measures rotational acceleration (in degress/s²) along the three axes of the device.
+     * Gets the current output of the gyroscope sensor, which measures rotational acceleration (in degrees/s²) along the three axes of the device.
      * 
      * Sensor name: ``gyroscope``
      * 
@@ -1031,7 +1031,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
     };
 
     /**
-     * Gets the current ouput of the magnetic field sensor, measured in μT (micro Tesla) along each axis of the device.
+     * Gets the current output of the magnetic field sensor, measured in μT (micro Tesla) along each axis of the device.
      * This is provided by the magnetic field sensor, so using this RPC on devices without a magnetometer will result in an error.
      * 
      * Notably, this RPC can be used as a compass (measuring Earth's magnetic field).

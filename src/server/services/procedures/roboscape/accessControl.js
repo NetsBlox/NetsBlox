@@ -54,12 +54,12 @@ const ensureAuthorized = async function(username, robotId) {
 };
 
 // returns accessible robot ids to this username
-// interesetedRobots: optional to help the search in database
-const authorizedRobots = async function(username, interesetedRobots) {
-    if (interesetedRobots && interesetedRobots.length === 0) return [];
-    let docs = await _findRobotDocs(interesetedRobots);
+// interestedRobots: optional to help the search in database
+const authorizedRobots = async function(username, interestedRobots) {
+    if (interestedRobots && interestedRobots.length === 0) return [];
+    let docs = await _findRobotDocs(interestedRobots);
     return docs
-        .map((doc, idx) => [doc, interesetedRobots[idx]])
+        .map((doc, idx) => [doc, interestedRobots[idx]])
         .filter(([doc]) => {
             if (!doc) return MISSING_DOC_ALLOWED;
             return _hasAccessDoc(username, doc);
