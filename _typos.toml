@@ -1,30 +1,27 @@
-[type.xml]
-extend-glob = ["*.xml"]
-check-file = false
-
-[type.jsonl]
-extend-glob = ["*.jsonl"]
-check-file = false
-
-[type.list]
-extend-glob = ["*.list"]
-check-file = false
-
-[type.csv]
-extend-glob = ["*.csv"]
-check-file = false
-
-[type.minjs]
-extend-glob = ["*.min.js"]
-check-file = false
-
 [files]
 extend-exclude = [
+    # dear lord why is this not ignored by default
+    "_typos.toml",
+
+    # general ignored file types
+    "*.jsonl",
+    "*.list",
+    "*.csv",
+    "*.png",
+    "*.pdf",
+    "*.tex",
+    "*.xml",
+    "*.svg",
+    "*.min.js",
+
     # auto-generated files
     "package-lock.json",
 
-    # submodules
-    "src/browser/*",
+    # select submodule subdirectories
+    "src/browser/test/*",
+    "src/browser/dist/*",
+    "src/browser/locale/*",
+    "src/browser/src/morphic.js", # has german text
     "src/server/services/procedures/roboscape/speckjs/*",
 
     # data files
@@ -35,6 +32,13 @@ extend-exclude = [
     "src/server/services/procedures/word-guess/dict/*.*",
 
     # misc
+    "src/browser/src/sha512.js",
     "src/common/sha512.js",
     "test/utils/sha512.js",
 ]
+
+[type.js]
+extend-glob = ["*.js"]
+[type.js.extend-words]
+parms = "parms" # too pervasive and part of the custom block api
+parm = "parm" # too pervasive and part of the custom block api
