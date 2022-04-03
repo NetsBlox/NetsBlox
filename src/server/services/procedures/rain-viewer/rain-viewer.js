@@ -9,16 +9,16 @@
  */
 
 const logger = require('../utils/logger')('rain-viewer');
+const SphericalMercator = require('sphericalmercator');
 const { GoogleMapsKey } = require('../utils/api-key');
 const ApiConsumer = require('../utils/api-consumer');
 const CacheManager = require('cache-manager');
 const FsStore = require('cache-manager-fs');
-const fs = require('fs');
-const jimp = require('jimp');
 const types = require('../../input-types');
 const utils = require('../utils');
-const SphericalMercator = require('sphericalmercator');
+const jimp = require('jimp');
 const _ = require('lodash');
+const fs = require('fs');
 
 const CACHE_DIR = process.env.CACHE_DIR || 'cache';
 logger.trace(`cache dir (root): ${CACHE_DIR}`);
@@ -36,7 +36,7 @@ const MapCache = CacheManager.caching({
     },
 });
 
-const RainViewer = new ApiConsumer('RainViewer', '', { cache: { ttl: 60 } }); // radar data updates every few minutes
+const RainViewer = new ApiConsumer('RainViewer', '', { cache: { ttl: 5 * 60 } }); // radar data updates every 10 minutes (or so)
 ApiConsumer.setRequiredApiKey(RainViewer, GoogleMapsKey);
 
 const MERC = new SphericalMercator({size:256});
@@ -66,12 +66,6 @@ types.defineType({
     baseParams: TIME_OFFSET_MAP,
 });
 
-RainViewer._getIndex = async function () {
-    return await this._requestData({
-        baseUrl: `https://api.rainviewer.com/public/weather-maps.json`,
-    });
-};
-
 RainViewer.getTimeOffsets = function () {
     return Object.keys(TIME_OFFSET_MAP);
 };
@@ -80,38 +74,6 @@ function decimalize(val) {
     const str = val.toString();
     return str.includes('.') ? str : `${str}.0`;
 }
-
-/**
- * Gets an radar image for the specified location.
- * You can use the ``timeOffset`` input to get (recent) past or forecasted radar images.
- *
- * @param {Latitude} latitude Latitude of the returned map (centered).
- * @param {Longitude} longitude Longitude of the returned map (centered).
- * @param {BoundedInteger<1,25>} zoom The zoom level of the returned image (see the :doc:`/service/GoogleMaps/index` service).
- * @param {TimeOffset=} timeOffset The time offset of the desired forecast (defaults to ``now``, which represents current weather).
- * @param {Object=} options Additional drawing options.
- * @param {Enum<256,512>=} options.size Size of the returned (square) image in pixels (default 512).
- * @param {Boolean=} options.smooth If set to true, smooths the returned image to be more aesthetically pleasing (default true).
- * @param {Boolean=} options.showSnow If set to true, renders snow as a separate color from normal precipitation (default false).
- * @param {BoundedInteger<0,21>=} options.colorScheme An integer denoting the color scheme to use in the returned image (default 4).
- * @returns {Image} The rendered radar data.
- */
-RainViewer.getImage = async function (latitude, longitude, zoom, time = TIME_OFFSET_MAP['now'], options={}) {
-    DEFAULT_OPTS = {
-        size: 512,
-        smooth: true,
-        showSnow: false,
-        colorScheme: 4,
-    };
-    options = _.merge({}, DEFAULT_OPTS, options);
-
-    const index = await this._getIndex();
-    const sample = index.radar[time[0]][time[1]];
-    return this._sendImage({
-        baseUrl: index.host,
-        path: `${sample.path}/${options.size}/${zoom}/${decimalize(latitude)}/${decimalize(longitude)}/${options.colorScheme}/${(options.smooth ? 1 : 0)}_${(options.showSnow ? 1 : 0)}.png`,
-    });
-};
 
 function coordsAt(x, y, info) {
     x = Math.ceil(x / info.scale);
@@ -179,10 +141,11 @@ RainViewer.getMap = async function (latitude, longitude, width, height, zoom, ti
         res = await jimp.read(map);
         bg_width = res.bitmap.width;
         bg_height = res.bitmap.height;
-        console.log('res',res);
     }
 
-    const radarIndex = await this._getIndex();
+    const radarIndex = await this._requestData({
+        baseUrl: `https://api.rainviewer.com/public/weather-maps.json`,
+    });
     const sample = radarIndex.radar[timeOffset[0]][timeOffset[1]];
     const mapInfo = { latitude, longitude, scale, zoom };
 
@@ -204,26 +167,12 @@ RainViewer.getMap = async function (latitude, longitude, width, height, zoom, ti
 
     for (let i = -rx; i <= rx; ++i) {
         for (let j = -ry; j <= ry; ++j) {
-            const buf = tiles[(i + rx) * (2 * ry + 1) + (j + ry)];
-            const tile = await jimp.read(buf);
+            const tile = await jimp.read(tiles[(i + rx) * (2 * ry + 1) + (j + ry)]);
             const px = radar_size * i + Math.round((bg_width - radar_size) / 2);
             const py = -radar_size * j + Math.round((bg_height - radar_size) / 2);
             await res.composite(tile, px, py);
         }
     }
-
-    // for (let i = -rx; i <= rx; ++i) {
-    //     for (let j = -ry; j <= ry; ++j) {
-    //         const { lat, long } = coordsAt(radar_size * i, radar_size * j, mapInfo);
-    //         const tile = await jimp.read(await this._requestImage({
-    //             baseUrl: radarIndex.host,
-    //             path: `${sample.path}/${radar_size}/${zoom}/${decimalize(lat)}/${decimalize(long)}/${options.colorScheme}/${(options.smooth ? 1 : 0)}_${(options.showSnow ? 1 : 0)}.png`,
-    //         }));
-    //         const px = radar_size * i + Math.round((bg_width - radar_size) / 2);
-    //         const py = -radar_size * j + Math.round((bg_height - radar_size) / 2);
-    //         await res.composite(tile, px, py);
-    //     }
-    // }
 
     // for some reason they don't currently support an async version of this
     res.getBuffer(jimp.MIME_PNG, (e, b) => this._sendImageBuffer(b));
