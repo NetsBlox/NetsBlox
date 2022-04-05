@@ -8,7 +8,7 @@ const {LoginRequired, RequestError} = require('../../../api/core/errors');
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const qs = require('qs');
-const {LOGIN_URL} = process.env;
+const {LoginURL} = require('../../config');
 const GetStorage = require('./storage');
 const _ = require('lodash');
 const fs = require('fs');
@@ -27,10 +27,10 @@ router.get('/login.html', bodyParser.json(), parseCookies, setUsername, handleEr
 
     const isLoggedIn = !!username;
     if (!isLoggedIn) {
-        if (LOGIN_URL) {
+        if (LoginURL) {
             const baseUrl = h.getServerURL();
             const url = `${baseUrl}/services/routes/alexa/login.html`;
-            res.redirect(`${LOGIN_URL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
+            res.redirect(`${LoginURL}?redirect=${encodeURIComponent(url)}&url=${encodeURIComponent(baseUrl)}`);
             return;
         } else {
             throw new LoginRequired();
