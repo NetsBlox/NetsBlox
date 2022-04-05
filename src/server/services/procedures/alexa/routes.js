@@ -1,10 +1,13 @@
 const AlexaSkill = require('./skill');
+
+// TODO: refactor the next imports
 const OAuth = require('../../../api/core/oauth');
+const {handleErrors, setUsername} = require('../../../api/rest/utils');
+const {LoginRequired, RequestError} = require('../../../api/core/errors');
+
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const qs = require('qs');
-const {handleErrors, setUsername} = require('../../../api/rest/utils');
-const {LoginRequired, RequestError} = require('../../../api/core/errors');
 const {LOGIN_URL} = process.env;
 const GetStorage = require('./storage');
 const _ = require('lodash');

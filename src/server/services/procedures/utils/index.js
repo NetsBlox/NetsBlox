@@ -1,6 +1,6 @@
 // a set of utilities to be used by rpcs
 const Q = require('q');
-const Projects = require('../../../storage/projects');
+const cloud = require('../../cloud-client');
 
 // sets up the headers and send an image
 const sendImageBuffer = (response, imageBuffer, logger) => {
@@ -73,30 +73,27 @@ const encodeQueryData = (query, encode=true) => {
     return ret.join('&');
 };
 
-const getRoleNames = (projectId, roleIds) => {
+const getRoleNames = async (projectId, roleIds) => {
     roleIds = roleIds.filter(id => !!id);
-    return Projects.getProjectMetadataById(projectId)
-        .then(metadata => {
-            if (!metadata) {
-                throw new Error('Project not found');
-            }
+    const metadata = await cloud.getRoomState(projectId);
+    if (!metadata) {
+        throw new Error('Project not found');
+    }
 
-            try {
-                return roleIds.map(id => metadata.roles[id].ProjectName);
-            } catch (err) {
-                throw new Error('Role not found');
-            }
-        });
-
+    try {
+        return roleIds.map(id => metadata.roles[id].name);
+    } catch (err) {
+        throw new Error('Role not found');
+    }
 };
 
-const getRoleName = (projectId, roleId) => {
-    return getRoleNames(projectId, [roleId])
-        .then(names => names[0]);
+const getRoleName = async (projectId, roleId) => {
+    const [name] = await getRoleNames(projectId, [roleId]);
+    return name;
 };
 
 const getRoleIds = async projectId => {
-    const metadata = await Projects.getProjectMetadataById(projectId);
+    const metadata = await cloud.getRoomState(projectId);
     return Object.keys(metadata.roles);
 };
 

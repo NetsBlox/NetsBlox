@@ -1,5 +1,5 @@
 const fse = require('fs-extra'),
-    Logger = require('../logger.js'),
+    Logger = require('./logger.js'),
     logger = new Logger('netsblox:jsdoc'),
     doctrine = require('doctrine');
 

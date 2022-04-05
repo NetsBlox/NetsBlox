@@ -1,13 +1,11 @@
 const mailer = require('./mailer');
 const Logger = require('./logger');
 const logger = new Logger('netsblox:bug-reporter');
-const Users = require('./storage/users');
-const version = require('./server-utils').version;
+const version = require('../../../package.json').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
 const Q = require('q');
-const NetworkTopology = require('./network-topology');
-const ProjectActions = require('./storage/project-actions');
+const cloud = require('./cloud-client');
 const fs = require('fs');
 const path = require('path');
 const {promisify} = require('util');
@@ -108,7 +106,7 @@ BugReporter.prototype.reportClientBug = function(socket, report) {
     return this.getUserEmail(report.user)
         .then(email => {
             if (email) body += '\n\nReporter\'s email: ' + email;
-            return this.getRoomState(socket);
+            return cloud.getRoomState(socket);
         })
         .then(roomState => {
             report.room = roomState;
@@ -117,26 +115,8 @@ BugReporter.prototype.reportClientBug = function(socket, report) {
         .catch(err => logger.error(err));
 };
 
-BugReporter.prototype.getRoomState = function(socket) {
-    if (!socket) {
-        return Q({error: 'socket not found'});
-    }
-
-    const projectId = socket.projectId;
-    return NetworkTopology.getRoomState(projectId)
-        .then(state => {
-            return ProjectActions.getProjectActionIdInfo(projectId)
-                .then(roleActionIds => {
-                    state.roleActionIds = roleActionIds;
-                    return state;
-                });
-        })
-        .catch(err => {
-            return {error: `Could not get room state: ${err.message}`};
-        });
-};
-
 BugReporter.prototype.getUserEmail = function(username) {
+    // TODO: update to use cloud client
     return Users.get(username)
         .then(user => {
             if (user) return user.email;

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Logger = require('../logger');
+const Logger = require('./logger');
 const logger = new Logger('netsblox:storage:services');
 const { isValidServiceName } = require('./procedures/utils');
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/admin'; // probably should mention netsblox instead of admin

@@ -3,7 +3,7 @@
 
 const _ = require('lodash');
 var assert = require('assert'),
-    Logger = require('./logger'),
+    Logger = require('./services/logger'),
     logger = new Logger('netsblox:api:utils'),
     version = require('../../package.json').version;
 

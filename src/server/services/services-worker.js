@@ -11,7 +11,6 @@ const InputTypes = require('./input-types.js');
 
 const {Docs} = require('./jsdoc-extractor.js');
 const {RESERVED_FN_NAMES} = require('../../common/constants').RPC;
-const ServerStorage = require('../storage/storage');
 const ServiceEvents = require('./procedures/utils/service-events');
 const Storage = require('./storage');
 const CommunityService = require('./community');
@@ -31,7 +30,6 @@ class ServicesWorker {
 
     async onUpdateService(name) {
         await this.onDeleteService(name);
-        await ServerStorage.onConnected;
         const CommunityServices = Storage.createCollection('netsblox:services:community');
         const serviceData = await CommunityServices.findOne({name});
         const service = CommunityService.new(serviceData);
@@ -151,7 +149,6 @@ class ServicesWorker {
     }
 
     async loadRPCsFromDatabase() {
-        await ServerStorage.onConnected;
         const CommunityServices = Storage.createCollection('netsblox:services:community');
         const serviceData = await CommunityServices.find({}).toArray();
         const services = serviceData

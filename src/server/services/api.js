@@ -2,7 +2,7 @@ const express = require('express');
 const Q = require('q');
 const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
-const Logger = require('../logger');
+const Logger = require('./logger');
 const ApiKeys = require('./api-keys');
 const fs = require('fs');
 const path = require('path');
@@ -144,9 +144,9 @@ class ServicesAPI {
 
     validateRPCRequest(serviceName, req, res) {
         const {rpcName} = req.params;
-        const {projectId, uuid} = req.query;
+        const {projectId, clientId} = req.query;
 
-        if(!uuid || !projectId) {
+        if(!clientId || !projectId) {
             res.status(400).send('Project ID and client ID are required.');
         } else if (!this.isServiceLoaded(serviceName)) {
             res.status(404).send(`Service "${serviceName}" is not available.`);
@@ -160,9 +160,9 @@ class ServicesAPI {
     }
 
     async invokeRPC(serviceName, rpcName, req, res) {
-        const {projectId, roleId, uuid} = req.query;
+        const {projectId, roleId, clientId} = req.query;
         const {username} = req.session;
-        this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${uuid})`);
+        this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${clientId})`);
 
         const ctx = {};
         ctx.response = res;
@@ -171,13 +171,14 @@ class ServicesAPI {
             username,
             projectId,
             roleId,
-            clientId: uuid
+            clientId,
         };
         const apiKey = this.services.getApiKey(serviceName);
         if (apiKey) {
+            // TODO: get the API key from the service settings?
             ctx.apiKey = await ApiKeys.get(username, apiKey);
         }
-        ctx.socket = new RemoteClient(projectId, roleId, uuid);
+        ctx.socket = new RemoteClient(projectId, roleId, clientId);
 
         const args = this.getArguments(serviceName, rpcName, req);
 
