@@ -473,7 +473,6 @@ GoogleMaps.getRadarMap = async function (latitude, longitude, width, height, zoo
     }
 
     const radarIndex = await this._radarCacheReq(this._requestData, 'https://api.rainviewer.com/public/weather-maps.json');
-    console.log('here');
     const sample = radarIndex.radar[timeOffset[0]][timeOffset[1]];
 
     const mapInfo = {
