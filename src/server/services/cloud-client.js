@@ -19,7 +19,17 @@ class NetsBloxCloud {
         const {username, state} = await this.get(url);
     }
 
-    async getServiceSettings(clientId) {
+    async getServiceSettings(clientId) {  // TODO: or should this use username?
+        // TODO
+    }
+
+    async userExists(username) {
+        const user = await this.viewUser(username).catch(nop);
+        return !!user;
+    }
+
+    async viewUser(username) {
+        const url = `/users/${username}`;
     }
 
     async fetch(url) {

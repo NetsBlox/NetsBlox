@@ -7,32 +7,19 @@
 'use strict';
 
 const logger = require('../utils/logger')('public-roles');
-const Projects = require('../../../storage/projects');
+const NetsBloxCloud = require('../../cloud-client');
 const PublicRoles = {};
 
 /**
  * Get the public role ID for the current role.
  * 
- * @returns {String} the public role id
+ * @returns {String} the public role ID
  */
-PublicRoles.getPublicRoleId = function() {
+PublicRoles.getPublicRoleId = async function() {
     const {projectId, roleId, clientId} = this.caller;
-    return Projects.getProjectMetadataById(projectId)
-        .then(metadata => {
-            if (!metadata) {
-                logger.warn(`cannot get public id for ${clientId} project ${projectId} not found.`);
-                throw new Error('Project not found. Has it been deleted?');
-            }
+    const state = await NetsBloxCloud.getClientState(clientId);
 
-            if (!metadata.roles[roleId]) {
-                logger.warn(`cannot get public id for ${clientId} role ${roleId} at ${projectId} not found.`);
-                throw new Error('Role not found. Has it been deleted?');
-            }
-
-            const roleName = metadata.roles[roleId].ProjectName;
-            const {name, owner} = metadata;
-            return `${roleName}@${name}@${owner}`;
-        });
+    // TODO: create the address (including for external addresses)
 };
 
 /**

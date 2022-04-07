@@ -29,13 +29,19 @@ async function tryLogin(req, res, next) {
     // TODO: add client secret, too
     const {clientId} = req.query;
     if (cookie) {
-        const username = await cloud.whoami(cookie);
-        req.username = username;
+        return setUsernameFromCookie(req, res, next);
     } else if (clientId) {
         const {username, state} = await cloud.getClientState(clientId);
         req.username = username;
         req.clientState = state;
     }
+    next();
+}
+
+async function setUsernameFromCookie(req, res, next) {
+    const cookie = req.cookies.netsblox;
+    const username = await cloud.whoami(cookie);
+    req.username = username;
     next();
 }
 
@@ -46,5 +52,5 @@ function ensureLoggedIn(req, res, next) {
 }
 
 module.exports = {
-    urlencoded, json, allDefaults,
+    urlencoded, json, allDefaults, ensureLoggedIn, setUsernameFromCookie
 };
