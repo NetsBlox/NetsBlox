@@ -1,7 +1,7 @@
 const Storage = require('../../storage');
 const jimp = require('jimp');
 
-const EDIT_COOLDOWN = 1000; // ms
+const EDIT_COOLDOWN = 60 * 1000; // ms
 const CANVAS_SIZE = [1000, 1000]; // pixels
 const BG_COLOR = jimp.rgbaToInt(0, 0, 0, 255);
 
