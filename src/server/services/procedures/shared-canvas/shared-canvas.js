@@ -26,6 +26,7 @@ let canvasChanged = false;
 async function _saveLoop() {
     try {
         if (canvasChanged) {
+            canvasChanged = false; // reset before save
             logger.info('saving canvas');
             await saveCanvas();
         }
