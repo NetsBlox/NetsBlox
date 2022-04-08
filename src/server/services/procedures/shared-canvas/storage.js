@@ -73,24 +73,15 @@ async function getCanvas() {
     return _canvas;
 }
 
-async function getImageBuf(img) {
-    return await new Promise((resolve, reject) => {
-        img.getBuffer(jimp.MIME_PNG, (e, b) => {
-            if (e) reject(e);
-            else resolve(b);
-        });
-    })
-}
-
 async function saveCanvas() {
-    const buf = await getImageBuf(await getCanvas())
+    const canvas = await getCanvas();
+    const buf = await canvas.getBufferAsync(jimp.MIME_PNG);
     await getCanvasDB().updateOne({ id: 'saved-canvas' }, { $set: { buf } }, { upsert: true });
 }
 
 module.exports = {
     getCanvas,
     saveCanvas,
-    getImageBuf,
 
     EDIT_COOLDOWN,
     getUser,

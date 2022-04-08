@@ -16,7 +16,7 @@
 const logger = require('../utils/logger')('shared-canvas');
 const utils = require('../utils');
 const jimp = require('jimp');
-const { getCanvas, saveCanvas, getImageBuf, getUser, EDIT_COOLDOWN } = require('./storage');
+const { getCanvas, saveCanvas, getUser, EDIT_COOLDOWN } = require('./storage');
 const { defineTypes } = require('./types');
 
 defineTypes();
@@ -74,7 +74,7 @@ SharedCanvas.setPixel = async function (x, y, color) {
     const canvas = await getCanvas();
     const [ r, g, b ] = color;
     canvas.setPixelColor(jimp.rgbaToInt(r, g, b, 255), x, y);
-    canvasChanged = true; // mark this change so we'll trigger a save on the next save cycle
+    canvasChanged = true; // mark this change (after) so we'll trigger a save on the next save cycle
 
     return true;
 };
@@ -155,7 +155,7 @@ SharedCanvas.getImage = async function (x = 0, y = 0, width, height, scale = 1) 
     if (height * scale > canvas.bitmap.height) throw Error(`Scaled image height (${height * scale}) exceeds full canvas height (${canvas.bitmap.height})`);
 
     const img = canvas.clone().crop(x, y, width, height).scale(scale, jimp.RESIZE_NEAREST_NEIGHBOR);
-    return utils.sendImageBuffer(this.response, await getImageBuf(img));
+    return utils.sendImageBuffer(this.response, await img.getBufferAsync(jimp.MIME_PNG));
 };
 
 module.exports = SharedCanvas;
