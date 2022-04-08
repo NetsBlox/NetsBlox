@@ -1,5 +1,7 @@
 {
     "cSpell.ignoreWords": [
-        "Blox"
+        "Blox",
+        "cooldown",
+        "upsert"
     ]
 }

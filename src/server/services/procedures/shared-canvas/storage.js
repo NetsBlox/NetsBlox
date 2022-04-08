@@ -1,8 +1,45 @@
 const Storage = require('../../storage');
 const jimp = require('jimp');
 
-const CANVAS_SIZE = [1000, 1000];
+const EDIT_COOLDOWN = 1000; // ms
+const CANVAS_SIZE = [1000, 1000]; // pixels
 const BG_COLOR = jimp.rgbaToInt(0, 0, 0, 255);
+
+_usersDB = null;
+function getUsersDB() {
+    if (!_usersDB) {
+        _usersDB = Storage.createCollection('shared-canvas-users');
+    }
+    return _usersDB;
+}
+
+class User {
+    constructor(username, lastEdit, numEdits) {
+        this.username = username;
+        this.lastEdit = lastEdit;
+        this.numEdits = numEdits;
+    }
+
+    msTillCooldown() {
+        return this.lastEdit + EDIT_COOLDOWN - +new Date();
+    }
+    canEdit() {
+        return this.msTillCooldown() <= 0;
+    }
+    markEdit() {
+        this.lastEdit = +new Date();
+        this.numEdits += 1;
+        getUsersDB().updateOne({ username: this.username }, { $set: this }, { upsert: true });
+    }
+}
+
+async function getUser(caller) {
+    const username = caller.username || '$anonymous'; // intentionally invalid username
+    const info = await getUsersDB().findOne({ username });
+    const lastEdit = info?.lastEdit || 0;
+    const numEdits = info?.numEdits || 0;
+    return new User(username, lastEdit, numEdits);
+}
 
 _canvasDB = null;
 function getCanvasDB() {
@@ -54,4 +91,7 @@ module.exports = {
     getCanvas,
     saveCanvas,
     getImageBuf,
+
+    EDIT_COOLDOWN,
+    getUser,
 };

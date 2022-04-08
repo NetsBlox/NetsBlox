@@ -1,12 +1,12 @@
 /**
  * SharedCanvas is a service that lets all NetsBlox users view and edit a shared canvas (image).
- * SharedCanvas lets users view the shared canvas, or edit it pixel by pixel.
- * However, editing the canvas requires you to be signed into NetsBlox,
- * and there is a cooldown before you can edit additional pixels.
+ * Users can view the canvas, or edit it pixel by pixel.
+ * However, there is a cooldown between canvas edits, meaning one user cannot dominate the entire canvas.
  *
- * SharedCanvas was inspired by `<Place> https://en.wikipedia.org/wiki/Place_(Reddit)`__, which was
- * a social experiment started on Reddit that functioned in much the same way and came to capture
- * Reddit's online culture.
+ * SharedCanvas was inspired by `Place <https://en.wikipedia.org/wiki/Place_(Reddit)>`__, which was
+ * a social experiment started on Reddit that functioned in much the same way. Place came to capture
+ * Reddit's online culture through the combined efforts of many users striving to control the canvas
+ * and display their own images.
  *
  * @alpha
  * @service
@@ -16,12 +16,12 @@
 const logger = require('../utils/logger')('shared-canvas');
 const utils = require('../utils');
 const jimp = require('jimp');
-const { getCanvas, saveCanvas, getImageBuf } = require('./storage');
+const { getCanvas, saveCanvas, getImageBuf, getUser, EDIT_COOLDOWN } = require('./storage');
 const { defineTypes } = require('./types');
 
 defineTypes();
 
-const UPDATE_INTERVAL = 30 * 1000; // ms
+const UPDATE_INTERVAL = 60 * 1000; // ms
 let canvasChanged = false;
 async function _saveLoop() {
     try {
@@ -42,7 +42,7 @@ setTimeout(_saveLoop, UPDATE_INTERVAL);
 const SharedCanvas = {};
 
 /**
- * Gets the color of the specific pixel in the image.
+ * Gets the color of the specified pixel in the image.
  *
  * @param {SharedCanvasX} x X coordinate of the pixel to read.
  * @param {SharedCanvasY} y Y coordinate of the pixel to read.
@@ -55,23 +55,64 @@ SharedCanvas.getPixel = async function (x, y) {
 };
 
 /**
- * Sets the color of the specific pixel in the image.
+ * Sets the color of the specified pixel in the image.
+ *
+ * After making an edit, your account is placed in a cooldown mode where no other edits can be made for a short period.
+ * If you are not signed in, you will be counted as a special guest account, which all share the same cooldown timer.
+ * Because of this, it is advised to sign in before using this service, esp. if you want to make many edits.
  *
  * @param {SharedCanvasX} x X coordinate of the pixel to read.
  * @param {SharedCanvasY} y Y coordinate of the pixel to read.
  * @param {SharedCanvasColor} color The new color to set at the given location.
+ * @returns {Boolean} ``true`` if the edit was successful, otherwise ``false`` (attempt to edit during cooldown).
  */
 SharedCanvas.setPixel = async function (x, y, color) {
+    const user = await getUser(this.caller);
+    if (!user.canEdit()) return false;
+    user.markEdit();
+
     const canvas = await getCanvas();
     const [ r, g, b ] = color;
     canvas.setPixelColor(jimp.rgbaToInt(r, g, b, 255), x, y);
     canvasChanged = true; // mark this change so we'll trigger a save on the next save cycle
+
+    return true;
+};
+
+/**
+ * Gets the amount of cooldown time remaining (in seconds) before the next edit can be made on this account.
+ * If this is ``0``, then the cooldown has expired and you can make your next edit.
+ *
+ * @returns {BoundedNumber<0>} Remaining cooldown time (in seconds), or ``0`` if no cooldown remaining.
+ */
+SharedCanvas.getCooldownRemaining = async function () {
+    const user = await getUser(this.caller);
+    return Math.max(user.msTillCooldown() / 1000, 0);
+};
+
+/**
+ * Gets the edit cooldown time (in seconds) that is imposed after each edit.
+ * 
+ * @returns {BoundedNumber<0>} Edit cooldown (in seconds).
+ */
+SharedCanvas.getCooldown = function () {
+    return EDIT_COOLDOWN / 1000;
+};
+
+/**
+ * Gets the total number of edits that have been made (successfully) on this account.
+ *
+ * @returns {BoundedInteger<0>} Total number of edits that have been made on this account.
+ */
+SharedCanvas.getEditCount = async function () {
+    const user = await getUser(this.caller);
+    return user.numEdits;
 };
 
 /**
  * Gets the current canvas size.
  *
- * @returns {Array<Integer>} The width and height of the canvas as a list.
+ * @returns {Tuple<BoundedInteger<1>,BoundedInteger<1>>} The width and height of the canvas, as a list.
  */
 SharedCanvas.getSize = async function () {
     const canvas = await getCanvas();
@@ -80,13 +121,13 @@ SharedCanvas.getSize = async function () {
 /**
  * Gets the current canvas width.
  *
- * @returns {Integer} The canvas width.
+ * @returns {BoundedInteger<1>} The canvas width.
  */
 SharedCanvas.getWidth = async function () { return (await this.getSize())[0]; };
 /**
  * Gets the current canvas height.
  *
- * @returns {Integer} The canvas height.
+ * @returns {BoundedInteger<1>} The canvas height.
  */
 SharedCanvas.getHeight = async function () { return (await this.getSize())[1]; };
 
