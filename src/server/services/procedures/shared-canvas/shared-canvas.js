@@ -154,7 +154,7 @@ SharedCanvas.getImage = async function (x = 0, y = 0, width, height, scale = 1) 
     if (width * scale > canvas.bitmap.width) throw Error(`Scaled image width (${width * scale}) exceeds full canvas width (${canvas.bitmap.width})`);
     if (height * scale > canvas.bitmap.height) throw Error(`Scaled image height (${height * scale}) exceeds full canvas height (${canvas.bitmap.height})`);
 
-    const img = canvas.clone().crop(x - 0.5, y - 0.5, width, height).resize(width * scale, height * scale, jimp.RESIZE_NEAREST_NEIGHBOR);
+    const img = canvas.clone().crop(x - 0.5, y - 0.5, width, height).scale(scale, jimp.RESIZE_NEAREST_NEIGHBOR);
     return utils.sendImageBuffer(this.response, await getImageBuf(img));
 };
 
