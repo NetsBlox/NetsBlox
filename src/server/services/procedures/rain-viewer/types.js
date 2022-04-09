@@ -22,7 +22,7 @@ const TIME_OFFSET_MAP = {
 function defineTypes() {
     types.defineType({
         name: 'TimeOffset',
-        description: 'A time offset for a weather radar forecast from the :doc:`/services/GoogleMaps/index` service.',
+        description: 'A time offset for a weather radar forecast from the :doc:`/services/RainViewer/index` service.',
         baseType: 'Enum',
         baseParams: TIME_OFFSET_MAP,
     });

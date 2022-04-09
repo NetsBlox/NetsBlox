@@ -29,9 +29,7 @@ describe(utils.suiteName(__filename), function() {
             ['maxLatitude'],
             ['minLongitude'],
             ['getDistance', ['startLatitude', 'startLongitude', 'endLatitude', 'endLongitude']],
-            ['minLatitude'],
-            ['getRadarTimeOffsets'],
-            ['getRadarMap', ['latitude', 'longitude', 'width', 'height', 'zoom', 'timeOffset', 'options']],
+            ['minLatitude']
         ]);
     });
 
