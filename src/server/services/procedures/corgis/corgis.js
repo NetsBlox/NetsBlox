@@ -60,12 +60,12 @@ corgis.searchDataset = async function(name, query, limit){
     }
 
     let queryRes = jsonQuery(query, {data: {records}});
-    let matchinRecords = queryRes.value;
-    if (!matchinRecords) throw new Error('no matching results');
-    let matchCount = Array.isArray(matchinRecords) ? matchinRecords.length : 1;
+    let matchingRecords = queryRes.value;
+    if (!matchingRecords) throw new Error('no matching results');
+    let matchCount = Array.isArray(matchingRecords) ? matchingRecords.length : 1;
     this._logger.trace('matching results:', matchCount);
-    if (matchCount > limit) matchinRecords = matchinRecords.slice(0, limit);
-    return this._createSnapStructure(matchinRecords);
+    if (matchCount > limit) matchingRecords = matchingRecords.slice(0, limit);
+    return this._createSnapStructure(matchingRecords);
 };
 
 /**

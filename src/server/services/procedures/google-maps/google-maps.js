@@ -93,7 +93,7 @@ GoogleMaps._getClientMap = function(clientId) {
 
 GoogleMaps._recordUserMap = function(caller, map) {
     // Store the user's new map settings
-    // get the corners of the image. We need to actully get both they are NOT "just opposite" of eachother.
+    // get the corners of the image. We need to actually get both they are NOT "just opposite" of each other.
     const {clientId} = caller;
     let northEastCornerCoords = this._coordsAt(map.width/2*map.scale, map.height/2*map.scale , map);
     let southWestCornerCoords = this._coordsAt(-map.width/2*map.scale, -map.height/2*map.scale , map);

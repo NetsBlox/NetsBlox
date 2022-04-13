@@ -58,8 +58,7 @@ var NetsBloxVantage = function(server) {
                     } else if (args.options.admin) {
                         user.admin = !user.admin;
                         user.save();
-                        console.log(`User "${user.username}" ${user.admin ? 'now has' :
-                            'no longer has'} admin priviledges!`);
+                        console.log(`User "${user.username}" ${user.admin ? 'now has' : 'no longer has'} admin privileges!`);
                     } else if (args.options.password) {
                         delete user.hash;
                         user.password = args.options.password;

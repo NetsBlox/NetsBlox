@@ -141,7 +141,7 @@ int underworld_melody[] = {
     AS3, A3, GS3,
     0, 0, 0
 };
-//Underwolrd tempo
+//Underworld tempo
 int underworld_tempo[] = {
     12, 12, 12, 12,
     12, 12, 6,

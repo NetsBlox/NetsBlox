@@ -41,7 +41,7 @@ The mechanism of current downloader:
     1. use aws-sdk to download data from AWS
     
     2. a "day" defined in the bucket is from 6pm yesterday to 6pm today, thus, every time we download up-to-date date, 
-       we check whether there is a "tommorrow"
+       we check whether there is a "tomorrow"
     
     3. if there is, download data using the key of "tomorrow"
     

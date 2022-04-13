@@ -13,7 +13,7 @@ const NetworkTopology = require('../network-topology');
 const BugReporter = require('../bug-reporter');
 const Storage = require('../storage/storage');
 const Messages = require('../storage/messages');
-const BannedAcounts = require('../storage/banned-accounts');
+const BannedAccounts = require('../storage/banned-accounts');
 const ResetTokens = require('../storage/reset-tokens');
 const Projects = require('../storage/projects');
 const DEFAULT_ROLE_NAME = 'myRole';
@@ -133,7 +133,7 @@ module.exports = [
                 return res.status(400).send('ERROR: Invalid username');
             }
 
-            const isBanned = await BannedAcounts.isBannedEmail(email);
+            const isBanned = await BannedAccounts.isBannedEmail(email);
             if (isBanned) {
                 return res.status(400).send('ERROR: Invalid (banned) email address');
             }
