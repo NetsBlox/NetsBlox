@@ -45,7 +45,7 @@ class NBService {
      * processes and queries json object or strings
      * @param  {json/string} json  [description]
      * @param  {string} query query string from json-query package
-     * @return {json}       returns the value found withing the input json
+     * @return {json} returns the value found within the input json
      */
     __queryJson(json, query){
         try {

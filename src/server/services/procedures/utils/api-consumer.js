@@ -190,7 +190,7 @@ class ApiConsumer extends NBService {
                 try {
                     parsedRes =  parserFn(res);
                 } catch(e) {
-                    this._logger.error('exception occured when parsing the response', e);
+                    this._logger.error('exception occurred when parsing the response', e);
                     this.response.status(500).send('');
                     return;
                 }
@@ -208,7 +208,7 @@ class ApiConsumer extends NBService {
                 try {
                     msgContents = parserFn(res);
                 } catch(e) {
-                    this._logger.error('exception occured when parsing the response', e);
+                    this._logger.error('exception occurred when parsing the response', e);
                     this.response.status(500).send('');
                     return;
                 }

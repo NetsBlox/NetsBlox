@@ -68,7 +68,7 @@ function sectionStations(n){
         pathMaxLon = -79.0,
         delta = (pathMaxLon - pathMinLon) / n;
     logger.info('delta is', delta);
-    // returns the secion index
+    // returns the section index
     let findSection = lon => {
         return Math.floor((lon - pathMinLon) / delta);
     };

@@ -57,7 +57,7 @@ describe(utils.suiteName(__filename), function() {
                 .catch(err => assert(err.message.includes('not found')));
         });
 
-        it('should gracefully fail to delete non-existant variables', async function() {
+        it('should gracefully fail to delete non-existent variables', async function() {
             const name = newVar();
             try {
                 await cloudvariables.deleteVariable(name);

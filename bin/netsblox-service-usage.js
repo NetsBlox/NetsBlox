@@ -44,7 +44,7 @@ storage.connect()
     .then(mapResults => {
         return Q.allSettled(mapResults).then(promiseResults => {
             let triples = promiseResults.filter(promise => promise.state === 'fulfilled').map(promise => promise.value);
-            console.log('successfull calls', `${triples.length} / ${promiseResults.length}`);
+            console.log('successful calls', `${triples.length} / ${promiseResults.length}`);
             // log to console
             triples.forEach(triple => {
                 console.log(JSON.stringify(triple));

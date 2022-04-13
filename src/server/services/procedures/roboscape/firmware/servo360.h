@@ -842,12 +842,12 @@ int servo360_getUnitsFullCircle(int pin);
   
   @details <b>Control System Settings</b> <br>
 
-  Error units are in terms of 4096ths of a full circle, and the settings listed
-  below multiply by 1000ths.  For example, if the angular distance error during
-  a 1/50th of a second speed measurement is 128 4096ths of a circle, the 
+  Error units are in terms of 4096th of a full circle, and the settings listed
+  below multiply by 1000th.  For example, if the angular distance error during
+  a 1/50th of a second speed measurement is 128 4096th of a circle, the 
   effect of proportional control with the default setting will be 
   (500 * 128) / 1000 = 64.  The result is that the control system will try to 
-  increase the speed by 64/4096ths of a full circle per second.
+  increase the speed by 64/4096th of a full circle per second.
 
   <b>Velocity Control System Constants</b><br>
   
@@ -959,7 +959,7 @@ int servo360_couple(int pinA, int pinB);
   system subtracts from the faster servo's drive level in response to 
   differences between two coupled servos distances from their respective 
   distance set points during a given 50th of a second.  The default scale 
-  value is 2000, which multiplies a distance error in 4096ths of a circle 
+  value is 2000, which multiplies a distance error in 4096th of a circle 
   by 2 and adds/subtracts it to/from the requested drive speed to reduce 
   the faster servos lead in its progress to the final angle. 
   

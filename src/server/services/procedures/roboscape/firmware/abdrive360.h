@@ -141,7 +141,7 @@ extern "C" {
 
 
 //#define ABD_NUDGE_SPEED 4
-//#define ABD_STOP_50ths 5
+//#define ABD_STOP_50th 5
 
 #ifndef _AB360_EE_Start_
 #define _AB360_EE_Start_ 63418

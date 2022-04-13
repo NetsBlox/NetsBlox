@@ -7,7 +7,7 @@ Netsblox is an extension of _Snap!_ which allows users to use some distributed c
 
 Currently, we have support for _messages_ where a message is like a Snap! event except contains an additional data payload. For example, in the Tic-Tac-Toe example, the user is able to  create a "TicTacToe" message which contains *row* and *column* fields corresponding to the row and column that of the user's move.
 
-Along with the events and messages, we also currently support _remote procedure calls_. RPC's are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student.
+Along with the events and messages, we also currently support _remote procedure calls_. RPCs are implemented as REST endpoints on the server which can perform some of the more challenging computation for the student (allowing support to make more complicated apps) as well as providing access to extra utilities not otherwise available to the student.
 
 For example, you can import the `Map utilities` service which gives the user access to Google Maps with a `map of (latitude), (longitude) with zoom (zoom)` block:
 
@@ -34,7 +34,7 @@ where `/path/to/directory/for/media` is the directory on the host machine to sto
 
 In order to enable specific RPCs which use external APIs, you may have to set environment variables using the `-e` flag (like `-e GOOGLE_MAPS_KEY=myGoogleMapsKey`) or pass in a list of environment variables through a file using `--env-file`. The list of all the environment variables are explained in the **RPC Support** section below.
 
-Note that addressing directories and files in windows is different from linux. For example the direcotry divider is `\` as opposted to `/`
+Note that addressing directories and files in windows is different from linux. For example the directory divider is `\` as opposed to `/`
 
 Next, just navigate to `localhost:8080` in a web browser to try it out!
 

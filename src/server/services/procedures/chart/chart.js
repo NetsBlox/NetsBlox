@@ -115,7 +115,7 @@ chart._prepareData = function(input, options=defaults){
 };
 
 /**
- * Truncates a string with an elipsis if it is too long.
+ * Truncates a string with an ellipsis if it is too long.
  * @param {String} word String to truncate
  * @param {Number} len Length
  */

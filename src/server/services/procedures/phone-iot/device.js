@@ -45,9 +45,9 @@ const common = require('./common');
 // v - image box updated
 // W - get toggle state
 // w - set toggle state
-// X - location (latlong + heading + altitude)
+// X - location (lat/long + heading + altitude)
 // Y - gyroscope
-// y - add custom radiobutton control
+// y - add custom radio button control
 // Z - add custom checkbox control
 // z - checkbox press event
 

@@ -82,7 +82,7 @@ GoogleStreetView.getViewFromAddress = function(location, width, height, fieldofv
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of ``120``
  * @param {BoundedNumber<0,360>} heading Heading of view
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, ``90`` to point up, ``-90`` to point down
- * @returns {Object} Metadata infromation about the requested Street View.
+ * @returns {Object} Metadata information about the requested Street View.
  */
 GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
@@ -109,7 +109,7 @@ GoogleStreetView.getInfo = function(latitude, longitude, width, height, fieldofv
  * @param {BoundedNumber<1,120>} fieldofview Field of View of image, maximum of ``120``
  * @param {BoundedNumber<0,360>} heading Heading of view
  * @param {BoundedNumber<-90,90>} pitch Pitch of view, ``90`` to point up, ``-90`` to point down
- * @returns {Object} Metadata infromation about the requested Street View.
+ * @returns {Object} Metadata information about the requested Street View.
  */
 GoogleStreetView.getInfoFromAddress = function(location, width, height, fieldofview, heading, pitch) {
     const key = this.apiKey.value;
