@@ -34,7 +34,9 @@ class User {
 }
 
 async function getUser(caller) {
-    const username = caller.username || '$anonymous'; // intentionally invalid username
+    const username = caller?.username;
+    if (!username) throw Error('You must be logged in to use this feature');
+
     const info = await getUsersDB().findOne({ username });
     const lastEdit = info?.lastEdit || 0;
     const numEdits = info?.numEdits || 0;
