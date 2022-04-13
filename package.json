@@ -59,7 +59,7 @@
     "geolib": "^2.0.18",
     "gnuplot": "^0.3.1",
     "jade": "^1.9.2",
-    "jimp": "^0.2.28",
+    "jimp": "^0.16.1",
     "json-query": "^2.2.2",
     "jsonwebtoken": "^7.2.1",
     "just.randomstring": "^0.1.1",
