@@ -2,13 +2,14 @@ const path = require('path');
 const fs = require('fs');
 const ServicesAPI = require('./api');
 const express = require('express');
-const middleware = require('../routes/middleware');
-const Storage = require('../storage/storage');
+const Storage = require('./storage/connection');
 const ServiceStorage = require('./storage');
 const ApiKeys = require('./api-keys');
-const Logger = require('../logger');
+const Logger = require('./logger');
 const routeUtils = require('./procedures/utils/router-utils');
 const types = require('./input-types');
+
+// TODO: if connecting to non-localhost, check for CLIENT_ID, SECRET
 
 async function listen(port) {
     const app = express();
@@ -24,10 +25,8 @@ async function listen(port) {
     });
     app.options('*', (req, res) => res.sendStatus(204));
 
-    await Storage.connect();
-    await ServiceStorage.init(logger, Storage._db);
-    await ApiKeys.init(Storage._db, logger);
-    middleware.init({_logger: logger});
+    const db = await Storage.connect();
+    await ServiceStorage.init(logger, db);
     await ServicesAPI.initialize();
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, PATCH, DELETE');
@@ -35,7 +34,7 @@ async function listen(port) {
     });
     app.use('/keys',
         ...routeUtils.allDefaults(),
-        middleware.isLoggedIn,
+        routeUtils.ensureLoggedIn,
         ApiKeys.router()
     );
     app.use('/input-types', async (_, res) => {

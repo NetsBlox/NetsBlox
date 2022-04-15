@@ -4,7 +4,8 @@ const AlexaSMAPI = require('ask-smapi-sdk');
 const clientID = process.env.ALEXA_CLIENT_ID;
 const clientSecret = process.env.ALEXA_CLIENT_SECRET;
 const GetStorage = require('./storage');
-const OAuth = require('../../../api/core/oauth');
+// FIXME: address the oauth stuff
+//const OAuth = require('../../../api/core/oauth');
 const OAUTH_CLIENT_NAME = 'Amazon Alexa';
 const assert = require('assert');
 
@@ -72,7 +73,7 @@ function sleep(duration) {
 }
 
 function getServerURL() {
-    return SERVER_URL;
+    return SERVER_URL;  // FIXME?
 }
 
 function getOAuthClientID() {

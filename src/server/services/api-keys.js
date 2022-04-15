@@ -1,6 +1,5 @@
 const express = require('express');
-const Logger = require('../logger');
-const Users = require('../storage/users');
+const Logger = require('./logger');
 const assert = require('assert');
 const ObjectId = require('mongodb').ObjectId;
 const _ = require('lodash');
@@ -8,56 +7,35 @@ const APIKey = require('./procedures/utils/api-key');
 
 class APIKeys {
     async init(db, logger) {
-        this.collection = db.collection('api-keys');
         this.logger = logger ? logger.fork('api-keys') : new Logger('netsblox:api-keys');
     }
 
-    async get(username, apiKey) {
+    async get(apiKey, serviceSettings) {
         const {provider} = apiKey;
-        const userKey = await this.getUserKey(username, provider);
-        if (userKey) {
-            return apiKey.withValue(userKey.value);
-        }
-
-        const groupKey = await this.getGroupKey(username, provider);
-        if (groupKey) {
-            return apiKey.withValue(groupKey.value);
-        }
-        return apiKey;
+        return this.getKeyFrom(provider, serviceSettings.user?.apiKeys) ||
+            this.getKeyFrom(provider, serviceSettings.member?.apiKeys) ||
+            this.getLeastSharedKey(
+                serviceSettings.groups.map(settings => this.getKeyFrom(provider, settings?.apiKeys))
+            );
     }
 
-    async getUserKey(owner, provider) {
-        const userKeys = await this.collection.find({owner, provider}, {_id: 0}).toArray();
-        return this.getLeastSharedKey(userKeys);
+    getKeyFrom(provider, apiKeys) {
+        return (apiKeys || {})[provider];
     }
 
-    getKeyPriority(key) {
-        if (key.isGroupDefault) {
-            return Infinity;
-        }
-        return key.groups.length;
-    }
+    getLeastSharedKey(keyValues) {
+        const counts = keyValues.reduce((counts, key) => {
+            counts[key] = (counts[key] || 0) + 1;
+            return counts;
+        }, {});
 
-    getLeastSharedKey(keys) {
-        keys.sort((key1, key2) => {
-            const p1 = this.getKeyPriority(key1);
-            const p2 = this.getKeyPriority(key2);
-            return p1 < p2 ? -1 : 1;
-        });
-        return keys.shift();
-    }
+        const keyPair = Object.entries(counts)
+            .sort(
+                ([_v1, c1], [_v2, c2]) => c1 < c2 ? -1 : 1
+            )
+            .unshift();
 
-    async getGroupKey(username, provider) {
-        const user = await Users.get(username);
-        const group = user ? await user.getGroup() : null;
-        if (group) {
-            const owner = group.getOwner();
-            const isGroupDefault = {owner, provider, isGroupDefault: true};
-            const isKeyForGroup = {provider, groups: group.getId()};
-            const query = {$or: [isGroupDefault, isKeyForGroup]};
-            const keys = await this.collection.find(query, {_id: 0}).toArray();
-            return this.getLeastSharedKey(keys);
-        }
+        return keyPair ? keyPair[0] : null;
     }
 
     async list(username, groupId) {

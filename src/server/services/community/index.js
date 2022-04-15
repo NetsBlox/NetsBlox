@@ -1,4 +1,4 @@
-const Logger = require('../../logger');
+const Logger = require('../logger');
 
 class CommunityService {
     constructor(logger) {

@@ -2,11 +2,12 @@ const express = require('express');
 const Q = require('q');
 const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
-const Logger = require('../logger');
+const Logger = require('./logger');
 const ApiKeys = require('./api-keys');
 const fs = require('fs');
 const path = require('path');
 const routeUtils = require('./procedures/utils/router-utils');
+const NetsBloxCloud = require('./cloud-client');
 
 class ServicesAPI {
     constructor() {
@@ -144,10 +145,10 @@ class ServicesAPI {
 
     validateRPCRequest(serviceName, req, res) {
         const {rpcName} = req.params;
-        const {projectId, uuid} = req.query;
+        const {clientId} = req.query;
 
-        if(!uuid || !projectId) {
-            res.status(400).send('Project ID and client ID are required.');
+        if(!clientId) {
+            res.status(400).send('Client ID is required.');
         } else if (!this.isServiceLoaded(serviceName)) {
             res.status(404).send(`Service "${serviceName}" is not available.`);
         } else if (!this.exists(serviceName, rpcName)) {
@@ -160,24 +161,35 @@ class ServicesAPI {
     }
 
     async invokeRPC(serviceName, rpcName, req, res) {
-        const {projectId, roleId, uuid} = req.query;
-        const {username} = req.session;
-        this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${uuid})`);
+        const {clientId} = req.query;
+        this.logger.info(`Received request to ${serviceName} for ${rpcName} (from ${clientId})`);
 
         const ctx = {};
         ctx.response = res;
         ctx.request = req;
+        const {username, state} = await NetsBloxCloud.getClientInfo(clientId)
+        // TODO: add support for external states, too?
+        const projectId = state.browser?.projectId;
+        const roleId = state.browser?.roleId;
+
         ctx.caller = {
             username,
             projectId,
             roleId,
-            clientId: uuid
+            clientId,
         };
         const apiKey = this.services.getApiKey(serviceName);
+        console.log({apiKey});
         if (apiKey) {
-            ctx.apiKey = await ApiKeys.get(username, apiKey);
+            // TODO: handle invalid settings (parse error)
+            const settings = await NetsBloxCloud.getServiceSettings(username);
+            const apiKeyValue = await ApiKeys.get(apiKey, settings);
+            if (apiKeyValue) {
+                ctx.apiKey = apiKeyValue;
+            }
+            console.log('key', ctx.apiKey);
         }
-        ctx.socket = new RemoteClient(projectId, roleId, uuid);
+        ctx.socket = new RemoteClient(projectId, roleId, clientId);
 
         const args = this.getArguments(serviceName, rpcName, req);
 

@@ -7,32 +7,25 @@
 'use strict';
 
 const logger = require('../utils/logger')('public-roles');
-const Projects = require('../../../storage/projects');
+const NetsBloxCloud = require('../../cloud-client');
 const PublicRoles = {};
 
 /**
  * Get the public role ID for the current role.
  * 
- * @returns {String} the public role id
+ * @returns {String} the public role ID
  */
-PublicRoles.getPublicRoleId = function() {
+PublicRoles.getPublicRoleId = async function() {
     const {projectId, roleId, clientId} = this.caller;
-    return Projects.getProjectMetadataById(projectId)
-        .then(metadata => {
-            if (!metadata) {
-                logger.warn(`cannot get public id for ${clientId} project ${projectId} not found.`);
-                throw new Error('Project not found. Has it been deleted?');
-            }
-
-            if (!metadata.roles[roleId]) {
-                logger.warn(`cannot get public id for ${clientId} role ${roleId} at ${projectId} not found.`);
-                throw new Error('Role not found. Has it been deleted?');
-            }
-
-            const roleName = metadata.roles[roleId].ProjectName;
-            const {name, owner} = metadata;
-            return `${roleName}@${name}@${owner}`;
-        });
+    if (!projectId) {  // TODO: extend the API to record if it is browser or external
+        throw new Error('Only supported from the NetsBlox browser.');
+    }
+    const state = await NetsBloxCloud.getRoomState(projectId);  // TODO: update this API?
+    const roleName = state.roles[roleId]?.name;
+    if (!roleName) {
+        throw new Error('Could not find role');
+    }
+    return `${roleName}@${state.name}@${state.owner}`;
 };
 
 /**

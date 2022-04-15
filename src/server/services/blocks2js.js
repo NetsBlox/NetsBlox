@@ -4,9 +4,9 @@ const snap2js = require('snap2js');
 const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
 const {EXPRESSION_TYPES, ASYNC_TYPES} = require('snap2js/src/ast');
-const Logger = require('../logger');
+const Logger = require('./logger');
 const logger = new Logger('netsblox:rpc:blocks2js');
-const BugReporter = require('../bug-reporter');
+const BugReporter = require('./bug-reporter');
 
 const context = snap2js.newContext();
 const blocks2js = Object.create(snap2js);

@@ -41,7 +41,7 @@ const BOARD_SIZE = BattleshipConstants.BOARD_SIZE;
 const SHIPS = BattleshipConstants.SHIPS;
 const DIRS = BattleshipConstants.DIRS;
 const Utils = require('../utils');
-const Projects = require('../../../storage/projects');
+const NetsBloxCloud = require('../../cloud-client');
 
 var isHorizontal = dir => dir === 'east' || dir === 'west';
 
@@ -216,21 +216,19 @@ Battleship.prototype.fire = function(row, column) {
  * @param {String} roleID Name of role to use
  * @returns {Integer} Number of remaining ships
  */
-Battleship.prototype.remainingShips = function(roleId) {
-    if (roleId) {  // resolve the provided role name to a role ID
-        return Projects.getProjectMetadataById(this.caller.projectId)
-            .then(metadata => {
-                const role = Object.keys(metadata.roles).find(id => {
-                    return metadata.roles[id].ProjectName === roleId;
-                });
+Battleship.prototype.remainingShips = async function(roleName) {
+    if (roleName) {  // resolve the provided role name to a role ID
+        const metadata = await NetsBloxCloud.getRoomState(this.caller.projectId)
+        const role = Object.keys(metadata.roles).find(id => {
+            return metadata.roles[id].name === roleName;
+        });
 
-                if (!this._state._boards[role]) {
-                    logger.error(`board doesn't exist for "${role}"`);
-                    this._state._boards[role] = new Board(BOARD_SIZE);
-                }
+        if (!this._state._boards[role]) {
+            logger.error(`board doesn't exist for "${role}"`);
+            this._state._boards[role] = new Board(BOARD_SIZE);
+        }
 
-                return this._state._boards[role].remaining();
-            });
+        return this._state._boards[role].remaining();
     }
 
     const role = this.caller.roleId;

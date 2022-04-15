@@ -1,63 +1,41 @@
 const Messages = {};
 
 class Message {
-    constructor() {
-        this._type = this.constructor.name;
-        this._data = Array.prototype.slice.call(arguments);
-    }
-
-    getType() {
-        return this._type;
-    }
-
-    static parse(msg) {
-        const {_type, _data} = JSON.parse(msg);
-        return new Messages[_type](..._data);
-    }
-
-    toString() {
-        return JSON.stringify(this);
+    constructor(target, msgType, content) {
+        this.target = target;
+        this.content = {
+            type: 'message',
+            msgType,
+            content,
+        };
     }
 }
 
 class SendMessage extends Message {
-    constructor(projectId, roleId, target, type, contents) {
-        super(...arguments);
-        this.projectId = projectId;
-        this.roleId = roleId;
-        this.target = target;
-        this.type = type;
-        this.contents = contents;
+    constructor(projectId, roleId, address, type, contents) {
+        const target = {address: {address}};
+        super(target, type, contents);
     }
 }
 
 class SendMessageToClient extends Message {
     constructor(projectId, roleId, clientId, type, contents) {
-        super(...arguments);
-        this.projectId = projectId;
-        this.roleId = roleId;
-        this.clientId = clientId;
-        this.type = type;
-        this.contents = contents;
+        const target = {client: {projectId, roleId, clientId}};
+        super(target, type, contents);
     }
 }
 
 class SendMessageToRoom extends Message {
     constructor(projectId, type, contents) {
-        super(...arguments);
-        this.projectId = projectId;
-        this.type = type;
-        this.contents = contents;
+        const target = {room: {projectId}};
+        super(target, type, contents);
     }
 }
 
 class SendMessageToRole extends Message {
     constructor(projectId, roleId, type, contents) {
-        super(...arguments);
-        this.projectId = projectId;
-        this.roleId = roleId;
-        this.type = type;
-        this.contents = contents;
+        const target = {role: {projectId, roleId}};
+        super(target, type, contents);
     }
 }
 

@@ -3,7 +3,7 @@
 'use strict';
 
 const logger = require('../utils/logger')('roboscape:routes');
-const Users = require('../../../storage/users');
+const NetsBloxCloud = require('../../cloud-client');
 const RoboscapeCol = require('./database'); // roboscape model
 
 const BASE_ENDPOINT = 'roboscape';
@@ -47,7 +47,7 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
 
     if (!robotRec) throw new Error('non-existing robot id');
 
-    if (await Users.get(username) === null) throw new Error('user not found');
+    if (await NetsBloxCloud.userExists(username)) throw new Error('user not found');
 
     const curTime = new Date();
 

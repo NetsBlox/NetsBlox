@@ -1,8 +1,7 @@
 // handles the incoming input arguments for the RPCs. Parses and validates the inputs based on the code docs for the functions
 const _ = require('lodash');
 const blocks2js = require('./blocks2js');
-const Projects = require('../storage/projects');
-const {cleanMarkup} = require('../services/jsdoc-extractor');
+const {cleanMarkup} = require('./jsdoc-extractor');
 
 let typeTape = null;
 function withTypeTape(fn) {
@@ -325,11 +324,11 @@ defineType({
         let roleNames = [''];
 
         if (ctx) {
-            const metadata = await Projects.getProjectMetadataById(ctx.caller.projectId);
-            if (metadata) {
-                roleNames = Object.values(metadata.roles)
-                    .map(role => role.ProjectName);
-                roleName = metadata.roles[ctx.caller.roleId].ProjectName;
+            const room = await Cloud.getRoomState(ctx.caller.projectId);
+            if (room) {
+                roleNames = Object.values(room.roles)
+                    .map(role => role.name);
+                roleName = room.roles[ctx.caller.roleId].name;
             }
         }
 
