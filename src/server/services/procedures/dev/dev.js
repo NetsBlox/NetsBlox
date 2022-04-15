@@ -7,6 +7,7 @@ const utils = require('../utils');
 const logger = require('../utils/logger')('dev');
 const _ = require('lodash');
 const devLogger = require('../utils/dev-logger');
+const NetsBloxCloud = require('../../cloud-client');
 
 const dev = {};
 dev.isSupported = () => process.env.ENV !== 'production';
@@ -17,6 +18,59 @@ dev.isSupported = () => process.env.ENV !== 'production';
  */
 dev.echo = function (argument) {
     return argument;
+};
+
+/**
+ * Send a message from the services server to a specific address.
+ * @category messages
+ *
+ * @param{String} address
+ * @param{String} messageType
+ * @param{Object} contents
+ */
+dev.sendMessage = function (address, messageType, contents) {
+    return this.socket.sendMessageTo(address, messageType, contents);
+};
+
+/**
+ * Send a message from the services server to a given role.
+ * @category messages
+ *
+ * @param{String} role
+ * @param{String} messageType
+ * @param{Object} contents
+ */
+dev.sendMessageToRole = async function (role, messageType, contents) {
+    const room = await NetsBloxCloud.getRoomState(this.caller.projectId);
+    const roleEntry = Object.entries(room.roles).find(([id, roleData]) => roleData.name === role);
+    if (!roleEntry) {
+        throw new Error(`Could not find role: ${role}`);
+    }
+    const roleID = roleEntry[0];
+    return this.socket.sendMessageToRole(roleID, messageType, contents);
+};
+
+/**
+ * Broadcast a message from the services server to the current room.
+ * @category messages
+ *
+ * @param{String} messageType
+ * @param{Object} contents
+ */
+dev.sendMessageToRoom = function (messageType, contents) {
+    return this.socket.sendMessageToRoom(messageType, contents);
+};
+
+/**
+ * Broadcast a message from the services server to the current room.
+ * @category messages
+ *
+ * @param{String} messageType
+ * @param{Object} contents
+ * @param{BoundedInteger} delay # of seconds to wait before sending
+ */
+dev.sendMessageToClient = function (messageType, contents, delay=0) {
+    setTimeout(() => this.socket.sendMessage(messageType, contents), delay*1000);
 };
 
 /**
