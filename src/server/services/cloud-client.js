@@ -1,3 +1,6 @@
+const _ = require('lodash');
+const fetch = require('node-fetch');
+
 // Client for NetsBlox Cloud
 class NetsBloxCloud {
     constructor(cloudUrl, id, secret) {
@@ -11,16 +14,25 @@ class NetsBloxCloud {
     }
 
     async getRoomState(projectId) {
-        // TODO: make a request to `/network/id/${projectId}`
+        const url = `/network/id/${projectId}`;
+        return await this.get(url);
     }
 
-    async getClientState(clientId) {
-        const url = `${this.cloudUrl}/network/${clientId}/state`;
-        const {username, state} = await this.get(url);
+    async getClientInfo(clientId) {
+        const url = `/network/${clientId}/state`;
+        return await this.get(url);
     }
 
-    async getServiceSettings(clientId) {  // TODO: or should this use username?
-        // TODO
+    async getServiceSettings(username) {
+        const url = `/services/settings/user/${username}/${this.id}/all`;
+        const settings = await this.get(url);
+        return _.mapValues(settings, value => {
+            if (value) {
+                if (value.map) return value.map(JSON.parse);
+                return JSON.parse(value);
+            }
+            return value;
+        });
     }
 
     async userExists(username) {
@@ -30,13 +42,35 @@ class NetsBloxCloud {
 
     async viewUser(username) {
         const url = `/users/${username}`;
+        return await this.get(url);
     }
 
-    async fetch(url) {
-        const headers = {
-            'X-Authorization': config.NetsBloxCloudID + ':' + config.NetsBloxCloudSecret,
-        };
-        const response = await axios.get(url, {headers});
+    async sendMessage(message) {
+        const url = `/network/messages/`;
+        console.log('sending', message);
+        const response = await this.post(url, message);
+        return response.status > 199 && response.status < 400;
+    }
+
+    async post(urlPath, body) {
+        const headers = {'Content-Type': 'application/json'};
+        body = JSON.stringify(body);
+        return await this.fetch(urlPath, {method: 'post', body, headers});
+    }
+
+    async get(urlPath) {
+        const response = await this.fetch(urlPath);
+        return await response.json();
+    }
+
+    async fetch(urlPath, options={}) {
+        const url = `${this.cloudUrl}${urlPath}`;
+        const headers = options.headers || {};
+        // TODO: make this a Bearer token?
+        headers['X-Authorization'] = this.id + ':' + this.secret;
+
+        options.headers = headers;
+        return await fetch(url, options);
     }
 }
 

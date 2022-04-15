@@ -17,9 +17,15 @@ const PublicRoles = {};
  */
 PublicRoles.getPublicRoleId = async function() {
     const {projectId, roleId, clientId} = this.caller;
-    const state = await NetsBloxCloud.getClientState(clientId);
-
-    // TODO: create the address (including for external addresses)
+    if (!projectId) {  // TODO: extend the API to record if it is browser or external
+        throw new Error('Only supported from the NetsBlox browser.');
+    }
+    const state = await NetsBloxCloud.getRoomState(projectId);  // TODO: update this API?
+    const roleName = state.roles[roleId]?.name;
+    if (!roleName) {
+        throw new Error('Could not find role');
+    }
+    return `${roleName}@${state.name}@${state.owner}`;
 };
 
 /**

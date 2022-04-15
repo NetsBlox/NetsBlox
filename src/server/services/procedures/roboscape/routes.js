@@ -47,7 +47,6 @@ const setUserAccess = async (mongoId, username, hasAccess) => {
 
     if (!robotRec) throw new Error('non-existing robot id');
 
-    // TODO: check that the user exists...
     if (await NetsBloxCloud.userExists(username)) throw new Error('user not found');
 
     const curTime = new Date();

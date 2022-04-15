@@ -19,7 +19,7 @@ function allDefaults() {
         urlencoded(),
         json(),
         cookieParser(),
-        (req, res, next) => tryLogIn(req, res, next, true),
+        (req, res, next) => tryLogin(req, res, next, true),
     ];
 }
 
@@ -31,7 +31,7 @@ async function tryLogin(req, res, next) {
     if (cookie) {
         return setUsernameFromCookie(req, res, next);
     } else if (clientId) {
-        const {username, state} = await cloud.getClientState(clientId);
+        const {username, state} = await cloud.getClientInfo(clientId);
         req.username = username;
         req.clientState = state;
     }
