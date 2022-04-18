@@ -53,7 +53,7 @@ function decimalize(val) {
  *
  * @returns {Array<TimeOffset>} The list of valid time offsets in chronological order.
  */
- RainViewer.getTimeOffsets = function () {
+RainViewer.getTimeOffsets = function () {
     return Object.keys(TIME_OFFSET_MAP);
 };
 
