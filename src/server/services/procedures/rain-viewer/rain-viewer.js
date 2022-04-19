@@ -74,7 +74,7 @@ RainViewer.getTimeOffsets = function () {
  * @param {Enum<none,roadmap,satellite,terrain>=} options.background Type of map to use for the background of the image (radar overlay on top) (default none).
  * @param {Boolean=} options.smooth If set to true, smooths the radar overlay in the returned image to be more aesthetically pleasing (default true).
  * @param {Boolean=} options.showSnow If set to true, renders snow as a separate color from normal precipitation (default false).
- * @param {BoundedInteger<0,21>=} options.colorScheme An integer denoting the color scheme to use in the returned image (default 4).
+ * @param {RadarColorScheme=} options.colorScheme An integer denoting the color scheme to use in the returned image (default 4).
  * @returns {Image} The rendered radar data overlay.
  */
 RainViewer.getOverlay = async function (latitude, longitude, width, height, zoom, timeOffset = TIME_OFFSET_MAP['now'], options={}) {

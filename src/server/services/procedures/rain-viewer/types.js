@@ -19,12 +19,31 @@ const TIME_OFFSET_MAP = {
     '+30min': ['nowcast', 2],
 };
 
+const COLOR_SCHEMES = {
+    'Black and White': 0,
+    'Original': 1,
+    'Universal Blue': 2,
+    'TITAN': 3,
+    'The Weather Channel': 4,
+    'Meteored': 5,
+    'NEXRAD Level III': 6,
+    'Rainbow @ SELEX-IS': 7,
+    'Dark Sky': 8,
+};
+
 function defineTypes() {
     types.defineType({
         name: 'TimeOffset',
         description: 'A time offset for a weather radar forecast from the :doc:`/services/RainViewer/index` service.',
         baseType: 'Enum',
         baseParams: TIME_OFFSET_MAP,
+    });
+
+    types.defineType({
+        name: 'RadarColorScheme',
+        description: 'A color scheme for an overlay provided by the :doc:`/services/RainViewer/index` service. For more information, check out the `Rain Viewer documentation <https://www.rainviewer.com/api/color-schemes.html>_`.',
+        baseType: 'Enum',
+        baseParams: COLOR_SCHEMES,
     });
 }
 
