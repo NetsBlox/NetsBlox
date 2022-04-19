@@ -1,6 +1,6 @@
 const types = require('../../input-types');
 
-const TIME_OFFSET_MAP = {
+const TIME_OFFSETS = {
     '-120min': ['past', 0],
     '-110min': ['past', 1],
     '-100min': ['past', 2],
@@ -36,18 +36,19 @@ function defineTypes() {
         name: 'TimeOffset',
         description: 'A time offset for a weather radar forecast from the :doc:`/services/RainViewer/index` service.',
         baseType: 'Enum',
-        baseParams: TIME_OFFSET_MAP,
+        baseParams: TIME_OFFSETS,
     });
 
     types.defineType({
-        name: 'RadarColorScheme',
-        description: 'A color scheme for an overlay provided by the :doc:`/services/RainViewer/index` service. For more information, check out the `Rain Viewer documentation <https://www.rainviewer.com/api/color-schemes.html>_`.',
+        name: 'ColorScheme',
+        description: 'A color scheme for an overlay provided by the :doc:`/services/RainViewer/index` service. For more information, check out the `Rain Viewer documentation <https://www.rainviewer.com/api/color-schemes.html>`__.',
         baseType: 'Enum',
         baseParams: COLOR_SCHEMES,
     });
 }
 
 module.exports = {
-    TIME_OFFSET_MAP,
+    TIME_OFFSETS,
+    COLOR_SCHEMES,
     defineTypes,
 };
