@@ -24,7 +24,7 @@ const MARKUP_REPLACE_GROUPS = [
 function cleanMarkup(str) {
     if (!str) return str;
     for (const [regex, replace] of MARKUP_REPLACE_GROUPS) {
-        str = str.replace(regex, replace)
+        str = str.replace(regex, replace);
     }
     return str;
 }
