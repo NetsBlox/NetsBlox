@@ -3,7 +3,7 @@
  * Users can view the canvas, or edit it pixel by pixel.
  * However, there is a cooldown between canvas edits, meaning one user cannot dominate the entire canvas.
  *
- * SharedCanvas was inspired by `Place <https://en.wikipedia.org/wiki/Place_(Reddit)>`__, which was
+ * SharedCanvas was inspired by `Place <https://en.wikipedia.org/wiki/R/place>`__, which was
  * a social experiment started on Reddit that functioned in much the same way. Place came to capture
  * Reddit's online culture through the combined efforts of many users striving to control the canvas
  * and display their own images.
