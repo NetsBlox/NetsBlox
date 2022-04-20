@@ -14,18 +14,18 @@ let parseSync = (filePath, searchScope = 5) => {
     return parseSource(source, searchScope);
 };
 
-const RTD_ROLE_REGEX = /:(\w+:)?\w+:`([^`]+)`/g;
-const RTD_BOLD_REGEX = /\*\*([^*]+)\*\*/g;
-const RTD_CODE_REGEX = /``([^`]+)``/g;
-const RTD_LINK_REGEX = /`([^`]+)`_/g;
-const RTD_EMPH_REGEX = /`([^`]+)`/g;
+const MARKUP_REPLACE_GROUPS = [
+    [/:(\w+:)?\w+:`([^`]+)`/g, '$2'], // role (used for service/rpc references)
+    [/`([^`]+?)\s*<([^`]+)>`__?/g, '$1 ($2)'], // link
+    [/\*\*([^*]+)\*\*/g, '$1'], // bold
+    [/``([^`]+)``/g, '$1'], // code
+    [/`([^`]+)`/g, '$1'], // italics
+];
 function cleanMarkup(str) {
     if (!str) return str;
-    str = str.replace(RTD_ROLE_REGEX, '$2');
-    str = str.replace(RTD_BOLD_REGEX, '$1');
-    str = str.replace(RTD_CODE_REGEX, '$1');
-    str = str.replace(RTD_LINK_REGEX, '$1');
-    str = str.replace(RTD_EMPH_REGEX, '$1');
+    for (const [regex, replace] of MARKUP_REPLACE_GROUPS) {
+        str = str.replace(regex, replace)
+    }
     return str;
 }
 
