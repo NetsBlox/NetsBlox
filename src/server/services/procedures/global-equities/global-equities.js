@@ -327,7 +327,7 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
  //
  //
 
- GlobalEquities._raw_search_crypto = async function(apifunction, from_symbol, to_symbol, interval, attributes, dateReturn) {
+ GlobalEquities._raw_search_forex = async function(apifunction, from_symbol, to_symbol, interval, attributes, dateReturn) {
     if (apifunction == 'FX_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${from_symbol}&to_symbol=${to_symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series FX (${interval}min)`; 
@@ -403,7 +403,7 @@ GlobalEquities.getForexData = function(from_symbol = 'USD', to_symbol = 'CNY', i
     if (api_func == undefined) {
         return GlobalEquities._raw_search_crypto('FX_INTRADAY', from_symbol, to_symbol, interval, attributes, dateReturn);
     }
-    return GlobalEquities._raw_search_crypto(api_func,from_symbol, to_symbol, null, attributes, dateReturn);
+    return GlobalEquities._raw_search_forex(api_func,from_symbol, to_symbol, null, attributes, dateReturn);
 }
 
 //
