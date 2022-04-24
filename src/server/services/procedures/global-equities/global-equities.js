@@ -401,7 +401,7 @@ GlobalEquities.getForexData = function(from_symbol = 'USD', to_symbol = 'CNY', i
     const api_funcs = { daily: 'FX_DAILY', weekly: 'FX_WEEKLY', monthly: 'FX_MONTHLY'};
     const api_func = api_funcs[interval];
     if (api_func == undefined) {
-        return GlobalEquities._raw_search_crypto('FX_INTRADAY', from_symbol, to_symbol, interval, attributes, dateReturn);
+        return GlobalEquities._raw_search_forex('FX_INTRADAY', from_symbol, to_symbol, interval, attributes, dateReturn);
     }
     return GlobalEquities._raw_search_forex(api_func,from_symbol, to_symbol, null, attributes, dateReturn);
 }
