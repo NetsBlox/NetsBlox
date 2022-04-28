@@ -15,14 +15,7 @@
  const { matches } = require('lodash');
  
  types.defineType({
-     name: 'EquitiesTimePeriod',
-     description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
-     baseType: 'Enum',
-     baseParams: { '5 min': 5, '10 min': 10, '15 min': 15, 'Daily':'daily','Weekly':'weekly','Monthly':'monthly'},
- });
- 
- types.defineType({
-     name: 'CryptoTimePeriod',
+     name: 'TimePeriod',
      description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
      baseType: 'Enum',
      baseParams: { '1 min': 1, '5 min': 5, '15 min': 15, '30 min': 30,'60 min':60,'Daily':'daily','Weekly':'weekly','Monthly':'monthly'},
@@ -35,7 +28,14 @@
     baseParams: { 'Traditional date':'traditionalDate', 'Fractional Year (for plotting)': 'fractionalYear'},
 });
 
-const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afghani (AFN)','AFN'],['Albanian Lek (ALL)','ALL'],['Armenian Dram (AMD)','AMD'],['Netherlands Antillean Guilder (ANG)','ANG'],
+ types.defineType({
+     name: 'EquitiesCryptoAttributes',
+     description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
+     baseType: 'Enum',
+     baseParams: { 'All': 'all', 'Open': 'open', 'High': 'high', 'Low':'low', 'Close':'close', 'Volume':'volume'},
+ });
+
+ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afghani (AFN)','AFN'],['Albanian Lek (ALL)','ALL'],['Armenian Dram (AMD)','AMD'],['Netherlands Antillean Guilder (ANG)','ANG'],
 ['Angolan Kwanza (AOA)','AOA'],['Argentine Peso (ARS)','ARS'],['Australian Dollar (AUD)','AUD'],['Aruban Florin (AWG)','AWG'],['Azerbaijani Manat (AZN)','AZN'],
 ['Bosnia-Herzegovina Convertible Mark (BAM)','BAM'],['Barbadian Dollar (BBD)','BBD'],['Bangladeshi Taka (BDT)','BDT'],['Bulgarian Lev (BGN)', 'BGN'],['Bahraini Dinar (BHD)', 'BHD'],
 ['Burundian Franc (BIF)', 'BIF'],['Bermudan Dollar (BMD)', 'BMD'],['Brunei Dollar (BND)', 'BND'],['Bolivian Boliviano (BOB)', 'BOB'],['Brazilian Real (BRL)', 'BRL'],['Bahamian Dollar (BSD)','BSD'],
@@ -61,41 +61,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
 ['New Taiwan Dollar (TWD)','TWD'],['Tanzanian Shilling (TZS)','TZS'],['Ukrainian Hryvnia (UAH)','UAH'],['Ugandan Shilling (UGX)','UGX'],['United States Dollar (USD)','USD'],['Uruguayan Peso (UYU)','UYU'],
 ['Uzbekistan Som (UZS)', 'UZS'],['Vietnamese Dong (VND)','VND'],['Vanuatu Vatu (VUV)','VUV'],['Samoan Tala (WST)','WST'],['CFA Franc BEAC (XAF)','XAF'],['East Caribbean Dollar (XCD)','XCD'],
 ['Special Drawing Rights (XDR)','XDR'],['CFA Franc BCEAO (XOF)','XOF'],['CFP Franc (XPF)','XPF'],['Yemeni Rial (YER)','YER'],['South African Rand (ZAR)','ZAR'],['Zambian Kwacha (ZMW)','ZMW'],['Zimbabwean Dollar (ZWL)','ZWL']];
-
-//'United Arab Emirates Dirham (AED)':'AED', 'Afghan Afghani (AFN)':'AFN', 'Albanian Lek (ALL)': 'ALL', 'Armenian Dram (AMD)': 'AMD', 'Netherlands Antillean Guilder (ANG)': 'ANG',
-//'Angolan Kwanza (AOA)': 'AOA', 'Argentine Peso (ARS)': 'ARS', 'Australian Dollar (AUD)': 'AUD', 'Aruban Florin (AWG)':'AWG', 'Azerbaijani Manat (AZN)':'AZN', 
-//'Bosnia-Herzegovina Convertible Mark (BAM)', 'BAM', 'Barbadian Dollar (BBD)', 'BBD', 'Bangladeshi Taka (BDT)', 'BDT', 'Bulgarian Lev (BGN)', 'BGN', 'Bahraini Dinar (BHD)', 'BHD', 
-//'Burundian Franc (BIF)', 'BIF', 'Bermudan Dollar (BMD)', 'BMD', 'Brunei Dollar (BND)', 'BND', 'Bolivian Boliviano (BOB)', 'BOB', 'Brazilian Real (BRL)', 'BRL', 'Bahamian Dollar (BSD)','BSD', 
-//'Bhutanese Ngultrum (BTN)','BTN', 'Botswanan Pula (BWP)','BWP', 'Belize Dollar (BZD)','BZD', 'Canadian Dollar (CAD)','CAD', 'Congolese Franc (CDF)','CDF', 
-//'Swiss Franc (CHF)','CHF', 'Chilean Unit of Account UF (CLF)','CLF', 'Chilean Peso (CLP)','CLP', 'Chinese Yuan Offshore (CNH)','CNH', 'Chinese Yuan (CNY)','CNY',
-//'Colombian Peso (COP)','COP', 'Cuban Peso (CUP)','CUP', 'Cape Verdean Escudo (CVE)','CVE', 'Czech Republic Koruna (CZK)','CZK', 'Djiboutian Franc (DJF)','DJF', 
-//'Danish Krone (DKK)','DKK', 'Dominican Peso (DOP)','DOP', 'Algerian Dinar (DZD)','DZD', 'Egyptian Pound (EGP)','EGP', 'Eritrean Nakfa (ERN)','ERN', 'Ethiopian Birr (ETB)','ETB',
-//'Euro (EUR)','EUR', 'Fijian Dollar (FJD)','FJD', 'Falkland Islands Pound (FKP)','FKP', 'British Pound Sterling (GBP)','GBP', 'Georgian Lari (GEL)','GEL', 'Ghanaian Cedi (GHS)','GHS', 
-//'Gibraltar Pound (GIP)','GIP', 'Gambian Dalasi (GMD)','GMD', 'Guinean Franc (GNF)','GNF', 'Guatemalan Quetzal (GTQ)','GTQ', 'Guyanaese Dollar (GYD)','GYD', 'Hong Kong Dollar (HKD)','HKD', 
-//'Honduran Lempira (HNL)','HNL', 'Croatian Kuna (HRK)','HRK', 'Haitian Gourde (HTG)','HTG', 'Hungarian Forint (HUF)','HUF', 'Internet Computer (ICP)','ICP', 'Indonesian Rupiah (IDR)','IDR', 
-//'Israeli New Sheqel (ILS)','ILS', 'Indian Rupee (INR)','INR', 'Iraqi Dinar (IQD)','IQD', 'Iranian Rial (IRR)','IRR', 'Icelandic Krona (ISK)','ISK', 'Jersey Pound (JEP)','JEP', 'Jamaican Dollar (JMD)','JMD', 
-//'Jordanian Dinar (JOD)','JOD', 'Japanese Yen (JPY)','JPY', 'Kenyan Shilling (KES)','KES', 'Kyrgystani Som (KGS)','KGS', 'Cambodian Riel (KHR)','KHR', 'Comorian Franc (KMF)','KMF', 'North Korean Won (KPW)','KPW', 
-//'South Korean Won (KRW)','KRW', 'Kuwaiti Dinar (KWD)','KWD', 'Cayman Islands Dollar (KYD)','KYD', 'Kazakhstani Tenge (KZT)','KZT', 'Laotian Kip (LAK)','LAK', 'Lebanese Pound (LBP)','LBP', 'Sri Lankan Rupee (LKR)','LKR', 
-//'Liberian Dollar (LRD)','LRD', 'Lesotho Loti (LSL)','LSL', 'Libyan Dinar (LYD)','LYD', 'Moroccan Dirham (MAD)','MAD', 'Moldovan Leu (MDL)','MDL', 'Malagasy Ariary (MGA)','MGA', 'Macedonian Denar (MKD)','MKD', 
-//'Myanma Kyat (MMK)','MMK', 'Mongolian Tugrik (MNT)','MNT', 'Macanese Pataca (MOP)','MOP', 'Mauritanian Ouguiya (pre-2018) (MRO)','MRO', 'Mauritanian Ouguiya (MRU)','MRU', 'Mauritian Rupee (MUR)','MUR', 
-//'Maldivian Rufiyaa (MVR)','MVR', 'Malawian Kwacha (MWK)','MWK', 'Mexican Peso (MXN)','MXN', 'Malaysian Ringgit (MYR)','MYR', 'Mozambican Metical (MZN)','MZN', 'Namibian Dollar (NAD)','NAD'
-//'Nigerian Naira (NGN)','NGN', 'Norwegian Krone (NOK)','NOK', 'Nepalese Rupee (NPR)','NPR', 'New Zealand Dollar (NZD)','NZD', 'Omani Rial (OMR)','OMR', 'Panamanian Balboa (PAB)','PAB',
-//'Peruvian Nuevo Sol (PEN)','PEN', 'Papua New Guinean Kina (PGK)', 'PGK', 'Philippine Peso (PHP)','PHP', 'Pakistani Rupee (PKR)','PKR', 'Polish Zloty (PLN)','PLN', 'Paraguayan Guarani (PYG)','PYG',
-//'Qatari Rial (QAR)','QAR', 'Romanian Leu (RON)','RON','Serbian Dinar (RSD)','RSD', 'Russian Ruble (RUB)','RUB', 'Old Russian Ruble (RUR)','RUR', 'Rwandan Franc (RWF)','RWF','Saudi Riyal (SAR)','SAR',
-//'Solomon Islands Dollar (SBDf)','SBDf', 'Seychellois Rupee (SCR)','SCR', 'Sudanese Pound (SDG)','SDG', 'Special Drawing Rights (SDR)','SDR', 'Swedish Krona (SEK)','SEK', 'Singapore Dollar (SGD)','SDG', 
-//'Saint Helena Pound (SHP)', 'SHP', 'Sierra Leonean Leone (SLL)','SLL', 'Somali Shilling (SOS)','SOS', 'Surinamese Dollar (SRD)','SRD', 'Syrian Pound (SYP)','SYP', 'Swazi Lilangeni (SZL)','SZL', 
-//'Thai Baht (THB)','THB', 'Tajikistani Somoni (TJS)','TJS', 'Turkmenistani Manat (TMT)','TMT', 'Tunisian Dinar (TND)','TND', 'Tongan Pa\'anga (TOP)','TOP', 'Turkish Lira (TRY)','TRY', 'Trinidad and Tobago Dollar (TTD)','TTD', 
-//'New Taiwan Dollar (TWD)','TWD', 'Tanzanian Shilling (TZS)','TZS', 'Ukrainian Hryvnia (UAH)','UAH', 'Ugandan Shilling (UGX)','UGX', 'United States Dollar (USD)','USD', 'Uruguayan Peso (UYU)','UYU', 
-//'Uzbekistan Som (UZS)', 'UZS', 'Vietnamese Dong (VND)','VND', 'Vanuatu Vatu (VUV)','VUV', 'Samoan Tala (WST)','WST', 'CFA Franc BEAC (XAF)','XAF', 'East Caribbean Dollar (XCD)','XCD',
-//'Special Drawing Rights (XDR)','XDR', 'CFA Franc BCEAO (XOF)','XOF', 'CFP Franc (XPF)','XPF', 'Yemeni Rial (YER)','YER', 'South African Rand (ZAR)','ZAR', 'Zambian Kwacha (ZMW)','ZMW', 'Zimbabwean Dollar (ZWL)','ZWL'
-
- 
- types.defineType({
-     name: 'EquitiesCryptoAttributes',
-     description: 'The style to use for displaying :doc:`/services/PhoneIoT/index` slider, as created by :func:`PhoneIoT.addSlider`.',
-     baseType: 'Enum',
-     baseParams: { 'All': 'all', 'Open': 'open', 'High': 'high', 'Low':'low', 'Close':'close', 'Volume':'volume'},
- });
  
  const DATA_SOURCE_LIFETIME = 1 * 24 * 60 * 60 * 1000;
  let CACHED_DATA = undefined;
@@ -123,7 +88,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
      CACHED_DATA = resultSet;
      CACHE_TIME_STAMP = Date.now();
  
-     // console.log(resultSet.slice(0,10));
      return resultSet;
  }
  
@@ -205,7 +169,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
              cleaned = cleaned[attributes];
          }
          timeserie.push(cleaned);
-         console.log(timeserie);
          // Add to return array
          matches.push(timeserie);
      }
@@ -215,7 +178,7 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
  /**
   * Get data of publicly traded stocks
   * @param {String} symbol Ticker symbol
-  * @param {EquitiesTimePeriod=} interval If intraday, 5, 10, or 15 minutes
+  * @param {TimePeriod=} interval If intraday
   * @param {EquitiesCryptoAttributes=} attributes May be all or only 1
   * @param {DateReturn} dateReturn Date return format
   * @return {Array} Array of time stamps and associated stock price
@@ -254,10 +217,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
  
      // Properties within the second property ("Time Series: (XX min)")
      const matches = [];
- 
-     // Print statements to verify read
-     // console.log(Object.keys(data));
-     // console.log(data[`${labelAppend}`]);
  
      // Fill time series with time tag and open/high/close
      for (const entry in data[`${labelAppend}`]) {
@@ -298,7 +257,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
              cleaned = cleaned[attributes];
          }
          timeserie.push(cleaned);
-         console.log(timeserie);
          // Add to return array
          matches.push(timeserie);
      }
@@ -308,7 +266,7 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
  /**
   * Get data of cryptocurrencies / digital currencies in USD
   * @param {String} symbol Crypto symbol
-  * @param {CryptoTimePeriod=} interval Interval selected by user
+  * @param {TimePeriod=} interval Interval selected by user
   * @param {EquitiesCryptoAttributes=} attributes May be all or only 1
   * @param {DateReturn} dateReturn Date return format
   * @return {Array} Array of time stamps and associated stock price
@@ -322,10 +280,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
      }
      return GlobalEquities._raw_search_crypto(api_func,symbol, null, 'USD', attributes, dateReturn);
  }
-
- //
- //
- //
 
  GlobalEquities._raw_search_forex = async function(apifunction, from_symbol, to_symbol, interval, attributes, dateReturn) {
     if (apifunction == 'FX_INTRADAY') {
@@ -379,7 +333,6 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
             cleaned = cleaned[attributes];
         }
         timeserie.push(cleaned);
-        console.log(timeserie);
         // Add to return array
         matches.push(timeserie);
     }
@@ -390,7 +343,7 @@ const currencyTypes = [['United Arab Emirates Dirham (AED)','AED'],['Afghan Afgh
  * Get data of cryptocurrencies / digital currencies in USD
  * @param {String} from_symbol Crypto symbol to convert from
  * @param {String} to_symbol Crypto symbol to convert to
- * @param {CryptoTimePeriod=} interval Interval selected by user
+ * @param {TimePeriod=} interval Interval selected by user
  * @param {EquitiesCryptoAttributes=} attributes May be all or only 1
  * @param {DateReturn} dateReturn Date return format
  * @return {Array} Array of time stamps and associated stock price
@@ -406,10 +359,6 @@ GlobalEquities.getForexData = function(from_symbol = 'USD', to_symbol = 'CNY', i
     return GlobalEquities._raw_search_forex(api_func,from_symbol, to_symbol, null, attributes, dateReturn);
 }
 
-//
-//
-//
-
  /**
   * Get data of publicly traded stocks
   * @param {String} from_symbol Ticker symbol to convert from
@@ -424,21 +373,8 @@ GlobalEquities.getForexData = function(from_symbol = 'USD', to_symbol = 'CNY', i
     if ("Error Message" in data) {
         throw new Error(`One more more unknown symbols: ${symbol_from}, ${symbol_to}`);
     }
-    // Properties within the second property ("Time Series: (XX min)")
-    const matches = [];
-    console.log(data);
-    // Fill time series with time tag and open/high/close
-     const timeserie = [];
-     dateEntry = data['Realtime Currency Exchange Rate']['6. Last Refreshed'];
-     console.log(dateEntry);
-     console.log(typeof(dateEntry));
-     valueEntry = data['Realtime Currency Exchange Rate']['5. Exchange Rate'];
-    timeserie.push((new Date(dateEntry)).toString());
-    timeserie.push(parseFloat(valueEntry) * amount + '');
-     // Add to return array
-     matches.push(timeserie);
-    
-    return matches;
+    valueEntry = data['Realtime Currency Exchange Rate']['5. Exchange Rate'];
+    return parseFloat(valueEntry) * amount;
 };
 
 /**
@@ -448,10 +384,7 @@ GlobalEquities.getForexData = function(from_symbol = 'USD', to_symbol = 'CNY', i
 GlobalEquities.currencySymbolSearch = function (searchString) {
     const matches = [];
     for (const element of currencyTypes) {
-        console.log(element);
         const results = [];
-        console.log(element[0].toLowerCase());
-        console.log(searchString.toLowerCase());
         if ((element[0].toLowerCase()).includes(searchString.toLowerCase())) {
             results.push(element[0]);
             results.push(element[1]);
