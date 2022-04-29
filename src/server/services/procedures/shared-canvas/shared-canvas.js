@@ -27,11 +27,7 @@ async function _saveLoop() {
     try {
         if (canvasChanged) {
             canvasChanged = false; // reset before save
-            logger.info('saving canvas');
             await saveCanvas();
-        }
-        else {
-            logger.info('saving canvas - no changes to save...');
         }
     } catch (e) {
         logger.error(`canvas save error: ${e}`);
