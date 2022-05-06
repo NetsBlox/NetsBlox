@@ -25,18 +25,24 @@ DailyWordGuess.guess = async function (word) {
     word = word.toLowerCase();
     let realWord = await DailyWordGuess._getDailyWord();
     let prevState = await DailyWordGuess._getUserState(this.caller);
+
+    if (prevState.complete) {
+        throw new RPCError('Word already guessed correctly. Come back tomorrow for a new word!');
+    }
     
     // Reject after game over
     if(prevState.tries <= 0){
-        throw new RPCError('No attempts remaining');
+        throw new RPCError('No attempts remaining. Better luck tomorrow!');
     }
 
     WordGuess._validateGuess(word, realWord);
 
-    // Remove a try
-    await DailyWordGuess._setUserState(this.caller, { tries: prevState.tries - 1 });
+    const matches = WordGuess._calculateMatches(realWord, word);
+    const complete = matches.every(num => num === 3);
 
-    return WordGuess._calculateMatches(realWord, word);
+    await DailyWordGuess._setUserState(this.caller, { complete, tries: prevState.tries - 1 });
+
+    return matches;
 };
 
 /**
