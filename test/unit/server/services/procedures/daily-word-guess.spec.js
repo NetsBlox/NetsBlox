@@ -13,17 +13,9 @@ describe(utils.suiteName(__filename), function () {
     const DailyWordGuess = utils.reqSrc('services/procedures/daily-word-guess/daily-word-guess');
     before(() => utils.reset());
 
-    it('two simultaneous requests to _getDailyWord should have same result', async function () {
-        const currentWordList = await Promise.all([
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord(),
-            DailyWordGuess._getDailyWord()
-        ]);
+    it('should have same result when simultaneous requests made to _getDailyWord', async function () {
+        const concurrentCalls = [...new Array(50)];
+        const currentWordList = await Promise.all(concurrentCalls.map(() => DailyWordGuess._getDailyWord()));
         assert.deepEqual(currentWordList, new Array(currentWordList.length).fill(currentWordList[0]));
     });
 });
