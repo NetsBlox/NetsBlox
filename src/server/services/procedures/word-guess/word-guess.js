@@ -94,14 +94,7 @@ WordGuess.guess = function (word) {
 
     // Reject words of wrong length
     let realWord = WordGuess._states[this.caller.clientId].word;
-    if (word.length != realWord.length) {
-        throw new RPCError('Guess should have length ' + realWord.length);        
-    }
-
-    // Require word to be in dictionary
-    if (!word.match(/\p{L}+/gu) || !nodehun.spellSync(word)) {
-        throw new RPCError('Invalid word');        
-    }
+    this._validateGuess(word, realWord);
 
     WordGuess._states[this.caller.clientId].time = Date.now();
 
@@ -164,6 +157,23 @@ WordGuess.giveUp = function () {
     WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Lost;
 
     return WordGuess._states[this.caller.clientId].word;
+};
+
+/**
+ * Check that a user's guess is valid length and in dictionary. Throws RPCError if either is false.
+ * @param {String} guess User's guess
+ * @param {String} realWord Solution word
+ */
+WordGuess._validateGuess = function (guess, realWord) {
+    // Length test
+    if (guess.length != realWord.length) {
+        throw new RPCError('Guess should have length ' + realWord.length);
+    }
+
+    // Require word to be in dictionary
+    if (!guess.match(/\p{L}+/gu) || !nodehun.spellSync(guess)) {
+        throw new RPCError('Invalid word');
+    }
 };
 
 module.exports = WordGuess;

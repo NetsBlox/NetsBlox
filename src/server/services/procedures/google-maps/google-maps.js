@@ -60,7 +60,7 @@ GoogleMaps._pixelsAt = function(lat, lon, map) {
     return pixelsXY;
 };
 
-GoogleMaps._toPrecision = function(number, precisionLimit) {
+GoogleMaps._toPrecision = function(number, precisionLimit = PRECISION) {
     return parseFloat(number).toFixed(precisionLimit);
 };
 
@@ -119,17 +119,21 @@ GoogleMaps._recordUserMap = function(caller, map) {
 };
 
 GoogleMaps._getMap = async function(latitude, longitude, width, height, zoom, mapType) {
+    // google maps imposes these limits currently - enforce them here as well for future proofing so overlays have reliable expectations
+    width = Math.min(width, 1280);
+    height = Math.min(height, 1280);
+
     const scale = width <= 640 && height <= 640 ? 1 : 2;
     const options = {
         center: {
-            lat: GoogleMaps._toPrecision(latitude, PRECISION),
-            lon: GoogleMaps._toPrecision(longitude, PRECISION)
+            lat: GoogleMaps._toPrecision(latitude),
+            lon: GoogleMaps._toPrecision(longitude)
         },
-        width: (width / scale),
-        height: (height / scale),
+        width: Math.floor(width / scale),   // floor for consistency going forward
+        height: Math.floor(height / scale), // floor for consistency going forward
         zoom: zoom,
         scale,
-        mapType: mapType || 'roadmap'
+        mapType: mapType || 'roadmap',
     };
     const queryString = this._getGoogleParams(options);
     const cacheKey = JSON.stringify(options);

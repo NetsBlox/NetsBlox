@@ -33,6 +33,20 @@ describe(utils.suiteName(__filename), function() {
         ]);
     });
 
+    describe('private utils', function() {
+        it('should have _coordsAt', function() {
+            assert.deepStrictEqual(typeof(Googlemaps._coordsAt), 'function');
+        });
+
+        it('should have _toPrecision', function() {
+            assert.deepStrictEqual(typeof(Googlemaps._toPrecision), 'function');
+        });
+
+        it('_toPrecision should allow unary', function() {
+            assert.deepStrictEqual(+Googlemaps._toPrecision(45), 45);
+        });
+    });
+
     describe('getDistance', function() {
         it('should calculate distance in meters (string input)', function(){
             let distance = googlemaps.getDistance('36', '-86', '36', '-87');
