@@ -370,14 +370,16 @@ function isProfane(text) {
 }
 
 let torExitIPs = [];
-async function updateTorIPs() {
+function updateTorIPs() {
     const url = 'https://check.torproject.org/torbulkexitlist';
-    const resp = await axios({url});
-    const ips = resp.data.split('\n');
-    return torExitIPs = ips;
+    return axios({url})
+        .then(resp => {
+            const ips = resp.data.split('\n');
+            torExitIPs = ips;
+        })
+        .catch(err => logger.warn(`Unable to update Tor exit nodes. Access from Tor may not be restricted. (Error: ${err.message})`));
 }
 const day = 1000*60*60*24;
-updateTorIPs();
 setInterval(updateTorIPs, 1*day);
 function isTorIP(ip) {
     return torExitIPs.includes(ip);
@@ -419,5 +421,6 @@ module.exports = {
     init: _server => {
         server = _server;
         logger = server._logger.fork('middleware');
+        updateTorIPs();
     }, COOKIE_ID
 };
