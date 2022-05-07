@@ -15,10 +15,12 @@ const _ = require('lodash');
 
 // Setup dictionary
 const dicFile = fs.readFileSync(path.join(__dirname, 'dict', 'en-custom.dic'));
-const affFile = fs.readFileSync(path.join(__dirname, 'dict','en-custom.aff'));
-const nodehun = new Nodehun(affFile, dicFile);    
+const affFile = fs.readFileSync(path.join(__dirname, 'dict', 'en-custom.aff'));
+const nodehun = new Nodehun(affFile, dicFile);
 
-  
+const wordleGuesses = fs.readFileSync(path.join(__dirname, 'dict', 'wordle', 'valid-words.csv')).toString().split('\n');
+const wordleAnswers = fs.readFileSync(path.join(__dirname, 'dict', 'wordle', 'word-bank.csv')).toString().split('\n');
+
 const WordGuess = {};
 
 WordGuess._states = {
@@ -47,10 +49,20 @@ setInterval(WordGuess._cleanStates, 24 * 60 * 60 * 1000);
 /**
  * Choose a random word of a specific length
  * @param {BoundedInteger<3,20>} length Length of word to search for
+ * @param {Function?} filter Optional filter to apply to words
  * @returns {String} A random word of the given length
  */
-WordGuess._getRandomCommonWord = function (length) {
-    const possibilities = CommonWords.getWords('en', 1, 10000).filter(word => word.length == length);
+WordGuess._getRandomCommonWord = function (length, filter = null) {
+    // Special case for 5-letter words to use Wordle list
+    if (length == 5) {
+        return wordleAnswers[Math.floor(Math.random() * wordleAnswers.length)];
+    }
+
+    if (filter == null) {
+        filter = word => true;
+    }
+
+    const possibilities = CommonWords.getWords('en', 1, 10000).filter(word => word.length == length && filter(word));
 
     if (possibilities.length == 0) {
         throw new RPCError('No words available of that length.');
@@ -89,7 +101,7 @@ WordGuess.guess = function (word) {
     }
 
     if (WordGuess._states[this.caller.clientId].gamestate != WordGuess._GameState.Playing) {
-        throw new RPCError('Game already complete');        
+        throw new RPCError('Game already complete');
     }
 
     // Reject words of wrong length
@@ -115,7 +127,7 @@ WordGuess.guess = function (word) {
  * @param {String} word Word guessed by user
  * @returns {Array} Array of integers corresponding to result
  */
-WordGuess._calculateMatches = function(realWord, word) {
+WordGuess._calculateMatches = function (realWord, word) {
     const realLetters = realWord.split('');
 
     let matches = [];
@@ -151,7 +163,7 @@ WordGuess.giveUp = function () {
     }
 
     if (WordGuess._states[this.caller.clientId].gamestate != WordGuess._GameState.Playing) {
-        throw new RPCError('Game complete');        
+        throw new RPCError('Game complete');
     }
 
     WordGuess._states[this.caller.clientId].gamestate = WordGuess._GameState.Lost;
@@ -168,6 +180,14 @@ WordGuess._validateGuess = function (guess, realWord) {
     // Length test
     if (guess.length != realWord.length) {
         throw new RPCError('Guess should have length ' + realWord.length);
+    }
+
+    // Special case for Wordle-size games
+    if (realWord.length == 5) {
+        if (!wordleGuesses.includes(guess)) {
+            throw new RPCError('Invalid word');
+        }
+        return;
     }
 
     // Require word to be in dictionary

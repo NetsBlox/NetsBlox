@@ -6,7 +6,6 @@
  * @category Games
  */
 const { RPCError } = require('../utils');
-const CommonWords = require('../common-words/common-words');
 const WordGuess = require('../word-guess/word-guess');
 const GetStorage = require('./storage');
 const logger = require('../utils/logger')('daily-word-guess');
@@ -29,9 +28,9 @@ DailyWordGuess.guess = async function (word) {
     if (prevState.complete) {
         throw new RPCError('Word already guessed correctly. Come back tomorrow for a new word!');
     }
-    
+
     // Reject after game over
-    if(prevState.tries <= 0){
+    if (prevState.tries <= 0) {
         throw new RPCError('No attempts remaining. Better luck tomorrow!');
     }
 
@@ -59,7 +58,7 @@ DailyWordGuess.giveUp = async function () {
  * @returns {Number} Number of attempts remaining
  */
 DailyWordGuess.triesRemaining = async function () {
-    return (await DailyWordGuess._getUserState(this.caller)).tries;    
+    return (await DailyWordGuess._getUserState(this.caller)).tries;
 };
 
 /**
@@ -83,7 +82,7 @@ DailyWordGuess._getDailyWord = async function () {
     const date = DailyWordGuess._getTodaysDate();
     const collection = GetStorage().dailyWords;
 
-    const doc = await collection.findOne({date});
+    const doc = await collection.findOne({ date });
     if (!doc) {
         return await DailyWordGuess._generateDailyWord(collection);
     }
@@ -96,21 +95,18 @@ DailyWordGuess._generateDailyWord = async function (collection) {
     const lastYear = DailyWordGuess._getTodaysDate();
     lastYear.setFullYear(lastYear.getFullYear() - 1);
 
-    const wordDocs = await collection.find({date: {'$gte': lastYear}}).toArray();
+    const wordDocs = await collection.find({ date: { '$gte': lastYear } }).toArray();
     const usedWords = new Set(wordDocs.map(doc => doc.word));
 
-    const possibilities = CommonWords.getWords('en', 1, 10000)
-        .filter(word => word.length == 5 && !usedWords.has(word));
-    const choiceIndex = Math.floor(Math.random() * possibilities.length);
-    const word = possibilities[choiceIndex];
+    const word = WordGuess._getRandomCommonWord(5, word => !usedWords.has(word));
 
     // Save the word in the database. If a word was already added concurrently
     // return that one instead of ours
     const date = DailyWordGuess._getTodaysDate();
-    const query = {date};
-    const update = {'$setOnInsert': {word, date}};
-    const options = {upsert: true};
-    const {value} = await collection.findOneAndUpdate(query, update, options);
+    const query = { date };
+    const update = { '$setOnInsert': { word, date } };
+    const options = { upsert: true };
+    const { value } = await collection.findOneAndUpdate(query, update, options);
     return value?.word || word;
 };
 
@@ -126,13 +122,13 @@ DailyWordGuess._getTodaysDate = function () {
  * @returns {Object} State of client
  */
 DailyWordGuess._getUserState = async function (caller) {
-    const {games} = GetStorage();
+    const { games } = GetStorage();
     const date = DailyWordGuess._getTodaysDate();
-    const query = {date, caller: caller.username || caller.clientId};
-    const initialState = Object.assign({tries: 6}, query);
-    const update = {'$setOnInsert': initialState};
-    const options = {upsert: true};
-    const {value} = await games.findOneAndUpdate(query, update, options);
+    const query = { date, caller: caller.username || caller.clientId };
+    const initialState = Object.assign({ tries: 6 }, query);
+    const update = { '$setOnInsert': initialState };
+    const options = { upsert: true };
+    const { value } = await games.findOneAndUpdate(query, update, options);
 
     return value || initialState;
 };
@@ -143,12 +139,12 @@ DailyWordGuess._getUserState = async function (caller) {
  * @returns {Object} State of client
  */
 DailyWordGuess._setUserState = async function (caller, newState) {
-    const {games} = GetStorage();
+    const { games } = GetStorage();
 
     const date = DailyWordGuess._getTodaysDate();
-    const query = {date, caller: caller.username || caller.clientId};
-    const update = {'$set': newState, '$setOnInsert': query};
-    const options = {upsert: true};
+    const query = { date, caller: caller.username || caller.clientId };
+    const update = { '$set': newState, '$setOnInsert': query };
+    const options = { upsert: true };
     await games.updateOne(query, update, options);
 };
 
