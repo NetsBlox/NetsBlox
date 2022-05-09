@@ -52,14 +52,10 @@ setInterval(WordGuess._cleanStates, 24 * 60 * 60 * 1000);
  * @param {Function?} filter Optional filter to apply to words
  * @returns {String} A random word of the given length
  */
-WordGuess._getRandomCommonWord = function (length, filter = null) {
+WordGuess._getRandomCommonWord = function (length, filter = () => true) {
     // Special case for 5-letter words to use Wordle list
     if (length == 5) {
-        return wordleAnswers[Math.floor(Math.random() * wordleAnswers.length)];
-    }
-
-    if (filter == null) {
-        filter = word => true;
+        return wordleAnswers[_.random(wordleAnswers.length - 1)];
     }
 
     const possibilities = CommonWords.getWords('en', 1, 10000).filter(word => word.length == length && filter(word));
@@ -68,7 +64,7 @@ WordGuess._getRandomCommonWord = function (length, filter = null) {
         throw new RPCError('No words available of that length.');
     }
 
-    return possibilities[Math.floor(Math.random() * possibilities.length)];
+    return possibilities[_.random(possibilities.length - 1)];
 };
 
 /**
