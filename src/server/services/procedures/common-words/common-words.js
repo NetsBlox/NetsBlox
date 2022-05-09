@@ -15,6 +15,12 @@ const words = Object.fromEntries(
     Object.values(SUPPORTED_LANGUAGES).map(lang => [lang, readWordList(lang)])
 );
 
+// Use Wordle dictionary for English words of length 5
+const wordleAnswers = fs.readFileSync(path.join(__dirname, 'wordle', 'word-bank.csv')).toString().split('\n');
+words['en'] = words['en'].filter(word => word.length != 5);
+words['en'] = [...words['en'], ...wordleAnswers];
+
+
 function readWordList(lang) {
     const filepath = path.join(__dirname, 'words', lang + '.txt');
     return fs.readFileSync(filepath, 'utf8')
@@ -37,7 +43,7 @@ CommonWords.getLanguages = function() {
  * @param{BoundedInteger<1>=} start Index to start from (default 1)
  * @param{BoundedInteger<1>=} end Index of last word to include (default 10)
  */
-CommonWords.getWords = function(language, start=1, end=10) {
+CommonWords.getWords = function (language, start = 1, end = 10) {
     return words[language].slice(start-1, end);
 };
 

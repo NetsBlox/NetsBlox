@@ -19,7 +19,6 @@ const affFile = fs.readFileSync(path.join(__dirname, 'dict', 'en-custom.aff'));
 const nodehun = new Nodehun(affFile, dicFile);
 
 const wordleGuesses = fs.readFileSync(path.join(__dirname, 'dict', 'wordle', 'valid-words.csv')).toString().split('\n');
-const wordleAnswers = fs.readFileSync(path.join(__dirname, 'dict', 'wordle', 'word-bank.csv')).toString().split('\n');
 
 const WordGuess = {};
 
@@ -53,11 +52,6 @@ setInterval(WordGuess._cleanStates, 24 * 60 * 60 * 1000);
  * @returns {String} A random word of the given length
  */
 WordGuess._getRandomCommonWord = function (length, filter = () => true) {
-    // Special case for 5-letter words to use Wordle list
-    if (length == 5) {
-        return wordleAnswers[_.random(wordleAnswers.length - 1)];
-    }
-
     const possibilities = CommonWords.getWords('en', 1, 10000).filter(word => word.length == length && filter(word));
 
     if (possibilities.length == 0) {
