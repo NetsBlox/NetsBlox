@@ -10,11 +10,17 @@ describe(utils.suiteName(__filename), function () {
     utils.verifyRPCInterfaces('WordGuess', [
         ['giveUp', []],
         ['guess', ['word']],
-        ['start', ['length']]
+        ['start', ['length']],
+        ['getWordList', ['length']],
     ]);
 
     beforeEach(function() {
         wordguess = new RPCMock(WordGuess);
+    });
+
+    it('should only include 5 letter words in wordle answers', function () {
+        const words = WordGuess.getWordList(5);
+        words.forEach(word => assert.equal(word.length, 5));
     });
 
     it('should generate words of requested length', function () {
