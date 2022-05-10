@@ -1,7 +1,6 @@
 /**
  * A Wordle-like word guessing game with a single daily word for all users.
  *
- * @alpha
  * @service
  * @category Games
  */
