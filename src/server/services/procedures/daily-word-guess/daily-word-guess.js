@@ -76,6 +76,14 @@ DailyWordGuess.timeRemaining = function () {
 };
 
 /**
+ * Get a list of all the possible words
+ * @returns {Array<String>} word list
+ */
+DailyWordGuess.getWordList = function () {
+    return WordGuess.getWordList(5);
+};
+
+/**
  * Get the day's word
  */
 DailyWordGuess._getDailyWord = async function () {
