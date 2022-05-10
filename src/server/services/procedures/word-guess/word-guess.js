@@ -1,7 +1,6 @@
 /**
  * A simple Wordle-like word guessing game.
  *
- * @alpha
  * @service
  * @category Games
  */
