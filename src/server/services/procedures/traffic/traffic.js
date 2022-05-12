@@ -68,16 +68,16 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
             return deferred.reject(new Error(`Could not access API: ${err.message}`));
         }
 
+        if (res.statusCode == 400) {
+            return deferred.reject(new Error('The area is too big! Try zooming in more.'));
+        } else if (res.statusCode === 401) {
+            return deferred.reject(new InvalidKeyError(this.apiKey));
+        }
+
         try {
             body = JSON.parse(body);
         } catch(e) {
-            throw new Error('Invalid API response: ' + body);
-        }
-
-        if (body.statusCode == 400) {
-            return deferred.reject(new Error('The area is too big! Try zooming in more.'));
-        } else if (body.statusCode === 401) {
-            return deferred.reject(new InvalidKeyError(this.apiKey));
+            return deferred.reject(new Error('Invalid API response: ' + body));
         }
 
         const type = ['Accident', 'Congestion', 'Disabled Vehicle', 'Mass Transit', 'Miscellaneous',
