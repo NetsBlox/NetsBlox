@@ -6,7 +6,6 @@
 
 'use strict';
 
-const Q = require('q');
 const logger = require('../utils/logger')('bing-traffic');
 const {BingMapsKey, InvalidKeyError} = require('../utils/api-key');
 const utils = require('../utils');
