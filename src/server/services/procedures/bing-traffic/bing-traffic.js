@@ -79,7 +79,7 @@ BingTraffic.search = async function(westLongitude, northLatitude, eastLongitude,
         'Other', 'Planned Event', 'Road Hazard', 'Construction', 'Alert', 'Weather'];
 
     // build the list of traffic incidents
-    const [resourceSet] = body.resourceSets;
+    const [resourceSet] = response.data.resourceSets;
     let resultCount = 0;
     if (resourceSet.estimatedTotal != 0) {
         const results = resourceSet.resources.map(resource => ({
