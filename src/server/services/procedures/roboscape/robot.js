@@ -484,6 +484,12 @@ Robot.prototype.onCommand = function(command) {
             }
         },
         {
+            regex: /^turn wheels (-?\d+)[, ](-?\d+)$/,
+            handler: () => {
+                this.drive(+RegExp.$1, +RegExp.$2);
+            }
+        },
+        {
             regex: /^get range$/,
             handler: () => {
                 return this.getRange();
