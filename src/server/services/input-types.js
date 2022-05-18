@@ -461,7 +461,7 @@ function parseDuration(input) {
     let res = 0;
     while (input.length != 0) {
         const delta = input.match(/^([+-]?)\s*(\d+\.?\d*)\s*([^+-\s]*)/);
-        if (!delta) throw Error(`Failed to parse ${input} as a duration`);
+        if (!delta) throw Error(`Failed to parse "${input}" as a duration`);
         if (delta[3].length === 0) throw Error(`Time offset "${delta[0]}" missing units`);
 
         input = input.slice(delta[0].length).trimLeft();
@@ -500,6 +500,14 @@ defineType({
 
         const MAX_DATE_LEN = 128;
         let dateLen = Math.min(MAX_DATE_LEN, input.length);
+        let deltaSepPos = 0;
+        let spacePrefix = true;
+        for (; deltaSepPos < dateLen; ++deltaSepPos) {
+            if (!spacePrefix && '+-'.includes(input[deltaSepPos]) && ' \t'.includes(input[deltaSepPos - 1])) break;
+            if (spacePrefix && !' \t'.includes(input[deltaSepPos])) spacePrefix = false;
+        }
+        dateLen = deltaSepPos;
+
         let date = null;
         for (; dateLen > 0; --dateLen) {
             date = basicParser(input.slice(0, dateLen), null);
