@@ -77,7 +77,7 @@ Robot.prototype.setSeqNum = function (seqNum) {
 
 Robot.prototype.accepts = function (clientId, seqNum) {
     if (this.lastSeqNum >= 0 && (seqNum <= this.lastSeqNum ||
-            seqNum > this.lastSeqNum + 100)) {
+        seqNum > this.lastSeqNum + 100)) {
         return false;
     }
 
@@ -140,7 +140,7 @@ Robot.prototype.isMostlyAlive = function () {
 };
 
 Robot.prototype.addClientSocket = function (socket) {
-    const {clientId} = socket;
+    const { clientId } = socket;
     var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i < 0) {
         this._logger.log('register ' + clientId + ' ' + this.mac_addr);
@@ -151,7 +151,7 @@ Robot.prototype.addClientSocket = function (socket) {
 };
 
 Robot.prototype.removeClientSocket = function (socket) {
-    const {clientId} = socket;
+    const { clientId } = socket;
     var i = this.sockets.findIndex(s => s.clientId === clientId);
     if (i >= 0) {
         this._logger.log('unregister ' + clientId + ' ' + this.mac_addr);
@@ -302,6 +302,7 @@ Robot.prototype.commandToClient = function (command) {
 
 Robot.prototype.sendToClient = function (msgType, content) {
     var myself = this;
+    var key = this.encryptionKey;
 
     let fields = ['time', ...Object.keys(content)];
     content.robot = this.mac_addr;
@@ -336,7 +337,7 @@ Robot.prototype.sendToClient = function (msgType, content) {
 
             const encryptedContent = {
                 robot: myself.mac_addr,
-                message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim()) : text.trim()
+                message: this._hasValidEncryptionSet() ? myself.encrypt(text.trim(), key) : text.trim()
             };
             socket.sendMessage('robot message', encryptedContent);
         }
@@ -411,8 +412,8 @@ Robot.prototype.onMessage = function (message) {
         let range = [];
 
         // Read all returned distances
-        for (let i = 11; i+1 < message.length; i += 2){
-            range.push(message.readInt16LE(i));           
+        for (let i = 11; i + 1 < message.length; i += 2) {
+            range.push(message.readInt16LE(i));
         }
 
         this.sendToClient('range', {
@@ -456,7 +457,7 @@ Robot.prototype.onMessage = function (message) {
 };
 
 // handle user commands to the robot (through the 'send' rpc)
-Robot.prototype.onCommand = function(command) {
+Robot.prototype.onCommand = function (command) {
     const cases = [
         {
             regex: /^is alive$/,
@@ -543,7 +544,7 @@ Robot.prototype.onCommand = function(command) {
         {
             regex: /^show number (\d+)(?:[, ](\d+))?$/,
             handler: () => {
-                this.setNumericDisplay(+RegExp.$1, (RegExp.$2 == '')? undefined : +RegExp.$2);
+                this.setNumericDisplay(+RegExp.$1, (RegExp.$2 == '') ? undefined : +RegExp.$2);
             }
         },
         {
@@ -574,19 +575,17 @@ Robot.prototype.onCommand = function(command) {
     return rv;
 };
 
-
 // determines whether encryption/decryption can be activated or not
 Robot.prototype._hasValidEncryptionSet = function () {
     let verdict = (this.encryptionKey && this.encryptionMethod && Array.isArray(this.encryptionKey) && this.encryptionKey.length !== 0);
     return verdict;
 };
 
-
-Robot.prototype.encrypt = function (text) {
+Robot.prototype.encrypt = function (text, key = null) {
     if (!this._hasValidEncryptionSet()) {
         throw new Error('invalid encryption setup');
     }
-    let output = this.encryptionMethod.encrypt(text, this.encryptionKey);
+    let output = this.encryptionMethod.encrypt(text, key ?? this.encryptionKey);
     this._logger.log('"' + text + '" encrypted to "' + output + '"');
     return output;
 };
@@ -671,7 +670,7 @@ Robot.prototype.playBlinks = function (states) {
 Robot.prototype.playNumbers = function (states, delay = 4000) {
     var myself = this,
         index = 0,
-        step = function () {            
+        step = function () {
             if (index < states.length) {
                 for (let repeat = 0; repeat < 3; repeat++) {
                     myself.setNumericDisplay(states[index], delay - 500);
@@ -680,11 +679,13 @@ Robot.prototype.playNumbers = function (states, delay = 4000) {
                 setTimeout(step, delay);
             }
         };
-    
+
     setTimeout(step, 0);
 };
 
 Robot.prototype.randomEncryption = function () {
+    this.sendToClient("encrypt", {});
+
     var keys = [],
         blinks = [];
     for (var i = 0; i < 4; i++) {
