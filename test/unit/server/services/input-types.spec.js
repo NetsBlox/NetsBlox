@@ -205,6 +205,18 @@ describe(utils.suiteName(__filename), function() {
             assertDatesEq(await parse('  2353436446  '), new Date(2353436446));
         });
 
+        it('should stop on +/- for base date parsing', async () => {
+            assertDatesEq(await parse('now -1d'), +new Date() - 1*24*60*60*1000);
+            assertDatesEq(await parse('now -3d'), +new Date() - 3*24*60*60*1000);
+            assertDatesEq(await parse('now -10d'), +new Date() - 10*24*60*60*1000);
+            assertDatesEq(await parse('now -30d'), +new Date() - 30*24*60*60*1000);
+
+            assertDatesEq(await parse('now +1d'), +new Date() + 1*24*60*60*1000);
+            assertDatesEq(await parse('now +3d'), +new Date() + 3*24*60*60*1000);
+            assertDatesEq(await parse('now +10d'), +new Date() + 10*24*60*60*1000);
+            assertDatesEq(await parse('now +30d'), +new Date() + 30*24*60*60*1000);
+        });
+
         it('should allow slightly extended unix timestamps', async () => {
             assertDatesEq(await parse('+2353436446'), new Date(2353436446));
             assertDatesEq(await parse('  +2353436446  '), new Date(2353436446));
