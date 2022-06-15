@@ -89,7 +89,7 @@ module.exports.GeniusKey = new ApiKey(
 
 module.exports.GlobalEquitiesKey = new ApiKey(
     'GlobalEquities',
-    'https://www.alphavantage.co/support',
+    'https://www.alphavantage.co/support/#api-key',
     'GLOBAL_EQUITIES_KEY'
 );
 
