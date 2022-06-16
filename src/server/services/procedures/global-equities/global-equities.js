@@ -64,13 +64,13 @@ function parseFractionalYear(value) {
 }
 
 /**
- * @param {BoundedString<2>} searchString String to search matches
+ * @param {BoundedString<2>} search String to search for matches
  * @return {Array} Array of results
  */
-GlobalEquities.equitiesSymbolSearch = async function(searchString){
+GlobalEquities.equitiesSymbolSearch = async function(search){
     const matches = [];
     for (const element of await getStockSymbol()) {
-        if (element[1] !== undefined && (element[1].toLowerCase()).includes(searchString.toLowerCase())) {
+        if (element[1] !== undefined && (element[1].toLowerCase()).includes(search.toLowerCase())) {
             matches.push([element[0], element[1]]);
         }
     }
@@ -296,13 +296,13 @@ GlobalEquities.convertCurrency = async function(fromSymbol = 'USD', amount = 1, 
 };
 
 /**
-* @param {BoundedString<2>} searchString String to search matches
+* @param {BoundedString<2>} search String to search for matches
 * @return {Array} Array of results
 */
-GlobalEquities.currencySymbolSearch = function (searchString) {
+GlobalEquities.currencySymbolSearch = function (search) {
     const matches = [];
     for (const element of currencyTypes) {
-        if ((element[0].toLowerCase()).includes(searchString.toLowerCase())) {
+        if ((element[0].toLowerCase()).includes(search.toLowerCase())) {
             matches.push([element[0], element[1]]);
         }
     }
