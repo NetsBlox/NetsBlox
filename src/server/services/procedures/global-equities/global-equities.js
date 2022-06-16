@@ -22,10 +22,10 @@ types.defineType({
     baseParams: { '1 min': 1, '5 min': 5, '15 min': 15, '30 min': 30,'60 min':60,'Daily':'daily','Weekly':'weekly','Monthly':'monthly'},
 });
 types.defineType({
-   name: 'DateFormat',
-   description: 'Type of date format to return.',
-   baseType: 'Enum',
-   baseParams: ['traditional', 'fractional'],
+    name: 'DateFormat',
+    description: 'Type of date format to return.',
+    baseType: 'Enum',
+    baseParams: ['traditional', 'fractional'],
 });
 types.defineType({
     name: 'EquityField',
@@ -40,8 +40,8 @@ let CACHE_TIME_STAMP = undefined;
 async function getStockSymbol() {
     if (CACHED_DATA !== undefined && Date.now() - CACHE_TIME_STAMP <= DATA_SOURCE_LIFETIME) return CACHED_DATA;
 
-    let resultSet = [];
-    data = await GlobalEquities._requestData({path:'query', queryString:`function=LISTING_STATUS&apikey=${GlobalEquities.apiKey.value}`});
+    const resultSet = [];
+    const data = await GlobalEquities._requestData({path:'query', queryString:`function=LISTING_STATUS&apikey=${GlobalEquities.apiKey.value}`});
     for (const line of data.split('\n')) {
         const categories = line.split(',');
         const ticker = categories[0];
@@ -57,9 +57,9 @@ async function getStockSymbol() {
 }
 
 function parseFractionalYear(value) {
-    year = parseInt(value.substring(0, value.indexOf('-')));
-    yearDate = new Date(year.toString());
-    frac = (new Date(value) - yearDate) / (new Date((year + 1).toString()) - yearDate);
+    const year = parseInt(value.substring(0, value.indexOf('-')));
+    const yearDate = new Date(year.toString());
+    const frac = (new Date(value) - yearDate) / (new Date((year + 1).toString()) - yearDate);
     return year + frac;
 }
 
@@ -78,6 +78,7 @@ GlobalEquities.equitiesSymbolSearch = async function(search){
 };
 
 GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat) {
+    let data, labelAppend;
     if (apifunction == 'TIME_SERIES_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series (${interval}min)`; 
@@ -94,6 +95,7 @@ GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&apikey=${this.apiKey.value}`});
         labelAppend = 'Monthly Time Series';
     }
+    else throw Error(`Unknown apifunction: ${apifunction}`);
 
     if ("Error Message" in data) {
         throw new Error(`Unknown symbol: ${symbol}`);
@@ -141,6 +143,7 @@ GlobalEquities.getEquityData = function(symbol = 'IBM', interval = 5, attributes
 };
 
 GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, market, attributes, dateFormat) {
+    let data, labelAppend;
     if (apifunction == 'CRYPTO_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&market=${market}&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series Crypto (${interval}min)`; 
@@ -157,6 +160,7 @@ GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, 
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&market=${market}&apikey=${this.apiKey.value}`});
         labelAppend = 'Time Series (Digital Currency Monthly)';
     }
+    else throw Error(`Unknown apifunction: ${apifunction}`);
 
     if ("Error Message" in data) {
         throw new Error(`Unknown symbol: ${symbol}`);
@@ -215,6 +219,7 @@ GlobalEquities.getCryptoData = function(symbol = 'ETH', interval = 5, attributes
 };
 
 GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbol, interval, attributes, dateFormat) {
+    let data, labelAppend;
     if (apifunction == 'FX_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series FX (${interval}min)`;
@@ -231,6 +236,7 @@ GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbo
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&apikey=${this.apiKey.value}`});
         labelAppend = 'Time Series FX (Monthly)';
     }
+    else throw Error(`Unknown apifunction: ${apifunction}`);
 
     if ("Error Message" in data) {
         throw new Error(`Unknown currency: ${fromSymbol} or ${toSymbol}`);
@@ -287,11 +293,11 @@ GlobalEquities.getForexData = function(fromSymbol = 'USD', toSymbol = 'CNY', int
 GlobalEquities.convertCurrency = async function(fromSymbol = 'USD', amount = 1, toSymbol = 'CNY') {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
-    data = await this._requestData({path:'query', queryString:`function=CURRENCY_EXCHANGE_RATE&from_currency=${fromSymbol}&to_currency=${toSymbol}&apikey=${this.apiKey.value}`});
+    const data = await this._requestData({path:'query', queryString:`function=CURRENCY_EXCHANGE_RATE&from_currency=${fromSymbol}&to_currency=${toSymbol}&apikey=${this.apiKey.value}`});
     if ("Error Message" in data) {
         throw new Error(`Unknown currencies: ${fromSymbol} or ${toSymbol}`);
     }
-    valueEntry = data['Realtime Currency Exchange Rate']['5. Exchange Rate'];
+    const valueEntry = data['Realtime Currency Exchange Rate']['5. Exchange Rate'];
     return parseFloat(valueEntry) * amount;
 };
 
