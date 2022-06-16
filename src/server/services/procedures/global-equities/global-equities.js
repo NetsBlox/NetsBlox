@@ -97,7 +97,7 @@ GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval
     }
     else throw Error(`Unknown apifunction: ${apifunction}`);
 
-    if ("Error Message" in data) {
+    if ('Error Message' in data) {
         throw new Error(`Unknown symbol: ${symbol}`);
     }
 
@@ -105,11 +105,11 @@ GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval
     const matches = [];
 
     // Fill time series with time tag and open/high/close
-    for (const entry in data[`${labelAppend}`]) {
+    for (const entry in data[labelAppend]) {
         const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
 
         // Push the rest of the information
-        const raw = data[`${labelAppend}`][entry];
+        const raw = data[labelAppend][entry];
         const cleaned = {
             'open': parseFloat(raw['1. open']),
             'high': parseFloat(raw['2. high']),
@@ -162,18 +162,18 @@ GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, 
     }
     else throw Error(`Unknown apifunction: ${apifunction}`);
 
-    if ("Error Message" in data) {
+    if ('Error Message' in data) {
         throw new Error(`Unknown symbol: ${symbol}`);
     }
 
     const matches = []; // Properties within the second property ("Time Series: (XX min)")
 
     // Fill time series with time tag and open/high/close
-    for (const entry in data[`${labelAppend}`]) {
+    for (const entry in data[labelAppend]) {
         const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
 
         // Push the rest of the information
-        const raw = data[`${labelAppend}`][entry];
+        const raw = data[labelAppend][entry];
         let cleaned;
         if (apifunction == 'CRYPTO_INTRADAY') {
             cleaned = {
@@ -238,19 +238,19 @@ GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbo
     }
     else throw Error(`Unknown apifunction: ${apifunction}`);
 
-    if ("Error Message" in data) {
+    if ('Error Message' in data) {
         throw new Error(`Unknown currency: ${fromSymbol} or ${toSymbol}`);
     }
 
     const matches = []; // Properties within the second property ("Time Series: (XX min)")
 
     // Fill time series with time tag and open/high/close
-    for (const entry in data[`${labelAppend}`]) {
+    for (const entry in data[labelAppend]) {
         const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
 
         // Push the rest of the information
-        const raw = data[`${labelAppend}`][entry];
-        cleaned = {
+        const raw = data[labelAppend][entry];
+        const cleaned = {
             'open': parseFloat(raw['1. open']),
             'high': parseFloat(raw['2. high']),
             'low': parseFloat(raw['3. low']),
@@ -294,7 +294,7 @@ GlobalEquities.convertCurrency = async function(fromSymbol = 'USD', amount = 1, 
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const data = await this._requestData({path:'query', queryString:`function=CURRENCY_EXCHANGE_RATE&from_currency=${fromSymbol}&to_currency=${toSymbol}&apikey=${this.apiKey.value}`});
-    if ("Error Message" in data) {
+    if ('Error Message' in data) {
         throw new Error(`Unknown currencies: ${fromSymbol} or ${toSymbol}`);
     }
     const valueEntry = data['Realtime Currency Exchange Rate']['5. Exchange Rate'];
