@@ -1,8 +1,7 @@
 /**
- * This API returns intraday time series of the equity specified,
- * covering extended trading hours where applicable (e.g., 4:00am to 8:00pm Eastern Time for the US market).
+ * GlobalEquities gives access to time series data various types of equities, including stocks, currency, and cryptocurrency.
  * The intraday data is derived from the Securities Information Processor (SIP) market-aggregated data.
- * Terms of use: https://www.alphavantage.co/termsOfService/
+ * `Terms of service <https://www.alphavantage.co/terms_of_service/>`__.
  * @service
  * @alpha
  */
@@ -17,19 +16,19 @@ const types = require('../../input-types');
 
 types.defineType({
     name: 'TimePeriod',
-    description: 'Frequency of data to return.',
+    description: 'Frequency of time series data to return from :doc:`/services/GlobalEquities/index`.',
     baseType: 'Enum',
-    baseParams: { '1 min': 1, '5 min': 5, '15 min': 15, '30 min': 30,'60 min':60,'Daily':'daily','Weekly':'weekly','Monthly':'monthly'},
+    baseParams: { '1 min': 1, '5 min': 5, '15 min': 15, '30 min': 30,'60 min': 60, 'daily': 'daily', 'weekly': 'weekly', 'monthly': 'monthly'},
 });
 types.defineType({
     name: 'DateFormat',
-    description: 'Type of date format to return.',
+    description: 'Type of date format to return from :doc:`/services/GlobalEquities/index`. This is either ``traditional``, which is a human-readable format, or ``fractional``, which is the year plus a fractional component representing the month, day, etc. into said year. ``fractional`` is useful for plotting data using :func:`Chart.draw`.',
     baseType: 'Enum',
     baseParams: ['traditional', 'fractional'],
 });
 types.defineType({
     name: 'EquityField',
-    description: 'A specific field of equity data to return.',
+    description: 'A specific field of equity data to return from :doc:`/services/GlobalEquities/index`.',
     baseType: 'Enum',
     baseParams: ['all', 'open', 'high', 'low', 'close', 'volume'],
 });
@@ -64,14 +63,17 @@ function parseFractionalYear(value) {
 }
 
 /**
- * @param {BoundedString<2>} search String to search for matches
- * @return {Array} Array of results
+ * Search for a type of equity (stock) by name.
+ * @param {BoundedString<2>} search String to search for matches.
+ * @returns {Array<Tuple<String, String>>} List of search results, which are pairs of ``name`` and ``symbol``.
  */
-GlobalEquities.equitiesSymbolSearch = async function(search){
+GlobalEquities.equitiesSymbolSearch = async function(search) {
+    search = search.toLowerCase();
+
     const matches = [];
     for (const element of await getStockSymbol()) {
-        if (element[1] !== undefined && (element[1].toLowerCase()).includes(search.toLowerCase())) {
-            matches.push([element[0], element[1]]);
+        if (element[1] !== undefined && (element[1].toLowerCase()).includes(search)) {
+            matches.push([element[1], element[0]]);
         }
     }
     return matches;
@@ -125,14 +127,15 @@ GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval
 };
 
 /**
- * Get data of publicly traded stocks
- * @param {String} symbol Ticker symbol
- * @param {TimePeriod=} interval If intraday
- * @param {EquityField=} attributes May be all or only 1
- * @param {DateFormat} dateFormat Date return format
- * @return {Array} Array of time stamps and associated stock price
+ * Get time series data about the value of publicly traded equities (stocks).
+ * To find equity symbol names, you can use :func:`GlobalEquities.equitiesSymbolSearch`.
+ * @param {String} symbol The equity symbol name.
+ * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
+ * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-GlobalEquities.getEquityData = function(symbol = 'IBM', interval = 5, attributes = 'all', dateFormat = 'traditional') {
+GlobalEquities.getEquityData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'TIME_SERIES_DAILY', weekly: 'TIME_SERIES_WEEKLY', monthly: 'TIME_SERIES_MONTHLY'};
     const apiFunc = apiFuncs[interval];
@@ -201,14 +204,15 @@ GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, 
 };
 
 /**
- * Get data of cryptocurrencies / digital currencies in USD
- * @param {String} symbol Crypto symbol
- * @param {TimePeriod=} interval Interval selected by user
- * @param {EquityField=} attributes May be all or only 1
- * @param {DateFormat} dateFormat Date return format
- * @return {Array} Array of time stamps and associated stock price
-*/
-GlobalEquities.getCryptoData = function(symbol = 'ETH', interval = 5, attributes = 'all', dateFormat = 'traditional') {
+ * Get time series data about the value of cryptocurrencies (digital currencies) in USD.
+ * To convert currency values, you can use :func:`GlobalEquities.convertCurrency`.
+ * @param {String} symbol The cryptocurrency symbol name.
+ * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
+ * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
+ */
+GlobalEquities.getCryptoData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'DIGITAL_CURRENCY_DAILY', weekly: 'DIGITAL_CURRENCY_WEEKLY', monthly: 'DIGITAL_CURRENCY_MONTHLY'};
     const apiFunc = apiFuncs[interval];
@@ -264,15 +268,16 @@ GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbo
 };
 
 /**
- * Get data of cryptocurrencies / digital currencies in USD
- * @param {String} fromSymbol Crypto symbol to convert from
- * @param {String} toSymbol Crypto symbol to convert to
- * @param {TimePeriod=} interval Interval selected by user
- * @param {EquityField=} attributes May be all or only 1
- * @param {DateFormat} dateFormat Date return format
- * @return {Array} Array of time stamps and associated stock price
-*/
-GlobalEquities.getForexData = function(fromSymbol = 'USD', toSymbol = 'CNY', interval = 5, attributes = 'all', dateFormat = 'traditional') {
+ * Get time series data from the foreign exchange about the conversion rate between two types of currency.
+ * To find currency symbol names, you can use :func:`GlobalEquities.currencySymbolSearch`.
+ * @param {String} fromSymbol The cryptocurrency symbol to convert from.
+ * @param {String} toSymbol The cryptocurrency symbol to convert to.
+ * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
+ * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
+ */
+GlobalEquities.getForexData = function(fromSymbol, toSymbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const apiFuncs = { daily: 'FX_DAILY', weekly: 'FX_WEEKLY', monthly: 'FX_MONTHLY'};
@@ -284,13 +289,14 @@ GlobalEquities.getForexData = function(fromSymbol = 'USD', toSymbol = 'CNY', int
 };
 
 /**
- * Get data of publicly traded stocks
- * @param {String} fromSymbol Ticker symbol to convert from
- * @param {Integer} amount Amount to convert
- * @param {String} toSymbol Ticker symbol to convert to
- * @return {Array} Array of time stamps and associated stock price
+ * Convert an ``amount`` of currency of type ``fromSymbol`` into the (current) equivalent amount of currency of type ``toSymbol``.
+ * To find currency symbol names, you can use :func:`GlobalEquities.currencySymbolSearch`.
+ * @param {String} fromSymbol Currency type to convert from.
+ * @param {Integer} amount Amount of currency to convert.
+ * @param {String} toSymbol Currency type to convert to.
+ * @returns {Number} The converted amount of currency.
  */
-GlobalEquities.convertCurrency = async function(fromSymbol = 'USD', amount = 1, toSymbol = 'CNY') {
+GlobalEquities.convertCurrency = async function(fromSymbol, amount, toSymbol) {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const data = await this._requestData({path:'query', queryString:`function=CURRENCY_EXCHANGE_RATE&from_currency=${fromSymbol}&to_currency=${toSymbol}&apikey=${this.apiKey.value}`});
@@ -302,13 +308,16 @@ GlobalEquities.convertCurrency = async function(fromSymbol = 'USD', amount = 1, 
 };
 
 /**
-* @param {BoundedString<2>} search String to search for matches
-* @return {Array} Array of results
-*/
+ * Search for a type of currency by name.
+ * @param {BoundedString<2>} search String to search for matches.
+ * @returns {Array<Tuple<String, String>>} List of search results, which are pairs of ``name`` and ``symbol``.
+ */
 GlobalEquities.currencySymbolSearch = function (search) {
+    search = search.toLowerCase();
+
     const matches = [];
     for (const element of currencyTypes) {
-        if ((element[0].toLowerCase()).includes(search.toLowerCase())) {
+        if ((element[0].toLowerCase()).includes(search)) {
             matches.push([element[0], element[1]]);
         }
     }
