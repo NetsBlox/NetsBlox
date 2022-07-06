@@ -1,5 +1,5 @@
 /**
- * GlobalEquities gives access to time series data various types of equities, including stocks, currency, and cryptocurrency.
+ * AlphaVantage gives access to time series data various types of equities, including stocks, currency, and cryptocurrency.
  * The intraday data is derived from the Securities Information Processor (SIP) market-aggregated data.
  * `Terms of service <https://www.alphavantage.co/terms_of_service/>`__.
  * @service
@@ -7,28 +7,28 @@
  */
 
 const ApiConsumer = require('../utils/api-consumer');
-const {GlobalEquitiesKey} = require('../utils/api-key');
+const {AlphaVantageKey} = require('../utils/api-key');
 const baseUrl = 'https://alphavantage.co';
-const GlobalEquities = new ApiConsumer('GlobalEquities', baseUrl, {cache: {ttl: 30}});
-ApiConsumer.setRequiredApiKey(GlobalEquities, GlobalEquitiesKey);
+const AlphaVantage = new ApiConsumer('AlphaVantage', baseUrl, {cache: {ttl: 30}});
+ApiConsumer.setRequiredApiKey(AlphaVantage, AlphaVantageKey);
 const currencyTypes = require('./currency-types');
 const types = require('../../input-types');
 
 types.defineType({
     name: 'TimePeriod',
-    description: 'Frequency of time series data to return from :doc:`/services/GlobalEquities/index`.',
+    description: 'Frequency of time series data to return from :doc:`/services/AlphaVantage/index`.',
     baseType: 'Enum',
     baseParams: { '1 min': 1, '5 min': 5, '15 min': 15, '30 min': 30,'60 min': 60, 'daily': 'daily', 'weekly': 'weekly', 'monthly': 'monthly'},
 });
 types.defineType({
     name: 'DateFormat',
-    description: 'Type of date format to return from :doc:`/services/GlobalEquities/index`. This is either ``traditional``, which is a human-readable format, or ``fractional``, which is the year plus a fractional component representing the month, day, etc. into said year. ``fractional`` is useful for plotting data using :func:`Chart.draw`.',
+    description: 'Type of date format to return from :doc:`/services/AlphaVantage/index`. This is either ``traditional``, which is a human-readable format, or ``fractional``, which is the year plus a fractional component representing the month, day, etc. into said year. ``fractional`` is useful for plotting data using :func:`Chart.draw`.',
     baseType: 'Enum',
     baseParams: ['traditional', 'fractional'],
 });
 types.defineType({
     name: 'EquityField',
-    description: 'A specific field of equity data to return from :doc:`/services/GlobalEquities/index`.',
+    description: 'A specific field of equity data to return from :doc:`/services/AlphaVantage/index`.',
     baseType: 'Enum',
     baseParams: ['all', 'open', 'high', 'low', 'close', 'volume'],
 });
@@ -40,7 +40,7 @@ async function getStockSymbol() {
     if (CACHED_DATA !== undefined && Date.now() - CACHE_TIME_STAMP <= DATA_SOURCE_LIFETIME) return CACHED_DATA;
 
     const resultSet = [];
-    const data = await GlobalEquities._requestData({path:'query', queryString:`function=LISTING_STATUS&apikey=${GlobalEquities.apiKey.value}`});
+    const data = await AlphaVantage._requestData({path:'query', queryString:`function=LISTING_STATUS&apikey=${AlphaVantage.apiKey.value}`});
     for (const line of data.split('\n')) {
         const categories = line.split(',');
         const ticker = categories[0];
@@ -67,7 +67,7 @@ function parseFractionalYear(value) {
  * @param {BoundedString<2>} search String to search for matches.
  * @returns {Array<Tuple<String, String>>} List of search results, which are pairs of ``name`` and ``symbol``.
  */
-GlobalEquities.equitiesSymbolSearch = async function(search) {
+AlphaVantage.equitiesSymbolSearch = async function(search) {
     search = search.toLowerCase();
 
     const matches = [];
@@ -79,7 +79,7 @@ GlobalEquities.equitiesSymbolSearch = async function(search) {
     return matches;
 };
 
-GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat) {
+AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat) {
     let data, labelAppend;
     if (apifunction == 'TIME_SERIES_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
@@ -128,24 +128,24 @@ GlobalEquities._rawSearchEquities = async function(apifunction, symbol, interval
 
 /**
  * Get time series data about the value of publicly traded equities (stocks).
- * To find equity symbol names, you can use :func:`GlobalEquities.equitiesSymbolSearch`.
+ * To find equity symbol names, you can use :func:`AlphaVantage.equitiesSymbolSearch`.
  * @param {String} symbol The equity symbol name.
  * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
  * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-GlobalEquities.getEquityData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getEquityData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'TIME_SERIES_DAILY', weekly: 'TIME_SERIES_WEEKLY', monthly: 'TIME_SERIES_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return GlobalEquities._rawSearchEquities('TIME_SERIES_INTRADAY', symbol, interval, attributes, dateFormat);
+        return AlphaVantage._rawSearchEquities('TIME_SERIES_INTRADAY', symbol, interval, attributes, dateFormat);
     }
-    return GlobalEquities._rawSearchEquities(apiFunc,symbol, null, attributes, dateFormat);
+    return AlphaVantage._rawSearchEquities(apiFunc,symbol, null, attributes, dateFormat);
 };
 
-GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, market, attributes, dateFormat) {
+AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, market, attributes, dateFormat) {
     let data, labelAppend;
     if (apifunction == 'CRYPTO_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&market=${market}&apikey=${this.apiKey.value}`});
@@ -205,24 +205,24 @@ GlobalEquities._rawSearchCrypto = async function(apifunction, symbol, interval, 
 
 /**
  * Get time series data about the value of cryptocurrencies (digital currencies) in USD.
- * To convert currency values, you can use :func:`GlobalEquities.convertCurrency`.
+ * To convert currency values, you can use :func:`AlphaVantage.convertCurrency`.
  * @param {String} symbol The cryptocurrency symbol name.
  * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
  * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-GlobalEquities.getCryptoData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getCryptoData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'DIGITAL_CURRENCY_DAILY', weekly: 'DIGITAL_CURRENCY_WEEKLY', monthly: 'DIGITAL_CURRENCY_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return GlobalEquities._rawSearchCrypto('CRYPTO_INTRADAY', symbol, interval, 'USD', attributes, dateFormat);
+        return AlphaVantage._rawSearchCrypto('CRYPTO_INTRADAY', symbol, interval, 'USD', attributes, dateFormat);
     }
-    return GlobalEquities._rawSearchCrypto(apiFunc,symbol, null, 'USD', attributes, dateFormat);
+    return AlphaVantage._rawSearchCrypto(apiFunc,symbol, null, 'USD', attributes, dateFormat);
 };
 
-GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbol, interval, attributes, dateFormat) {
+AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol, interval, attributes, dateFormat) {
     let data, labelAppend;
     if (apifunction == 'FX_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
@@ -269,7 +269,7 @@ GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbo
 
 /**
  * Get time series data from the foreign exchange about the conversion rate between two types of currency.
- * To find currency symbol names, you can use :func:`GlobalEquities.currencySymbolSearch`.
+ * To find currency symbol names, you can use :func:`AlphaVantage.currencySymbolSearch`.
  * @param {String} fromSymbol The cryptocurrency symbol to convert from.
  * @param {String} toSymbol The cryptocurrency symbol to convert to.
  * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
@@ -277,26 +277,26 @@ GlobalEquities._rawSearchForex = async function(apifunction, fromSymbol, toSymbo
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-GlobalEquities.getForexData = function(fromSymbol, toSymbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getExchangeData = function(fromSymbol, toSymbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const apiFuncs = { daily: 'FX_DAILY', weekly: 'FX_WEEKLY', monthly: 'FX_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return GlobalEquities._rawSearchForex('FX_INTRADAY', fromSymbol, toSymbol, interval, attributes, dateFormat);
+        return AlphaVantage._rawSearchForex('FX_INTRADAY', fromSymbol, toSymbol, interval, attributes, dateFormat);
     }
-    return GlobalEquities._rawSearchForex(apiFunc,fromSymbol, toSymbol, null, attributes, dateFormat);
+    return AlphaVantage._rawSearchForex(apiFunc,fromSymbol, toSymbol, null, attributes, dateFormat);
 };
 
 /**
  * Convert an ``amount`` of currency of type ``fromSymbol`` into the (current) equivalent amount of currency of type ``toSymbol``.
- * To find currency symbol names, you can use :func:`GlobalEquities.currencySymbolSearch`.
+ * To find currency symbol names, you can use :func:`AlphaVantage.currencySymbolSearch`.
  * @param {String} fromSymbol Currency type to convert from.
  * @param {Integer} amount Amount of currency to convert.
  * @param {String} toSymbol Currency type to convert to.
  * @returns {Number} The converted amount of currency.
  */
-GlobalEquities.convertCurrency = async function(fromSymbol, amount, toSymbol) {
+AlphaVantage.convertCurrency = async function(fromSymbol, amount, toSymbol) {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const data = await this._requestData({path:'query', queryString:`function=CURRENCY_EXCHANGE_RATE&from_currency=${fromSymbol}&to_currency=${toSymbol}&apikey=${this.apiKey.value}`});
@@ -312,7 +312,7 @@ GlobalEquities.convertCurrency = async function(fromSymbol, amount, toSymbol) {
  * @param {BoundedString<2>} search String to search for matches.
  * @returns {Array<Tuple<String, String>>} List of search results, which are pairs of ``name`` and ``symbol``.
  */
-GlobalEquities.currencySymbolSearch = function (search) {
+AlphaVantage.currencySymbolSearch = function (search) {
     search = search.toLowerCase();
 
     const matches = [];
@@ -324,4 +324,4 @@ GlobalEquities.currencySymbolSearch = function (search) {
     return matches;
 };
 
-module.exports = GlobalEquities;
+module.exports = AlphaVantage;

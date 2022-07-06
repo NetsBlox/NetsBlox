@@ -87,10 +87,10 @@ module.exports.GeniusKey = new ApiKey(
     'https://genius.com/signup_or_login',
 );
 
-module.exports.GlobalEquitiesKey = new ApiKey(
-    'GlobalEquities',
+module.exports.AlphaVantageKey = new ApiKey(
+    'AlphaVantage',
     'https://www.alphavantage.co/support/#api-key',
-    'GLOBAL_EQUITIES_KEY'
+    'ALPHA_VANTAGE_KEY'
 );
 
 class InvalidKeyError extends Error {
