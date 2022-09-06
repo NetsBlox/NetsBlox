@@ -21,7 +21,9 @@ class COVIDData {
         this.types = TYPES;
         this._intervalId = null;
         const hour = 1000*60*60;
-        this.setUpdateInterval(4*hour);
+        if (!process.env.hasOwnProperty('COVID_DISABLE_AUTO_UPDATE')) {
+            this.setUpdateInterval(4*hour);
+        }
     }
 
     setUpdateInterval(duration) {
