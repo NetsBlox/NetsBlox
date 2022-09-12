@@ -763,7 +763,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The ``sensors`` input is a list of pairs (lists of length 2), where each pair is a sensor name and an update period in milliseconds.
      * You can have different update periods for different sensors.
      * You will receive a message of the same name as the sensor at most once per whatever update period you specified.
+     * 
      * Any call to this RPC will invalidate all previous calls - thus, calling it with an empty list will stop all updates.
+     * Alternatively, the dedicated :func:`PhoneIoT.stopSensors` RPC will likewise stop all updates.
      * 
      * This method of accessing sensor data is often easier, as it doesn't require loops or error-checking code.
      * If a networking error occurs, you simply miss that single message.
@@ -829,7 +831,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * @param {Device} device id of the device
      */
-    PhoneIoT.prototype.stopListeningToSensors = async function (device, sensors={}) {
+    PhoneIoT.prototype.stopSensors = async function (device, sensors={}) {
         this.listenToSensors(device, {});
     };
     /**

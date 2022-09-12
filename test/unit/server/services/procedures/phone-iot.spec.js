@@ -17,7 +17,7 @@ describe(utils.suiteName(__filename), function() {
         ['addLabel', ['device', 'x', 'y', 'text', 'options']],
         ['listenToGUI', ['device']],
         ['listenToSensors', ['device', 'sensors']],
-        ['stopListeningToSensors', ['device']],
+        ['stopSensors', ['device']],
         ['getSensors', []],
         ['getToggleState', ['device', 'id']],
         ['setToggleState', ['device', 'id', 'state']],
