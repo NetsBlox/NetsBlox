@@ -1,5 +1,5 @@
 // Extend snap2js for netsblox blocks and execution on the server
-const Q = require('q');
+const {defer} = require('./utils');
 const snap2js = require('snap2js');
 const backend = require('snap2js/src/backend');
 const helpers = require('snap2js/src/backend-helpers');
@@ -202,7 +202,7 @@ context.doYield = function(startTime) {
 };
 
 function ServerResponse() {
-    this.deferred = Q.defer();
+    this.deferred = defer();
     this.promise = this.deferred.promise;
     this._status = null;
     this.responseText = '';

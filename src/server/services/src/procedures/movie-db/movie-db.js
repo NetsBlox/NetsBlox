@@ -8,7 +8,7 @@
 
 'use strict';
 
-const Q = require('q');
+const {ninvoke} = require('../../utils');
 const MovieDBClient = require('moviedb');
 const ApiConsumer = require('../utils/api-consumer');
 
@@ -20,7 +20,7 @@ ApiConsumer.setRequiredApiKey(MovieDB, TheMovieDBKey);
 MovieDB._callApiMethod = async function(method, query) {
     const client = new MovieDBClient(this.apiKey.value);
     try {
-        const results = await Q.ninvoke(client, method, query);
+        const results = await ninvoke(client, method, query);
         return results[0];
     } catch (err) {
         if (err.message.includes('Unauthorized')) {

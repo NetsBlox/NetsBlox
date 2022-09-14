@@ -4,7 +4,6 @@ const logger = new Logger('netsblox:bug-reporter');
 const version = require('../package.json').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
-const Q = require('q');
 const cloud = require('./cloud-client');
 const fs = require('fs');
 const path = require('path');

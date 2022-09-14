@@ -1,5 +1,5 @@
 const express = require('express');
-const Q = require('q');
+const {defer} = require('./utils');
 const RemoteClient = require('./remote-client');
 const Services = require('./services-worker');
 const Logger = require('./logger');
@@ -11,7 +11,7 @@ const NetsBloxCloud = require('./cloud-client');
 
 class ServicesAPI {
     constructor() {
-        this.loading = Q.defer();
+        this.loading = defer();
 
         this.logger = new Logger('netsblox:services');
         this.services = new Services(this.logger);

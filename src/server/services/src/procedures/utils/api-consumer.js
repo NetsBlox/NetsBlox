@@ -3,7 +3,7 @@ const NBService = require('./service.js'),
     CacheManager = require('cache-manager'),
     fsStore = require('cache-manager-fs'),
     fs = require('fs'),
-    Q = require('q'),
+    {defer} = require('../../utils'),
     _ = require('lodash'),
     request = require('request'),
     rp = require('request-promise');
@@ -136,7 +136,7 @@ class ApiConsumer extends NBService {
         const fullUrl = this._getFullUrl(queryOptions);
         let requestImage = () => {
             logger.trace('requesting image from', fullUrl);
-            const deferred = Q.defer();
+            const deferred = defer();
             const imgResponse = request.get(fullUrl);
             delete imgResponse.headers['cache-control'];
             imgResponse.on('response', res => {

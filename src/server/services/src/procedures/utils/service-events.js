@@ -1,4 +1,4 @@
-const Q = require('q');
+const {defer} = require('../../utils');
 
 class ServiceEvents {
     constructor() {
@@ -27,7 +27,7 @@ class ServiceEvents {
     }
 
     once (event, fn) {
-        const deferred = Q.defer();
+        const deferred = defer();
         const callback = (...args) => {
             fn(...args);
             this.off(event, callback);

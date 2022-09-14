@@ -214,6 +214,27 @@ function sleep(duration) {
     return new Promise(resolve => setTimeout(resolve, duration));
 }
 
+function defer() {
+    const deferred = {};
+    deferred.promise = new Promise((res, rej) => {
+        deferred.resolve = res;
+        deferred.reject = rej;
+    });
+    return deferred;
+}
+
+function ninvoke(obj, method, ...args) {
+    const fn = obj[method];
+    const deferred = defer();
+    const callback = (err, result) => {
+        if (err) return deferred.reject(err);
+        return deferred.resolve(result);
+    };
+    args.push(callback);
+    fn.apply(obj, args);
+    return deferred.promise;
+}
+
 module.exports = {
     serialize,
     serializeArray,
@@ -235,4 +256,5 @@ module.exports = {
     sortByDateField,
     getNewClientId,
     sleep,
+    defer,
 };

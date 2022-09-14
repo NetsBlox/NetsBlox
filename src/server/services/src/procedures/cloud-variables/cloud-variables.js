@@ -8,7 +8,7 @@
  */
 const logger = require('../utils/logger')('cloud-variables');
 const Storage = require('../../storage');
-const Q = require('q');
+const utils = require('../utils');
 
 const globalListeners = {}; // map<var name, map<client id, [socket, msg name, expiry timestamp]>>
 const userListeners = {}; // map<user name, map<var name, map<client id, [socket, msg name, expiry timestamp]>>>
@@ -218,7 +218,7 @@ CloudVariables.lockVariable = async function(name, password) {
 
 CloudVariables._queueLockFor = async function(variable) {
     // Return a promise which will resolve when the lock is applied
-    const deferred = Q.defer();
+    const deferred = utils.defer();
     const id = variable._id;
     const {password} = variable;
 

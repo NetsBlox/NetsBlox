@@ -1,4 +1,3 @@
-const Q = require('q');
 const fs = require('fs');
 const path = require('path');
 const logoPath = path.join(__dirname, 'netsblox_logo.png');
@@ -100,7 +99,7 @@ dev.echoIfWithin = function(input) {
  * Sleep for 3 seconds and detect if the RPC was aborted.
  */
 dev.detectAbort = function() {
-    const deferred = Q.defer();
+    const deferred = utils.defer();
     let aborted = false;
 
     this.request.on('close', () => {

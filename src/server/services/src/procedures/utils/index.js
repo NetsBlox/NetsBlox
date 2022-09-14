@@ -1,5 +1,5 @@
 // a set of utilities to be used by rpcs
-const Q = require('q');
+const {defer} = require('../../utils');
 const cloud = require('../../cloud-client');
 
 // sets up the headers and send an image
@@ -130,4 +130,5 @@ module.exports = {
     isValidServiceName,
     setRequiredApiKey,
     RPCError,
+    defer,
 };

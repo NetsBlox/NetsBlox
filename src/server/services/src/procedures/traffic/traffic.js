@@ -6,7 +6,7 @@
 
 'use strict';
 
-const Q = require('q');
+const {defer} = require('../utils');
 const logger = require('../utils/logger')('traffic');
 const {BingMapsKey, InvalidKeyError} = require('../utils/api-key');
 const utils = require('../utils');
@@ -58,7 +58,7 @@ BingTraffic.search = function(westLongitude, northLatitude, eastLongitude, south
         eastLongitude
     ];
     const url = baseUrl + boundingBox.join(',') + '?key=' + this.apiKey.value;
-    const deferred = Q.defer();
+    const deferred = defer();
 
     logger.trace(`Requesting traffic accidents in ${westLongitude},${northLatitude},${eastLongitude},${southLatitude}`);
     request(url, (err, res, body) => {

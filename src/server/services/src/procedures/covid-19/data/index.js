@@ -1,7 +1,7 @@
 const assert = require('assert');
 const axios = require('axios');
 const _ = require('lodash');
-const Q = require('q');
+const utils = require('../../utils');
 const COUNTRY_ALIASES = require('./countries');
 const BASE_URL = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/';
 const START_DATE = '01-22-2020';
@@ -209,7 +209,7 @@ class COVIDData {
     }
 
     async getMergedAndSortedDocs(query, type) {
-        const deferred = Q.defer();
+        const deferred = utils.defer();
         const stream = this._model.find(query).stream();
         const countsByDate = {};
 

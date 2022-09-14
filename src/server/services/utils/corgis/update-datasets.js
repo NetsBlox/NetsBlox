@@ -1,6 +1,6 @@
 const fs = require('fs'),
     osmosis = require('osmosis'),
-    Q = require('q');
+    utils = require('../utils');
 const https = require('https');
 
 const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
@@ -45,7 +45,7 @@ let updateDatasets = (names) => {
 
 // finds out what datasets are available
 let discoverDatasets = () => {
-    let deferred = Q.defer();
+    let deferred = utils.defer();
     let names = [];
     osmosis
         .get('https://think.cs.vt.edu/corgis/json/index.html')

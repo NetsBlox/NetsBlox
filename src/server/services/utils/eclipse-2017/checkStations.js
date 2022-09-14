@@ -2,7 +2,7 @@
 const fs = require('fs'),
     geolib = require('geolib'),
     rp = require('request-promise'),
-    Q = require('q'),
+    utils = require('../../src/utils'),
     _ = require('lodash'),
     eclipsePath = require('./eclipsePath').center,
     stationUtils = require('../../../src/server/rpc/procedures/eclipse-2017/stations.js'),
@@ -77,22 +77,21 @@ function reqUpdates(stations){
         if (stationChunks.length > 0) {
             setTimeout(fire, INTERVAL);
         }else {
-            Q.allSettled(promises).done(responses => {
-                responses = responses.filter(item => {
-                    if (item.state === 'rejected') {
-                        console.log('failed', item.reason);
-                        return false;
-                    }
-                    return true;
-                });
-                let updatesArr = responses.map(item => item.value);
-                // change falsy updates' temp to 0
-                updatesArr = updatesArr.map(up => {
-                    if ( up && up.temp < 0 ) up.temp = 0;
-                    return up;
-                });
-                deferred.resolve(updatesArr);
+            const responses = await Promise.allSettled(promises);
+            responses = responses.filter(item => {
+                if (item.state === 'rejected') {
+                    console.log('failed', item.reason);
+                    return false;
+                }
+                return true;
             });
+            let updatesArr = responses.map(item => item.value);
+            // change falsy updates' temp to 0
+            updatesArr = updatesArr.map(up => {
+                if ( up && up.temp < 0 ) up.temp = 0;
+                return up;
+            });
+            deferred.resolve(updatesArr);
         }
     };
     fire();
