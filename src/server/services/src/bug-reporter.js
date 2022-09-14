@@ -1,7 +1,7 @@
 const mailer = require('./mailer');
 const Logger = require('./logger');
 const logger = new Logger('netsblox:bug-reporter');
-const version = require('../../../package.json').version;
+const version = require('../package.json').version;
 const snap2jsVersion = require('snap2js/package').version;
 const request = require('request-promise');
 const Q = require('q');

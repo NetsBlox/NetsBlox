@@ -5,12 +5,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const utils = require('../server-utils');
+const utils = require('./utils');
 const JsonToSnapList = require('./procedures/utils').jsonToSnapList;
 const InputTypes = require('./input-types.js');
 
 const {Docs} = require('./jsdoc-extractor.js');
-const {RESERVED_FN_NAMES} = require('../../common/constants').RPC;
+const {RESERVED_FN_NAMES} = require('./constants').RPC;
 const ServiceEvents = require('./procedures/utils/service-events');
 const Storage = require('./storage');
 const CommunityService = require('./community');

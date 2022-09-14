@@ -1,5 +1,5 @@
 const _ = require('lodash'),
-    eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
+    eclipsePathCenter = require('../../../utils/eclipse-2017/eclipsePath.js').center,
     rpcStorage = require('../../storage'),
     Logger = require('../../logger.js'),
     logger = new Logger('netsblox:wu:stations'),

@@ -41,7 +41,7 @@ async function listen(port) {
         res.status(200).json(types.typesMeta);
     });
     app.use('/', ServicesAPI.router());
-    const RPC_ROOT = path.join(__dirname, 'libs');
+    const RPC_ROOT = path.join(__dirname, '..', 'libs');
     const RPC_INDEX = fs.readFileSync(path.join(RPC_ROOT, 'LIBS'), 'utf8')
         .split('\n')
         .filter(line => {

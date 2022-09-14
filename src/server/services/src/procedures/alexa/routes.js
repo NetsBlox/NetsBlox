@@ -1,7 +1,11 @@
 const AlexaSkill = require('./skill');
+const express = require('express');
 
+module.exports = express();  // FIXME: add support for OAuth on NetsBlox cloud
+return;
 // TODO: refactor the next imports
-//const OAuth = require('../../../api/core/oauth');
+const OAuth = require('../../../api/core/oauth');
+// FIXME: TODO: Update this
 const {handleErrors} = require('../../../api/rest/utils');
 const {setUsernameFromCookie} = require('../utils/router-utils');
 const {LoginRequired, RequestError} = require('../../../api/core/errors');
@@ -15,7 +19,6 @@ const _ = require('lodash');
 const fs = require('fs');
 const path = require('path');
 const AmazonLoginTemplate = _.template(fs.readFileSync(path.join(__dirname, 'login.html.ejs'), 'utf8'));
-const express = require('express');
 const cookieParser = require('cookie-parser');
 const h = require('./helpers');
 const logger = require('../utils/logger')('alexa:routes');

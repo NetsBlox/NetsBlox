@@ -1,0 +1,4 @@
+[submodule "src/ciphers/speck"]
+	path = src/ciphers/speck
+	url = https://github.com/hax/speck.js
+	branch = master

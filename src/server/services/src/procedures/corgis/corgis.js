@@ -6,29 +6,16 @@
 const ApiConsumer = require('../utils/api-consumer'),
     jsonQuery = require('json-query'),
     corgiDatasets = require('./datasets.js'),
-    fse = require('fse');
+    fsp = require('fs/promises');
 
 let corgis = new ApiConsumer('Corgis','');
 
 const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
 
-let loadDataset = dsName => {
+let loadDataset = async dsName => {
     let absolutePath = STORAGE_DIR + dsName + '.json';
-    return new Promise((resolve, reject) => {
-        fse.readFile(absolutePath, 'utf8', function (err,data) {
-            if (err) {
-                reject(err);
-            }
-            if (data) {
-                try {
-                    data = JSON.parse(data);
-                    resolve(data);
-                } catch (e) {
-                    reject(e);
-                }
-            }
-        }); // end of fse.readFile
-    });
+    const data = await fsp.readFile(absolutePath, 'utf8');
+    return JSON.parse(data);
 };
 
 const datasetsMetadata = corgiDatasets.parseDatasetsInfo();

@@ -1,4 +1,4 @@
-const fse = require('fse');
+const fs = require('fs');
 const path = require('path');
 
 // reads from a text file containing dataset descriptions in the following format
@@ -18,8 +18,8 @@ tags
 const STORAGE_DIR = process.env.CORGIS_DIR || 'datasets/';
 
 const readAvailableDatasetNames = () => {
-    if (!fse.existsSync(STORAGE_DIR)) return [];
-    let files = fse.readdirSync(STORAGE_DIR);
+    if (!fs.existsSync(STORAGE_DIR)) return [];
+    let files = fs.readdirSync(STORAGE_DIR);
     files = files.map(fName => fName.replace('.json', ''));
     return files;
 };
@@ -27,7 +27,7 @@ const readAvailableDatasetNames = () => {
 const downloadedSets = readAvailableDatasetNames();
 
 function parseDatasetsInfo() {
-    let file = fse.readFileSync(path.join(__dirname, 'datasets.list'), 'utf8');
+    let file = fs.readFileSync(path.join(__dirname, 'datasets.list'), 'utf8');
 
     let datasetsMetadata = file
         .split('\n\n')

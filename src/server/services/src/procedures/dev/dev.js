@@ -1,7 +1,7 @@
 const Q = require('q');
 const fs = require('fs');
 const path = require('path');
-const logoPath = path.join(__dirname, '..', '..', '..', '..', '..', 'netsblox_logo.png');
+const logoPath = path.join(__dirname, 'netsblox_logo.png');
 const buffer = fs.readFileSync(logoPath);
 const utils = require('../utils');
 const logger = require('../utils/logger')('dev');

@@ -7,7 +7,7 @@
 
 const Eclipse2017 = {};
 const logger = require('../utils/logger')('eclipse-2017');
-const eclipsePathCenter = require('../../../../../utils/rpc/eclipse-2017/eclipsePath.js').center,
+const eclipsePathCenter = require('../../../utils/eclipse-2017/eclipsePath.js').center,
     rpcUtils = require('../utils'),
     stationUtils = require('./stations.js'),
     schedule = require('node-schedule'),

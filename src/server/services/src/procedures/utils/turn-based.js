@@ -1,6 +1,6 @@
 // A turn based base class to add turn based behavior to an RPC
 'use strict';
-const getArgs = require('../../../server-utils').getArgumentsFor;
+const getArgs = require('../../utils').getArgumentsFor;
 
 class TurnBased {
     constructor(action, reset) {

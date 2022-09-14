@@ -1,4 +1,4 @@
-const fse = require('fs-extra'),
+const fs = require('fs'),
     Logger = require('./logger.js'),
     logger = new Logger('netsblox:jsdoc'),
     doctrine = require('doctrine');
@@ -10,7 +10,7 @@ const MARKER_START = '/**',
     MARKER_END = '*/';
 
 let parseSync = (filePath, searchScope = 5) => {
-    let source = fse.readFileSync(filePath, 'UTF8');
+    let source = fs.readFileSync(filePath, 'UTF8');
     return parseSource(source, searchScope);
 };
 
