@@ -82,11 +82,11 @@ AlphaVantage.equitiesSymbolSearch = async function(search) {
 AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat) {
     let data, labelAppend;
     if (apifunction == 'TIME_SERIES_INTRADAY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&symbol=${symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series (${interval}min)`; 
     }
     else if (apifunction == 'TIME_SERIES_DAILY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&symbol=${symbol}&apikey=${this.apiKey.value}`});
         labelAppend = 'Time Series (Daily)';
     }
     else if (apifunction == 'TIME_SERIES_WEEKLY') {
