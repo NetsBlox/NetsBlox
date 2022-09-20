@@ -79,7 +79,10 @@ AlphaVantage.equitiesSymbolSearch = async function(search) {
     return matches;
 };
 
-AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat) {
+AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, attributes, dateFormat, startDate, endDate) {
+    startDate = startDate ? +startDate : -Infinity;
+    endDate = endDate ? +endDate : Infinity;
+
     let data, labelAppend;
     if (apifunction == 'TIME_SERIES_INTRADAY') {
         data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&symbol=${symbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
@@ -108,7 +111,11 @@ AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, 
 
     // Fill time series with time tag and open/high/close
     for (const entry in data[labelAppend]) {
-        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
+        const t = new Date(entry);
+        const t_ms = +t;
+        if (t_ms < startDate || t_ms > endDate) continue;
+
+        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : t).toString()];
 
         // Push the rest of the information
         const raw = data[labelAppend][entry];
@@ -123,6 +130,8 @@ AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, 
 
         matches.push(timeseries);
     }
+
+    matches.reverse(); // make chronological
     return matches;
 };
 
@@ -130,29 +139,34 @@ AlphaVantage._rawSearchEquities = async function(apifunction, symbol, interval, 
  * Get time series data about the value of publicly traded equities (stocks).
  * To find equity symbol names, you can use :func:`AlphaVantage.equitiesSymbolSearch`.
  * @param {String} symbol The equity symbol name.
- * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {TimePeriod} interval The interval of time series data to return.
  * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @param {Date=} startDate The first date of results to include (defaults to no cutoff).
+ * @param {Date=} endDate The last date of results to include (defaults to no cutoff).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-AlphaVantage.getEquityData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getEquityData = function(symbol, interval, attributes = 'all', dateFormat = 'traditional', startDate, endDate) {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'TIME_SERIES_DAILY', weekly: 'TIME_SERIES_WEEKLY', monthly: 'TIME_SERIES_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return AlphaVantage._rawSearchEquities('TIME_SERIES_INTRADAY', symbol, interval, attributes, dateFormat);
+        return AlphaVantage._rawSearchEquities('TIME_SERIES_INTRADAY', symbol, interval, attributes, dateFormat, startDate, endDate);
     }
-    return AlphaVantage._rawSearchEquities(apiFunc,symbol, null, attributes, dateFormat);
+    return AlphaVantage._rawSearchEquities(apiFunc,symbol, null, attributes, dateFormat, startDate, endDate);
 };
 
-AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, market, attributes, dateFormat) {
+AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, market, attributes, dateFormat, startDate, endDate) {
+    startDate = startDate ? +startDate : -Infinity;
+    endDate = endDate ? +endDate : Infinity;
+
     let data, labelAppend;
     if (apifunction == 'CRYPTO_INTRADAY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&interval=${interval}min&market=${market}&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&symbol=${symbol}&interval=${interval}min&market=${market}&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series Crypto (${interval}min)`; 
     }
     else if (apifunction == 'DIGITAL_CURRENCY_DAILY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&symbol=${symbol}&market=${market}&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&symbol=${symbol}&market=${market}&apikey=${this.apiKey.value}`});
         labelAppend = 'Time Series (Digital Currency Daily)';
     }
     else if (apifunction == 'DIGITAL_CURRENCY_WEEKLY') {
@@ -173,7 +187,11 @@ AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, ma
 
     // Fill time series with time tag and open/high/close
     for (const entry in data[labelAppend]) {
-        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
+        const t = new Date(entry);
+        const t_ms = +t;
+        if (t_ms < startDate || t_ms > endDate) continue;
+
+        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : t).toString()];
 
         // Push the rest of the information
         const raw = data[labelAppend][entry];
@@ -200,6 +218,8 @@ AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, ma
 
         matches.push(timeseries);
     }
+
+    matches.reverse(); // make chronological
     return matches;
 };
 
@@ -207,29 +227,34 @@ AlphaVantage._rawSearchCrypto = async function(apifunction, symbol, interval, ma
  * Get time series data about the value of cryptocurrencies (digital currencies) in USD.
  * To convert currency values, you can use :func:`AlphaVantage.convertCurrency`.
  * @param {String} symbol The cryptocurrency symbol name.
- * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {TimePeriod} interval The interval of time series data to return.
  * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @param {Date=} startDate The first date of results to include (defaults to no cutoff).
+ * @param {Date=} endDate The last date of results to include (defaults to no cutoff).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-AlphaVantage.getCryptoData = function(symbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getCryptoData = function(symbol, interval, attributes = 'all', dateFormat = 'traditional', startDate, endDate) {
     symbol = symbol.toUpperCase();
     const apiFuncs = { daily: 'DIGITAL_CURRENCY_DAILY', weekly: 'DIGITAL_CURRENCY_WEEKLY', monthly: 'DIGITAL_CURRENCY_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return AlphaVantage._rawSearchCrypto('CRYPTO_INTRADAY', symbol, interval, 'USD', attributes, dateFormat);
+        return AlphaVantage._rawSearchCrypto('CRYPTO_INTRADAY', symbol, interval, 'USD', attributes, dateFormat, startDate, endDate);
     }
-    return AlphaVantage._rawSearchCrypto(apiFunc,symbol, null, 'USD', attributes, dateFormat);
+    return AlphaVantage._rawSearchCrypto(apiFunc, symbol, null, 'USD', attributes, dateFormat, startDate, endDate);
 };
 
-AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol, interval, attributes, dateFormat) {
+AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol, interval, attributes, dateFormat, startDate, endDate) {
+    startDate = startDate ? +startDate : -Infinity;
+    endDate = endDate ? +endDate : Infinity;
+
     let data, labelAppend;
     if (apifunction == 'FX_INTRADAY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&interval=${interval}min&apikey=${this.apiKey.value}`});
         labelAppend = `Time Series FX (${interval}min)`;
     }
     else if (apifunction == 'FX_DAILY') {
-        data = await this._requestData({path:'query', queryString:`function=${apifunction}&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&apikey=${this.apiKey.value}`});
+        data = await this._requestData({path:'query', queryString:`function=${apifunction}&outputsize=full&from_symbol=${fromSymbol}&to_symbol=${toSymbol}&apikey=${this.apiKey.value}`});
         labelAppend = 'Time Series FX (Daily)';
     }
     else if (apifunction == 'FX_WEEKLY') {
@@ -250,7 +275,11 @@ AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol,
 
     // Fill time series with time tag and open/high/close
     for (const entry in data[labelAppend]) {
-        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : new Date(entry)).toString()];
+        const t = new Date(entry);
+        const t_ms = +t;
+        if (t_ms < startDate || t_ms > endDate) continue;
+
+        const timeseries = [(dateFormat === 'fractional' ? parseFractionalYear(entry) : t).toString()];
 
         // Push the rest of the information
         const raw = data[labelAppend][entry];
@@ -264,6 +293,8 @@ AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol,
 
         matches.push(timeseries);
     }
+
+    matches.reverse(); // make chronological
     return matches;
 };
 
@@ -272,20 +303,22 @@ AlphaVantage._rawSearchForex = async function(apifunction, fromSymbol, toSymbol,
  * To find currency symbol names, you can use :func:`AlphaVantage.currencySymbolSearch`.
  * @param {String} fromSymbol The cryptocurrency symbol to convert from.
  * @param {String} toSymbol The cryptocurrency symbol to convert to.
- * @param {TimePeriod=} interval The interval of time series data to return (default: ``5 min``).
+ * @param {TimePeriod} interval The interval of time series data to return.
  * @param {EquityField=} attributes A specific attribute/field of data to return for each entry, or ``all`` to return all entries (default: ``all``).
  * @param {DateFormat=} dateFormat The date format to return for each entry (default: ``traditional``).
+ * @param {Date=} startDate The first date of results to include (defaults to no cutoff).
+ * @param {Date=} endDate The last date of results to include (defaults to no cutoff).
  * @returns {Array<Tuple<Any, Any>>} Array of time series results, which are pairs of ``time`` and ``data``.
  */
-AlphaVantage.getExchangeData = function(fromSymbol, toSymbol, interval = 5, attributes = 'all', dateFormat = 'traditional') {
+AlphaVantage.getExchangeData = function(fromSymbol, toSymbol, interval, attributes = 'all', dateFormat = 'traditional', startDate, endDate) {
     fromSymbol = fromSymbol.toUpperCase();
     toSymbol = toSymbol.toUpperCase();
     const apiFuncs = { daily: 'FX_DAILY', weekly: 'FX_WEEKLY', monthly: 'FX_MONTHLY'};
     const apiFunc = apiFuncs[interval];
     if (apiFunc == undefined) {
-        return AlphaVantage._rawSearchForex('FX_INTRADAY', fromSymbol, toSymbol, interval, attributes, dateFormat);
+        return AlphaVantage._rawSearchForex('FX_INTRADAY', fromSymbol, toSymbol, interval, attributes, dateFormat, startDate, endDate);
     }
-    return AlphaVantage._rawSearchForex(apiFunc,fromSymbol, toSymbol, null, attributes, dateFormat);
+    return AlphaVantage._rawSearchForex(apiFunc,fromSymbol, toSymbol, null, attributes, dateFormat, startDate, endDate);
 };
 
 /**
