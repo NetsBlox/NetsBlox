@@ -2,7 +2,6 @@
  * This service provides access to the `RainViewer <https://www.rainviewer.com/api.html>`__ aggregated database.
  * RainViewer provides access to recent and forecasted weather radar maps all around the world.
  *
- * @alpha
  * @service
  * @category Science
  * @category Climate
