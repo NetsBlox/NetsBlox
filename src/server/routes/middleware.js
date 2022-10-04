@@ -110,7 +110,7 @@ async function login(req, res) {
 
     await Q.nfcall(tryLogIn, req, res);
     loggedIn = req.loggedIn;
-    username = username || req.session.username;
+    username = req.session.username || username;
 
     if (!username) {
         logger.log('"passive" login failed - no session found!');
