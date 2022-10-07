@@ -1,6 +1,6 @@
 {
   "name": "netsblox",
-  "version": "1.49.1",
+  "version": "1.49.2",
   "description": "Visual programming environment with networking support",
   "bin": {
     "netsblox": "./bin/netsblox"
