@@ -7,7 +7,7 @@
  * and https://github.com/owid/covid-19-data/tree/master/public/data/vaccinations.
  *
  * @service
- * @category Science
+ * @category Health
  */
 const _ = require('lodash');
 const getServiceStorage = require('../../advancedStorage');

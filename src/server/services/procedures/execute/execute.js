@@ -3,6 +3,7 @@
  * server. This is particularly useful for batching RPC requests.
  *
  * @service
+ * @category Utilities
  */
 const Execute = {};
 

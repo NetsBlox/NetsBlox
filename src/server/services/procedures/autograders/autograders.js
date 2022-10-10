@@ -5,6 +5,7 @@
  * For more information, check out https://editor.netsblox.org/docs/services/Autograders/index.html
  *
  * @service
+ * @category Utilities
  */
 const assert = require('assert');
 const _ = require('lodash');

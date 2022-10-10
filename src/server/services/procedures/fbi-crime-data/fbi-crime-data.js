@@ -6,7 +6,7 @@
  * 
  * @alpha
  * @service
- * @category Statistics
+ * @category Society
  */
 'use strict';
 

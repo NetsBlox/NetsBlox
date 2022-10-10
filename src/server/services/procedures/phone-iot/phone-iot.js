@@ -24,6 +24,8 @@
  * You're now ready to start using the other RPCs in PhoneIoT to communicate with the device!
  * 
  * @service
+ * @category Devices
+ * @category global
  */
  'use strict';
 

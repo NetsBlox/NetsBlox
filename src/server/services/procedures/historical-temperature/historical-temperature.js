@@ -11,7 +11,6 @@
  * - ``southern hemisphere`` - only southern landmasses
  *
  * @service
- * @category Science
  * @category Climate
  */
 

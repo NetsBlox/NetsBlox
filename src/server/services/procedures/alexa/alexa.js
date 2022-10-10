@@ -13,6 +13,8 @@
  * intent.
  *
  * @service
+ * @category ArtificialIntelligence
+ * @category Devices
  */
 const Alexa = {};
 const AlexaSkill = require('./skill');

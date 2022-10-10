@@ -3,6 +3,7 @@
  * For explanation on the different attributes for each object,
  * visit https://metmuseum.github.io.
  * @service
+ * @category History
  */
 
 const MetObject = require('./database.js');

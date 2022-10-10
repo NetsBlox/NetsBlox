@@ -2,6 +2,7 @@
  * The Corgis Service provides access to CORGIS datasets from https://corgis-edu.github.io/corgis/.
  *
  * @service
+ * @category Society
  */
 const ApiConsumer = require('../utils/api-consumer'),
     jsonQuery = require('json-query'),

@@ -4,6 +4,7 @@
  *
  * Terms of use: https://collection.britishmuseum.org/resource/Termsofuse
  * @service
+ * @category History
  */
 
 const ApiConsumer = require('../utils/api-consumer');

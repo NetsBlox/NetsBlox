@@ -4,6 +4,7 @@
  *
  * Terms of use: https://developers.google.com/maps/terms
  * @service
+ * @category Location
  */
 'use strict';
 

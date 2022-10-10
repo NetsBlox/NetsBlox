@@ -5,8 +5,8 @@
  * For more information, check out https://www.aoml.noaa.gov/hrd/data_sub/re_anal.html
  *
  * @service
- * @category Science
  * @category Climate
+ * @category GeoData
  */
 const fs = require('fs').promises;
 const path = require('path');

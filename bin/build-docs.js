@@ -119,7 +119,11 @@ const SERVICES_PATH = path.join(GENERATED_PATH, 'services');
 
 function getCategories(obj) {
     const cats = obj.categories;
-    return cats && cats.length ? cats : ['index'];
+    if (!cats || !cats.length) return ['index'];
+    for (let i = 0; i < cats.length; ++i) {
+        if (cats[i] == 'global') cats[i] = 'index';
+    }
+    return cats;
 }
 function updateCategories(categories, name, obj) {
     for (const category of getCategories(obj)) {

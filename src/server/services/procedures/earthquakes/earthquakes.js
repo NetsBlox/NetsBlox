@@ -3,7 +3,7 @@
  * For more information, check out https://earthquake.usgs.gov/.
  *
  * @service
- * @category Science
+ * @category GeoData
  */
 'use strict';
 

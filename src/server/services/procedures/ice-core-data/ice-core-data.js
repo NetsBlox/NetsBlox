@@ -18,7 +18,6 @@
  * - https://www1.ncdc.noaa.gov/pub/data/paleo/icecore/antarctica/wdc05a2013d18o.txt
  *
  * @service
- * @category Science
  * @category Climate
  */
 

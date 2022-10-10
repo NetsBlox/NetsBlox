@@ -2,6 +2,7 @@
  * The Pixabay Service provides access to free images released under Creative Commons CC0.
  * For more information, check out https://pixabay.com
  * @service
+ * @category Media
  */
 
 const ApiConsumer = require('../utils/api-consumer');

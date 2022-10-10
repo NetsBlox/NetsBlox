@@ -5,7 +5,8 @@
  * For more information, check out https://genius.com.
  *
  * @service
- * @category Music
+ * @category Society
+ * @category Media
  */
 const {parse: parseHTML} = require('node-html-parser');
 const ApiConsumer = require('../utils/api-consumer');
