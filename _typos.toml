@@ -30,7 +30,7 @@ extend-exclude = [
     "src/server/services/procedures/ice-core-data/data/domec-deuterium/*.txt",
     "src/server/services/procedures/nexrad-radar/RadarLocations.js",
     "src/server/services/procedures/word-guess/dict/*.*",
-    "src/server/services/procedures/alpha-vantage/currency-types.js",
+    "src/server/services/procedures/financial-data/currency-types.js",
 
     # misc
     "src/browser/src/sha512.js",
