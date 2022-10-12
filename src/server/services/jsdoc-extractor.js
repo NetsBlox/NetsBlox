@@ -164,8 +164,8 @@ function parseSource(source, searchScope) {
     if (serviceAnnotation) {
         categories = serviceAnnotation.parsed.tags
             .filter(tag => tag.title === 'category')
-            .map(tag => tag.description.split(';').map(c => c.trim()));
-        if (categories.length === 0) categories.push(['global']);
+            .map(tag => tag.description ? tag.description.split(';').map(c => c.trim()) : []);
+        if (categories.length === 0) categories.push([]);
 
         tags = serviceAnnotation.parsed.tags
             .map(tag => tag.title)

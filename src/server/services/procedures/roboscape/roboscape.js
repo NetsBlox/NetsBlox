@@ -33,7 +33,7 @@
 /**
  * @service
  * @category Devices
- * @category global
+ * @category
  */
 'use strict';
 

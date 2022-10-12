@@ -121,7 +121,7 @@ function getCategories(obj) {
     const cats = obj.categories;
     if (!cats || !cats.length) return ['index'];
     for (let i = 0; i < cats.length; ++i) {
-        if (cats[i] == 'global') cats[i] = 'index';
+        if (cats[i].length === 0) cats[i] = 'index';
     }
     return cats;
 }

@@ -3,7 +3,7 @@
  * ID programmatically. This enables communication between projects.
  *
  * @service
- * @category global
+ * @category
  * @category Utilities
  */
 'use strict';
