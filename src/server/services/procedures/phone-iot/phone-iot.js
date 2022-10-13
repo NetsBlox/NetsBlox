@@ -25,7 +25,7 @@
  * 
  * @service
  * @category Devices
- * @category
+ * @category GLOBAL
  */
  'use strict';
 

@@ -2,7 +2,7 @@
  * A charting service powered by gnuplot.
  *
  * @service
- * @category
+ * @category GLOBAL
  * @category Media
  */
 
