@@ -164,7 +164,16 @@ function parseSource(source, searchScope) {
     if (serviceAnnotation) {
         categories = serviceAnnotation.parsed.tags
             .filter(tag => tag.title === 'category')
-            .map(tag => tag.description.split(';').map(c => c.trim()));
+            .map(tag => {
+                if (!tag.description) throw Error('Missing category spec');
+                if (tag.description.toUpperCase() === 'GLOBAL') {
+                    if (tag.description !== 'GLOBAL') throw Error(`Reserved word GLOBAL used with invalid casing (${tag.description})`);
+                    return [];
+                } else {
+                    return tag.description.split(';').map(c => c.trim());
+                }
+            });
+        if (categories.length === 0) categories.push([]);
 
         tags = serviceAnnotation.parsed.tags
             .map(tag => tag.title)

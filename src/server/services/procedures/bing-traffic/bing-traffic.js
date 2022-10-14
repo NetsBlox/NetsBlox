@@ -1,7 +1,10 @@
 /**
  * The Traffic Service provides access to real-time traffic data using the Bing Traffic API.
  * For more information, check out https://msdn.microsoft.com/en-us/library/hh441725.aspx
+ *
  * @service
+ * @category Society
+ * @category GeoData
  */
 
 'use strict';

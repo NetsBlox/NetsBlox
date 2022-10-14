@@ -2,14 +2,16 @@
  * AlphaVantage gives access to time series data various types of equities, including stocks, currency, and cryptocurrency.
  * The intraday data is derived from the Securities Information Processor (SIP) market-aggregated data.
  * `Terms of service <https://www.alphavantage.co/terms_of_service/>`__.
- * @service
+ *
  * @alpha
+ * @service
+ * @category Society
  */
 
 const ApiConsumer = require('../utils/api-consumer');
 const {AlphaVantageKey} = require('../utils/api-key');
 const baseUrl = 'https://alphavantage.co';
-const AlphaVantage = new ApiConsumer('AlphaVantage', baseUrl, {cache: {ttl: 30}});
+const AlphaVantage = new ApiConsumer('FinancialData', baseUrl, {cache: {ttl: 30}});
 ApiConsumer.setRequiredApiKey(AlphaVantage, AlphaVantageKey);
 const currencyTypes = require('./currency-types');
 const types = require('../../input-types');

@@ -4,6 +4,8 @@
  *
  * Terms of use: https://twitter.com/en/tos
  * @service
+ * @category Media
+ * @category Society
  */
 
 'use strict';

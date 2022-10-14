@@ -2,6 +2,8 @@
  * A charting service powered by gnuplot.
  *
  * @service
+ * @category GLOBAL
+ * @category Media
  */
 
 const NBService = require('../utils/service'),

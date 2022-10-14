@@ -5,6 +5,7 @@
  * block.
  *
  * @service
+ * @category Utilities
  */
 const _ = require('lodash');
 const Blocks = require('./blocks');

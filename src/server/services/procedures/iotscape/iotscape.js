@@ -5,6 +5,7 @@
  * block.
  *
  * @service
+ * @category Devices
  */
 const _ = require('lodash');
 const fs = require('fs');

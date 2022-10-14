@@ -3,8 +3,8 @@
  * RainViewer provides access to recent and forecasted weather radar maps all around the world.
  *
  * @service
- * @category Science
  * @category Climate
+ * @category GeoData
  */
 
 const logger = require('../utils/logger')('rain-viewer');

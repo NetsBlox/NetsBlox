@@ -1,3 +1,9 @@
+/**
+ * @alpha
+ * @service
+ * @category Utilities
+ */
+
 const Q = require('q');
 const fs = require('fs');
 const path = require('path');

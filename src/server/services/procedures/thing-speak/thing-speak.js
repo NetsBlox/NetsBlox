@@ -4,6 +4,7 @@
  *
  * Terms of use: https://thingspeak.com/pages/terms
  * @service
+ * @category Devices
  */
 const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('Thingspeak', 'https://api.thingspeak.com/channels/');

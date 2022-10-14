@@ -2,7 +2,7 @@
  * The BaseX Service provides access to an existing BaseX instance.
  *
  * @service
- * @category Database
+ * @category Utilities
  */
 const axios = require('axios');
 const parseXml = require('@rgrove/parse-xml');

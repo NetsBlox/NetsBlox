@@ -3,6 +3,7 @@
  * to Moview Reviews, Top Stories, and their Semantic API.
  *
  * @service
+ * @category Media
  */
 const ApiConsumer = require('../utils/api-consumer');
 const {NewYorkTimesKey} = require('../utils/api-key');

@@ -4,6 +4,7 @@
  *
  * @alpha
  * @service
+ * @category Climate
  */
 'use strict';
 

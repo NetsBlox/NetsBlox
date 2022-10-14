@@ -9,7 +9,7 @@
  * of the percent of people in that country who are male/female.`
  * 
  * @service
- * @category Science
+ * @category Health
  */
 'use strict';
 
