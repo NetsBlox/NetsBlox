@@ -16,6 +16,8 @@ const common = require('./common');
 // d - level (slider) event
 // E - get level (slider)
 // e - set level (slider)
+// F - get atm pressure
+// f - get ambient temperature
 // G - gravity
 // g - add custom label control
 // H - set text
@@ -24,6 +26,7 @@ const common = require('./common');
 // i - set image
 // J - get pos vector
 // j - add joystick
+// K - get relative humidity
 // L - linear acceleration
 // l - light level
 // M - magnetic field
@@ -812,6 +815,36 @@ Device.prototype.getLightLevel = async function (device, args, clientId) {
 
     return throwIfErr(await response).vals[0];
 };
+Device.prototype.getPressure = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('pressure', clientId);
+
+    const message = Buffer.alloc(9);
+    message.write('F', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(message);
+
+    return throwIfErr(await response).vals[0];
+};
+Device.prototype.getTemperature = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('temperature', clientId);
+
+    const message = Buffer.alloc(9);
+    message.write('f', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(message);
+
+    return throwIfErr(await response).vals[0];
+};
+Device.prototype.getRelativeHumidity = async function (device, args, clientId) {
+    const { response, password } = this.rpcHeader('humidity', clientId);
+
+    const message = Buffer.alloc(9);
+    message.write('K', 0, 1);
+    message.writeBigInt64BE(common.gracefulPasswordParse(password), 1);
+    this.sendToDevice(message);
+
+    return throwIfErr(await response).vals[0];
+};
 
 Device.prototype._getLocationRaw = async function (device, args, clientId) {
     const { response, password } = this.rpcHeader('location', clientId);
@@ -939,13 +972,16 @@ const ORDERED_SENSOR_TYPES = [
     'lightLevel',
     'location',
     'orientation',
+    'pressure',
+    'temperature',
+    'humidity',
 ];
 Device.prototype._parseSensorPacket = function (message, pos, stop) {
     const res = {};
     for (const sensor of ORDERED_SENSOR_TYPES) {
         if (pos >= stop) {
-            this._logger.log('invalid sensor packet - missing items');
-            return {};
+            this._logger.log('sensor packet missing expected items');
+            return res; // return what we had for backwards compat (new things always added to end)
         }
         const len = message[pos++];
         if (len === 0) continue;
@@ -1136,6 +1172,9 @@ Device.prototype.onMessage = function (message) {
     else if (command === 'P') this._sendSensorResult('proximity', 'proximity sensor', message);
     else if (command === 'R') this._sendSensorResult('rotation', 'rotation sensor', message);
     else if (command === 'l') this._sendSensorResult('lightlevel', 'light sensor', message);
+    else if (command === 'F') this._sendSensorResult('pressure', 'pressure sensor', message);
+    else if (command === 'f') this._sendSensorResult('temperature', 'temperature sensor', message);
+    else if (command === 'K') this._sendSensorResult('humidity', 'humidity sensor', message);
     else if (command === 'S') this._sendSensorResult('stepcount', 'step counter', message);
     else if (command === 'G') this._sendSensorResult('gravity', 'gravity sensor', message);
     else if (command === 'm') this._sendSensorResult('miclevel', 'microphone', message);

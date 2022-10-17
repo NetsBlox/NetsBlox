@@ -790,6 +790,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {SensorPeriod=} sensors.proximity ``proximity`` period
      * @param {SensorPeriod=} sensors.stepCount ``stepCount`` period
      * @param {SensorPeriod=} sensors.location ``location`` period
+     * @param {SensorPeriod=} sensors.pressure ``pressure`` period
+     * @param {SensorPeriod=} sensors.temperature ``temperature`` period
+     * @param {SensorPeriod=} sensors.humidity ``humidity`` period
      */
     PhoneIoT.prototype.listenToSensors = async function (device, sensors={}) {
         const clientID = this.socket.clientId;
@@ -1235,7 +1238,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``lightLevel``
      * 
-     * Message fields: ``value``, ``device``
+     * Message fields: ``level``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1243,6 +1246,49 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.getLightLevel = function (device) {
         return this._passToDevice('getLightLevel', arguments);
+    };
+    /**
+     * Gets the current atmospheric pressure around the device in kPa (kilopascals).
+     * For reference, ``1`` atmosphere of pressure is ``101.325`` kPa.
+     * 
+     * Sensor name: ``pressure``
+     * 
+     * Message fields: ``pressure``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+    PhoneIoT.prototype.getPressure = function (device) {
+        return this._passToDevice('getPressure', arguments);
+    };
+    /**
+     * Gets the current ambient temperature around the device in Celsius.
+     * 
+     * Sensor name: ``temperature``
+     * 
+     * Message fields: ``temp``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+    PhoneIoT.prototype.getTemperature = function (device) {
+        return this._passToDevice('getTemperature', arguments);
+    };
+    /**
+     * Gets the relative humidity as a percent.
+     * 
+     * Sensor name: ``humidity``
+     * 
+     * Message fields: ``relative``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+     PhoneIoT.prototype.getRelativeHumidity = function (device) {
+        return this._passToDevice('getRelativeHumidity', arguments);
     };
 
     /**

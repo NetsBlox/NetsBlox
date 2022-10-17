@@ -53,5 +53,8 @@ describe(utils.suiteName(__filename), function() {
         ['setText', ['device', 'id', 'text']],
         ['getText', ['device', 'id']],
         ['setCredentials', ['device', 'password']],
+        ['getPressure', ['device']],
+        ['getTemperature', ['device']],
+        ['getRelativeHumidity', ['device']],
     ]);
 });
