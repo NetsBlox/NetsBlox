@@ -497,7 +497,12 @@
             let index = 0;
             const testCaseName = BlockMorph.prototype.parseSpec(spec)
                 .map(spec => {
-                    const isInput = !BlockMorph.prototype.labelPart(spec);
+                    let isInput = true;
+                    try {
+                        BlockMorph.prototype.labelPart(spec);
+                        isInput = false;
+                    } catch {}
+
                     if (isInput) {
                         return JSON.stringify(inputs[index++]);
                     }
