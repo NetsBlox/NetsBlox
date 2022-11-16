@@ -5,3 +5,12 @@
 [submodule "src/server/services/procedures/roboscape/speckjs"]
 	path = src/server/services/procedures/roboscape/speckjs
 	url = https://github.com/NetsBlox/speckjs.git
+[submodule "browser"]
+	path = browser
+	url = git@github.com:NetsBlox/Snap--Build-Your-Own-Blocks.git
+[submodule "cloud"]
+	path = cloud
+	url = git@github.com:NetsBlox/cloud.git
+[submodule "services"]
+	path = services
+	url = git@github.com:NetsBlox/services.git
