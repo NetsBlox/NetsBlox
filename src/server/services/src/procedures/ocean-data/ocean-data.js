@@ -8,7 +8,6 @@
  * - https://www.paleo.bristol.ac.uk/~ggdjl/warm_climates/hansen_etal.pdf.
  *
  * @service
- * @category Science
  * @category Climate
  */
 const OceanData = {};

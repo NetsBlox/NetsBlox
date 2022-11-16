@@ -15,8 +15,7 @@
  * - http://vo.imcce.fr/webservices/miriade/proxy.php?file=http://145.238.217.38//tmp/insola/insolaouteXT96X&format=text
  * 
  * @service
- * @category Science
- * @category Climate
+ * @category Astronomy
  */
 
 const fs = require('fs');

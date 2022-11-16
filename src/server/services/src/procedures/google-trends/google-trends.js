@@ -3,6 +3,7 @@
  * For more information, check out https://trends.google.com/trends/.
  * @deprecated
  * @service
+ * @category Language
  */
 const TrendsRPC = {};
 

@@ -2,7 +2,9 @@
  * The KeyValueStore Service provides basic storage functionality using a hierarchical
  * key-value storage (similar to CloudVariables).
  *
+ * @deprecated
  * @service
+ * @category Utilities
  */
 'use strict';
 

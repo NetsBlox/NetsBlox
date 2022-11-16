@@ -4,6 +4,7 @@
  *
  * Terms of use: https://thingspeak.com/pages/terms
  * @service
+ * @category Devices
  */
 const ApiConsumer = require('../utils/api-consumer');
 const thingspeakIoT = new ApiConsumer('Thingspeak', 'https://api.thingspeak.com/channels/');
@@ -118,12 +119,13 @@ thingspeakIoT.searchByTag = function(tag, limit=15, updatedSince=null) {
  *
  * @param {Latitude} latitude latitude to search near
  * @param {Longitude} longitude longitude to search near
- * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {BoundedNumber<0>=} distance max distance from location in meters (default ``100000`` = 100Km)
  * @param {Number=} limit max number of results to return (default ``15``)
  * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
  * @returns {Array<Object>} search results
  */
-thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, limit=15, updatedSince=null) {
+thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100000, limit=15, updatedSince=null) {
+    distance /= 1000; // convert to Km for Thingspeak API
     const pred = getUpdatedSincePred(updatedSince);
     return this._paginatedSearch('public.json', { latitude, longitude, distance }, limit, pred).catch(this._handleError);
 };
@@ -134,12 +136,13 @@ thingspeakIoT.searchByLocation = function(latitude, longitude, distance=100, lim
  * @param {String} tag tag to search for
  * @param {Latitude} latitude latitude to search near
  * @param {Longitude} longitude longitude to search near
- * @param {BoundedNumber<0>=} distance max distance from location (default ``100``)
+ * @param {BoundedNumber<0>=} distance max distance from location in meters (default ``100000`` = 100Km)
  * @param {Number=} limit max number of results to return (default ``15``)
  * @param {Date=} updatedSince only include results which have (some) new data since this date (default no time-based filtering)
  * @returns {Array<Object>} search results
  */
-thingspeakIoT.searchByTagAndLocation = function(tag, latitude, longitude, distance=100, limit=15, updatedSince=null) {
+thingspeakIoT.searchByTagAndLocation = function(tag, latitude, longitude, distance=100000, limit=15, updatedSince=null) {
+    distance /= 1000; // convert to Km for Thingspeak API
     const updatedSincePred = getUpdatedSincePred(updatedSince);
     const pred = v => {
         if ((v.tags || []).every(t => !(t.name || '').includes(tag))) {

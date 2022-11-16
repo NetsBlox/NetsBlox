@@ -87,6 +87,12 @@ module.exports.GeniusKey = new ApiKey(
     'https://genius.com/signup_or_login',
 );
 
+module.exports.AlphaVantageKey = new ApiKey(
+    'AlphaVantage',
+    'https://www.alphavantage.co/support/#api-key',
+    'ALPHA_VANTAGE_KEY'
+);
+
 class InvalidKeyError extends Error {
     constructor(apiKey) {
         const message = `Invalid API key. Please update your ${apiKey.provider} API key.`;

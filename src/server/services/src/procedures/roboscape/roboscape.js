@@ -27,8 +27,14 @@
  *  ROBOSCAPE_PORT: set it to the UDP port (1973) to enable this module
  *  ROBOSCAPE_MODE: sets the NetsBlox interface type, can be "security",
  *      "native" or "both" (default)
+ *
  */
 
+/**
+ * @service
+ * @category Devices
+ * @category GLOBAL
+ */
 'use strict';
 
 const logger = require('../utils/logger')('roboscape');

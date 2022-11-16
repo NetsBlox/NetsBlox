@@ -10,7 +10,7 @@ function withTypeTape(fn) {
     typeTape = [];
     const result = fn();
     const types = typeTape;
-    
+
     typeTape = oldTypeTape;
     return [types, result];
 }
@@ -37,17 +37,12 @@ class EnumError extends ParameterError {
 function getErrorMessage(arg, err) {
     const typeName = arg.type.name;
     const netsbloxType = getNBType(typeName);
-    const omitTypeName = err instanceof ParameterError ||
-        err.message.includes(netsbloxType);
-    const msg = omitTypeName ? 
+    const omitTypeName = err instanceof ParameterError || err.message.includes(netsbloxType);
+    const msg = omitTypeName ?
         `"${arg.name}" is not valid.` :
         `"${arg.name}" is not a valid ${netsbloxType}.`;
 
-    if (err.message) {
-        return msg + ' ' + err.message;
-    } else {
-        return msg;
-    }
+    return err.message ? `${msg} ${err.message}` : msg;
 }
 
 // Any is the only first-order type, and it has no base type
@@ -277,7 +272,19 @@ defineType({
 // all Object types are going to be structured data (simplified json for snap environment)
 defineType({
     name: 'Object',
-    description: 'A set named fields with values. This is constructed as a list of lists, where the inner lists have two values: the field name and value.',
+    description:
+        'An unordered (i.e., the order does not matter) set of named fields with values.\n' +
+        'This is constructed as a list of lists, where each inner list has two values: the field name and its corresponding value.\n' +
+        'The following is an example of structured data:\n\n' +
+        '``[["name", "John Doe"], ["age", 15], ["address", "123 Street Ave."]]``\n\n' +
+        'This is used to encode complex data such as information about a person (e.g., name, age, address, etc.) or some other "object" being described.\n' +
+        'Information like this could be stored in several ways, such as a list of just the field values (without the field names).\n' +
+        'However, storing it like an ``Object`` (with the field names) allows for the fields to be specified in any order, or potentially omitting some fields,\n' +
+        'and preserves information about what each value means.\n\n' +
+        'In NetsBlox, this is also sometimes called "structured data" due to other langues (e.g., C/C++ and Rust) calling this type of data a "struct", which is short for "structure".\n' +
+        'Other languages, like Javascript, call this an "object", which is the official name of the NetsBlox type.\n\n' +
+        'The official ``Structured data`` library of blocks can be used to work with structured data more easily.\n' +
+        'This can be imported through the ``File > Libraries...`` menu in the NetsBlox editor, and the imported blocks show up in the ``Custom`` tab of blocks.',
     baseType: 'Any',
     parser: async (input, params=[], ctx) => {
         // check if it has the form of structured data
@@ -460,7 +467,7 @@ function parseDuration(input) {
     let res = 0;
     while (input.length != 0) {
         const delta = input.match(/^([+-]?)\s*(\d+\.?\d*)\s*([^+-\s]*)/);
-        if (!delta) throw Error(`Failed to parse ${input} as a duration`);
+        if (!delta) throw Error(`Failed to parse "${input}" as a duration`);
         if (delta[3].length === 0) throw Error(`Time offset "${delta[0]}" missing units`);
 
         input = input.slice(delta[0].length).trimLeft();
@@ -499,6 +506,14 @@ defineType({
 
         const MAX_DATE_LEN = 128;
         let dateLen = Math.min(MAX_DATE_LEN, input.length);
+        let deltaSepPos = 0;
+        let spacePrefix = true;
+        for (; deltaSepPos < dateLen; ++deltaSepPos) {
+            if (!spacePrefix && '+-'.includes(input[deltaSepPos]) && ' \t'.includes(input[deltaSepPos - 1])) break;
+            if (spacePrefix && !' \t'.includes(input[deltaSepPos])) spacePrefix = false;
+        }
+        dateLen = deltaSepPos;
+
         let date = null;
         for (; dateLen > 0; --dateLen) {
             date = basicParser(input.slice(0, dateLen), null);

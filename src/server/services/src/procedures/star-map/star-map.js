@@ -3,7 +3,7 @@
  * For more information, check out http://skyserver.sdss.org/dr14/en/home.aspx
  *
  * @service
- * @category Science
+ * @category Astronomy
  */
 'use strict';
 

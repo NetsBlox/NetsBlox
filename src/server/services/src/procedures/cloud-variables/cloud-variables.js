@@ -5,6 +5,8 @@
  * Cloud variables that are inactive (no reads or writes) for 30 days are subject to deletion.
  *
  * @service
+ * @category GLOBAL
+ * @category Utilities
  */
 const logger = require('../utils/logger')('cloud-variables');
 const Storage = require('../../storage');

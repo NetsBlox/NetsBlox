@@ -7,6 +7,7 @@
  * 
  * @service
  * @category ArtificialIntelligence
+ * @category Media
  */
 'use strict';
 

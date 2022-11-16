@@ -5,7 +5,8 @@
  * Terms of Service: https://openweathermap.org/terms
  *
  * @service
- * @category Science
+ * @category Climate
+ * @category GeoData
  */
 'use strict';
 

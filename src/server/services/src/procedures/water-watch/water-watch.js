@@ -3,7 +3,8 @@
  * For more information, check out https://waterservices.usgs.gov/
  *
  * @service
- * @category Science
+ * @category Climate
+ * @category GeoData
  */
 const ApiConsumer = require('../utils/api-consumer'),
     waterwatch = new ApiConsumer('WaterWatch','https://waterservices.usgs.gov/nwis/iv/');

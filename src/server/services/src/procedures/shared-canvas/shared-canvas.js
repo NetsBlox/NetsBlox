@@ -10,6 +10,7 @@
  *
  * @alpha
  * @service
+ * @category Media
  */
 'use strict';
 

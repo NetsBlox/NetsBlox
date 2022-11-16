@@ -1,8 +1,12 @@
 /**
  * The AirQuality Service provides access to real-time air quality data using the AirNowAPI.
  * For more information, check out https://docs.airnowapi.org/.
+ *
  * @service
- * @category Science
+ * @category Climate
+ * @category Society
+ * @category GeoData
+ * @category Health
  */
 'use strict';
 

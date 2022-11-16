@@ -1,8 +1,8 @@
 // Extend snap2js for netsblox blocks and execution on the server
 const {defer} = require('./utils');
 const snap2js = require('snap2js');
-const backend = require('snap2js/src/backend');
-const helpers = require('snap2js/src/backend-helpers');
+const backend = require('snap2js/src/backend/javascript');
+const helpers = require('snap2js/src/backend/javascript-helpers');
 const {EXPRESSION_TYPES, ASYNC_TYPES} = require('snap2js/src/ast');
 const Logger = require('./logger');
 const logger = new Logger('netsblox:rpc:blocks2js');

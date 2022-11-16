@@ -4,6 +4,7 @@
  *
  * Terms of service: https://developers.google.com/maps/terms
  * @service
+ * @category Location
  */
 const {GoogleMapsKey, TimezoneDBKey} = require('../utils/api-key');
 const utils = require('../utils');

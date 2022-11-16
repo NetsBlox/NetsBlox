@@ -24,6 +24,8 @@
  * You're now ready to start using the other RPCs in PhoneIoT to communicate with the device!
  * 
  * @service
+ * @category Devices
+ * @category GLOBAL
  */
  'use strict';
 
@@ -295,6 +297,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Because of this, you should keep label text relatively short.
      * If you need a large amount of text written, consider using :func:`PhoneIoT.addTextField` with ``readonly = true``.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the label (percentage).
@@ -308,7 +314,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.landscape If set to ``true``, rotates the label 90 degrees around the label position so the text appears upright when viewed in landscape.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addLabel = function (device, x, y, text='', options) {
+    PhoneIoT.prototype.addLabel = async function (device, x, y, text='', options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         arguments[3] = text;
         const DEFAULTS = {
             textColor: this.getColor(0, 0, 0),
@@ -323,6 +331,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Adds a button to the display with the given position and size.
      * If not specified, the default text for a button is empty, which can be used to just make a colored, unlabeled button.
      * The text can be modified later via :func:`PhoneIoT.setText`.
+     * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -341,7 +353,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {FontSize=} options.fontSize The size of the font to use for text (default ``1.0``).
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addButton = function (device, x, y, width, height, text='', options) {
+    PhoneIoT.prototype.addButton = async function (device, x, y, width, height, text='', options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             style: 0,
             color: this.getColor(66, 135, 245),
@@ -358,6 +372,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * If not specified, an image display is by default ``readonly = true``, meaning that the user cannot modify its content.
      * If (explicitly) set to ``readonly = false``, then the user can click on the image display to change the image to a new picture from the camera.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the image display (percentage).
@@ -372,7 +390,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Fit=} options.fit The technique used to fit the image into the display, in case the image and the display have different aspect ratios. This can be ``fit`` (default), ``zoom``, or ``stretch``.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addImageDisplay = function (device, x, y, width, height, options) {
+    PhoneIoT.prototype.addImageDisplay = async function (device, x, y, width, height, options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             readonly: true,
             landscape: false,
@@ -387,6 +407,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Unless set to ``readonly = true``, the user can click on the text field to change its content.
      * 
      * If you have a small amount of text you need to show and would otherwise make this control ``readonly = true``, consider using :func:`PhoneIoT.addLabel` instead.
+     * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -406,7 +430,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.landscape If set to ``true``, rotates the text field ``90`` degrees around its top left corner.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addTextField = function (device, x, y, width, height, options) {
+    PhoneIoT.prototype.addTextField = async function (device, x, y, width, height, options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             text: '',
             color: this.getColor(66, 135, 245),
@@ -426,6 +452,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * The position of the joystick is given by a vector ``[x, y]``, which is normalized to a length of 1.
      * If you would prefer to not have this normalization and want rectangular coordinates instead of circular, consider using :func:`PhoneIoT.addTouchpad` instead.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the joystick (percentage).
@@ -438,7 +468,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.landscape If set to ``true``, the ``x`` and ``y`` values of the joystick are altered so that it acts correctly when in landscape mode. Unlike other controls, this option does not affect where the control is displayed on the screen (no rotation).
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addJoystick = function (device, x, y, width, options) {
+    PhoneIoT.prototype.addJoystick = async function (device, x, y, width, options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             color: this.getColor(66, 135, 245),
             landscape: false,
@@ -456,6 +488,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Although the vector value is not normalized to a length of 1,
      * each component (``x`` and ``y`` individually) is in ``[-1, 1]``.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the touchpad (percentage).
@@ -470,7 +506,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.landscape ``true`` to rotate the control ``90`` degrees into landscape mode.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addTouchpad = function (device, x, y, width, height, options) {
+    PhoneIoT.prototype.addTouchpad = async function (device, x, y, width, height, options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             color: this.getColor(66, 135, 245),
             landscape: false,
@@ -487,6 +525,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * You can read and write the value of a slider with :func:`PhoneIoT.getLevel` and :func:`PhoneIoT.setLevel`.
      * Note that if the control is set to ``readonly = true``, the user cannot change the value, but you can still do so from code.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the slider (percentage).
@@ -502,7 +544,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the value by sliding; however, you are still able to change the value from code. This is especially useful for displaying progress bars such as for a long-running application. Defaults to ``false``.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addSlider = function (device, x, y, width, options) {
+    PhoneIoT.prototype.addSlider = async function (device, x, y, width, options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             color: this.getColor(66, 135, 245),
             landscape: false,
@@ -517,6 +561,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * Adds a toggle control to the canvas at the given location.
      * The ``text`` parameter can be used to set the initial text shown for the toggle (defaults to empty),
      * but this can be changed later with :func:`PhoneIoT.setText`.
+     * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
      * 
      * @category Display
      * @param {Device} device id of the device
@@ -535,7 +583,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the state by clicking; however, you will still be free to do so from code. Defaults to ``false``.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addToggle = function (device, x, y, text='', options) {
+    PhoneIoT.prototype.addToggle = async function (device, x, y, text='', options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             style: 0,
             checked: false,
@@ -555,6 +605,10 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * and the user can check at most one radio button from any given group.
      * These can be used to accept multiple-choice input from the user.
      * 
+     * Adding a widget/control to the device will automatically call :func:`PhoneIoT.listenToGUI`, which is needed to receive events from user interaction.
+     * If you have a scenario where one project sets up the GUI but another project also needs to listen for GUI events,
+     * the other project can directly call :func:`PhoneIoT.listenToGUI` to receive the events without needing to actually add a widget.
+     * 
      * @category Display
      * @param {Device} device id of the device
      * @param {Position} x X position of the top left corner of the radio button (percentage).
@@ -572,7 +626,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {Boolean=} options.readonly If set to ``true``, the user will not be able to change the state by clicking; however, you will still be free to do so from code. Defaults to ``false``.
      * @returns {String} id of the created control
      */
-    PhoneIoT.prototype.addRadioButton = function (device, x, y, text='', options) {
+    PhoneIoT.prototype.addRadioButton = async function (device, x, y, text='', options) {
+        await this.listenToGUI(device); // adding a gui widget automatically registers to listen to gui
+
         const DEFAULTS = {
             group: 'main',
             checked: false,
@@ -688,21 +744,30 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * This is needed to receive any type of GUI event, including button clicks, joystick movements, and textbox update events.
      * You only need to call this RPC once, which you can do at the start of your program (but after calling :func:`PhoneIoT.setCredentials`).
      * 
+     * Adding a widget/control to the device will automatically register that project to listen for GUI updates,
+     * so it is not typically required to call this RPC directly.
+     * However, this is still available in the case that a project needs to listen to events without actually creating any widgets itself
+     * (e.g., if another project sets up the GUI and this project only needs to listen to events).
+     * 
      * See the :doc:`Display` section for more information.
      * 
      * @param {Device} device id of the device
      */
     PhoneIoT.prototype.listenToGUI = async function (device) {
-        await this.authenticate(device); // throws on failure - we want this
-        
-        device.guiListeners[this.socket.clientId] = this.socket;
+        if (device.guiListeners[this.socket.clientId] === undefined) { // only check auth if we haven't auth checked before (for gui)
+            await this.authenticate(device); // throws on failure - we want this
+        }
+
+        device.guiListeners[this.socket.clientId] = this.socket; // update regardless in case the socket broke and had to be reconnected
     };
     /**
      * This RPC requests that you receive periodic sensor update events from the device.
      * The ``sensors`` input is a list of pairs (lists of length 2), where each pair is a sensor name and an update period in milliseconds.
      * You can have different update periods for different sensors.
      * You will receive a message of the same name as the sensor at most once per whatever update period you specified.
+     * 
      * Any call to this RPC will invalidate all previous calls - thus, calling it with an empty list will stop all updates.
+     * Alternatively, the dedicated :func:`PhoneIoT.stopSensors` RPC will likewise stop all updates.
      * 
      * This method of accessing sensor data is often easier, as it doesn't require loops or error-checking code.
      * If a networking error occurs, you simply miss that single message.
@@ -725,6 +790,9 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * @param {SensorPeriod=} sensors.proximity ``proximity`` period
      * @param {SensorPeriod=} sensors.stepCount ``stepCount`` period
      * @param {SensorPeriod=} sensors.location ``location`` period
+     * @param {SensorPeriod=} sensors.pressure ``pressure`` period
+     * @param {SensorPeriod=} sensors.temperature ``temperature`` period
+     * @param {SensorPeriod=} sensors.humidity ``humidity`` period
      */
     PhoneIoT.prototype.listenToSensors = async function (device, sensors={}) {
         const clientID = this.socket.clientId;
@@ -760,6 +828,16 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
             }
             listeners[clientID] = [this.socket, timestamp, sensors[sensor]];
         }
+    };
+    /**
+     * Stops outgoing sensor updates that were previously requested by :func:`PhoneIoT.listenToSensors`.
+     * This is equivalent to calling :func:`PhoneIoT.listenToSensors` with an empty sensors list,
+     * but is provided as a separate RPC for convenience and discoverability.
+     * 
+     * @param {Device} device id of the device
+     */
+    PhoneIoT.prototype.stopSensors = async function (device, sensors={}) {
+        this.listenToSensors(device, {});
     };
     /**
      * This RPC returns a list containing the name of every sensor supported by PhoneIoT.
@@ -1160,7 +1238,7 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      * 
      * Sensor name: ``lightLevel``
      * 
-     * Message fields: ``value``, ``device``
+     * Message fields: ``level``, ``device``
      * 
      * @category Sensors
      * @param {Device} device id of the device
@@ -1168,6 +1246,49 @@ if (PHONE_IOT_MODE === 'native' || PHONE_IOT_MODE === 'both') {
      */
     PhoneIoT.prototype.getLightLevel = function (device) {
         return this._passToDevice('getLightLevel', arguments);
+    };
+    /**
+     * Gets the current atmospheric pressure around the device in kPa (kilopascals).
+     * For reference, ``1`` atmosphere of pressure is ``101.325`` kPa.
+     * 
+     * Sensor name: ``pressure``
+     * 
+     * Message fields: ``pressure``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+    PhoneIoT.prototype.getPressure = function (device) {
+        return this._passToDevice('getPressure', arguments);
+    };
+    /**
+     * Gets the current ambient temperature around the device in Celsius.
+     * 
+     * Sensor name: ``temperature``
+     * 
+     * Message fields: ``temp``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+    PhoneIoT.prototype.getTemperature = function (device) {
+        return this._passToDevice('getTemperature', arguments);
+    };
+    /**
+     * Gets the relative humidity as a percent.
+     * 
+     * Sensor name: ``humidity``
+     * 
+     * Message fields: ``relative``, ``device``
+     * 
+     * @category Sensors
+     * @param {Device} device id of the device
+     * @returns {Number} current light level
+     */
+     PhoneIoT.prototype.getRelativeHumidity = function (device) {
+        return this._passToDevice('getRelativeHumidity', arguments);
     };
 
     /**

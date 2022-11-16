@@ -9,7 +9,7 @@
  * of the percent of people in that country who are male/female.`
  * 
  * @service
- * @category Science
+ * @category Health
  */
 'use strict';
 
@@ -19,7 +19,7 @@ const types = require('../../input-types');
 
 // this is a direct download link to the CSV file - if you need details on the structure,
 // download it, or check https://www.mortality.org/, which has much more detail.
-const DATA_SOURCE = 'https://www.mortality.org/Public/STMF/Outputs/stmf.csv';
+const DATA_SOURCE = 'https://www.mortality.org/File/GetDocument/Public/STMF/Outputs/stmf.csv';
 
 // maximum lifetime of any given download of DATA_SOURCE.
 // downloads are cached for fast reuse, but will be discarded after this amount of time (milliseconds).

@@ -3,7 +3,7 @@
  * For more information, check out https://api.nasa.gov/.
  *
  * @service
- * @category Science
+ * @category Astronomy
  */
 
 'use strict';

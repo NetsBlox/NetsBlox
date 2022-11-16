@@ -17,6 +17,7 @@ describe(utils.suiteName(__filename), function() {
         ['addLabel', ['device', 'x', 'y', 'text', 'options']],
         ['listenToGUI', ['device']],
         ['listenToSensors', ['device', 'sensors']],
+        ['stopSensors', ['device']],
         ['getSensors', []],
         ['getToggleState', ['device', 'id']],
         ['setToggleState', ['device', 'id', 'state']],
@@ -52,5 +53,8 @@ describe(utils.suiteName(__filename), function() {
         ['setText', ['device', 'id', 'text']],
         ['getText', ['device', 'id']],
         ['setCredentials', ['device', 'password']],
+        ['getPressure', ['device']],
+        ['getTemperature', ['device']],
+        ['getRelativeHumidity', ['device']],
     ]);
 });

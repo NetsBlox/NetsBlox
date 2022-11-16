@@ -4,6 +4,8 @@
  *
  * Terms of use: https://www.themoviedb.org/documentation/api/terms-of-use
  * @service
+ * @category Society
+ * @category Media
  */
 
 'use strict';

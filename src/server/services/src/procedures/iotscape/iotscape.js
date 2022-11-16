@@ -4,8 +4,8 @@
  * Services can be found under the "Community/Devices" section using the `call <RPC>`
  * block.
  *
- * @alpha
  * @service
+ * @category Devices
  */
 const _ = require('lodash');
 const fs = require('fs');
