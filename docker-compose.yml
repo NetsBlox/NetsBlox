@@ -1,29 +1,36 @@
 ---
 version: "3"
 services:
-  mongo:
-    image: mongo
-    volumes:
-      - netsblox-data:/data/db
-  server:
+  cloud:  # Basic account management, network overlay, etc
     restart: always
-    environment:
-      - "MONGO_URI=mongodb://mongo:27017/netsblox"
-      - "NETSBLOX_BLOB_DIR=/netsblox-blob"
-      - "ROBOSCAPE=1973"
-      - "CORE_NLP_HOST=http://corenlp:9000"
-    image: netsblox/server:latest
+    image: netsblox/cloud:latest
     volumes:
-      - netsblox-projects:/netsblox-blob
+        - ${PWD}/cloud/crates/cloud/config/default.toml:/config/default.toml
     ports:
-        - "8080:8080"
-        - "8081:8081"
-        - "1973:1973"
-    depends_on:
-      - mongo
-  corenlp:
-    image: graham3333/corenlp-complete
+        - "7777:7777"
 
-volumes:
-    netsblox-data:
-    netsblox-projects:
+  services:  # NetsBlox RPCs
+    restart: always
+    image: netsblox/services:latest
+    ports:
+        - "7778:7778"
+    environment:
+        - "NETSBLOX_CLOUD=http://cloud:7777"
+        - "NETSBLOX_CLOUD_ID=NetsBloxServices"
+        - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
+        - "PORT=7778"
+        - "MONGO_URI=mongodb://mongo:27017"
+
+  browser:  # Hosts the client files
+    restart: always
+    image: netsblox/browser:latest
+    ports:
+        - "2000:2000"
+    environment:
+        - "CLOUD_URL=https://cloud.netsblox.org"
+        - "PORT=2000"
+
+  mongo:
+    restart: always
+    image: mongo:5.0-focal
+
