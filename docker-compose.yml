@@ -7,18 +7,18 @@ services:
     volumes:
         - ${PWD}/cloud/crates/cloud/config/default.toml:/config/default.toml
     ports:
-        - "7777:7777"
+        - "8080:8080"
 
   services:  # NetsBlox RPCs
     restart: always
     image: netsblox/services:latest
     ports:
-        - "7778:7778"
+        - "8081:8081"
     environment:
-        - "NETSBLOX_CLOUD=http://cloud:7777"
+        - "NETSBLOX_CLOUD=http://cloud:8080"
         - "NETSBLOX_CLOUD_ID=NetsBloxServices"
         - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
-        - "PORT=7778"
+        - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
 
   browser:  # Hosts the client files
@@ -34,3 +34,4 @@ services:
     restart: always
     image: mongo:5.0-focal
 
+# Blob storage for project contents (media, etc)
