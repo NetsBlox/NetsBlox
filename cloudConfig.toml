@@ -1,0 +1,37 @@
+address = "0.0.0.0:8080"
+public_url = "http://127.0.0.1:8080"
+#login_url = "https://login.netsblox.org"
+
+[admin]
+username = "admin"
+password = "somePassword"
+email = "admin@netsblox.org"
+
+[database]
+url = "mongodb://mongo:27017/"
+name = "netsblox-rs"
+
+[s3]
+bucket = "netsbloxrs"
+endpoint = "http://minio:9000"
+region_name = ""
+
+[s3.credentials]
+access_key = "KEY"
+secret_key = "MYSECRET"
+
+[cookie]
+name = "netsblox"
+domain = "localhost"
+key = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz0123456789ab"
+
+[email]
+sender = "NetsBlox <no-reply@netsblox.org>"
+
+[email.smtp]
+host = "smtp.gmail.com"
+username = "USERNAME"
+password = "PASSWORD"
+
+[security]
+allow_tor_login = false

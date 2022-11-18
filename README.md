@@ -20,7 +20,7 @@ This results in the stage costume changing:
 ## Installation
 The recommended method of installation is using [Docker Compose](https://docs.docker.com/compose) as explained below. Otherwise, native installation instructions are also available.
 ### Docker Compose
-First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](https://github.com/NetsBlox/cloud/blob/main/crates/cloud/config/default.toml) (or just clone this repository). Next, you may want to update the cloud config (at least to define an initial admin account). Then start all the services by running the following from the same directory as the docker-compose.yml file:
+First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](https://github.com/NetsBlox/cloud/blob/main/crates/cloud/config/default.toml) (or just clone this repository and use `cloudConfig.toml`). Then start all the services by running the following from the same directory as the docker-compose.yml file:
 ```
 docker-compose up
 ```

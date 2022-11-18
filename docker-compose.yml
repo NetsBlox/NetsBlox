@@ -5,7 +5,7 @@ services:
     restart: always
     image: netsblox/cloud:latest
     volumes:
-        - ${PWD}/cloud/crates/cloud/config/default.toml:/config/default.toml
+        - ${PWD}/cloudConfig.toml:/config/default.toml
     ports:
         - "8080:8080"
     depends_on:
