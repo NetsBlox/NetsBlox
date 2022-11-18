@@ -18,23 +18,14 @@ This results in the stage costume changing:
 ![Google map costume on the stage](./map-example.png)
 
 ## Installation
-The recommended method of installation is using [Docker](https://www.docker.com) as explained below. Otherwise, native installation instructions are also available.
-### Docker
-NetsBlox requires access to MongoDB and a file system (for blob storage). MongoDB can be started using Docker:
+The recommended method of installation is using [Docker Compose](https://docs.docker.com/compose) as explained below. Otherwise, native installation instructions are also available.
+### Docker Compose
+First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](https://github.com/NetsBlox/cloud/blob/main/crates/cloud/config/default.toml) (or just clone this repository). Next, you may want to update the cloud config (at least to define an initial admin account). Then start all the services by running the following from the same directory as the docker-compose.yml file:
 ```
-docker run -d -p 27017:27017 -v /abs/path/to/data:/data/db mongo
+docker-compose up
 ```
-where `/abs/path/to/data` is a path on the host machine where the project content and media will be stored.
 
-NetsBlox can then be started with
-```
-docker run -it -p 8080:8080 -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v /path/to/directory/for/media:/blob-data netsblox/server
-```
-where `/path/to/directory/for/media` is the directory on the host machine to store the project content and media.
-
-In order to enable specific RPCs which use external APIs, you may have to set environment variables using the `-e` flag (like `-e GOOGLE_MAPS_KEY=myGoogleMapsKey`) or pass in a list of environment variables through a file using `--env-file`. The list of all the environment variables are explained in the **RPC Support** section below.
-
-Note that addressing directories and files in windows is different from linux. For example the directory divider is `\` as opposed to `/`
+To enable more NetsBlox services (like `GoogleMaps`), define the required environment variables (ie, the API keys) under the `environment` section of the "NetsBlox RPCs" section of the docker-compose file.
 
 Next, just navigate to `localhost:8080` in a web browser to try it out!
 
@@ -51,7 +42,6 @@ Helpful commands:
 Finally attach to the instance and follow native installation. You can run the server in dev mode using `ENV=dev npm run dev`
 
 Access and edit the source files at the address you specified in the beginning `my/netsblox/dir/path`
-
 
 ### Native
 Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= 8) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
