@@ -101,7 +101,7 @@
   "devDependencies": {
     "expect": "^1.6.0",
     "istanbul": "^1.1.0-alpha.1",
-    "mocha": "^5.2.0",
+    "mocha": "^10.1.0",
     "mocha-chrome": "^2.2.0",
     "nodemon": "^1.18.10",
     "supertest": "^3.4.2",
