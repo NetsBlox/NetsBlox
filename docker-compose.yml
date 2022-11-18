@@ -8,6 +8,9 @@ services:
         - ${PWD}/cloud/crates/cloud/config/default.toml:/config/default.toml
     ports:
         - "8080:8080"
+    depends_on:
+        - mongo
+        - minio
 
   services:  # NetsBlox RPCs
     restart: always
@@ -20,6 +23,8 @@ services:
         - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
         - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
+    depends_on:
+        - cloud
 
   browser:  # Hosts the client files
     restart: always
@@ -29,17 +34,27 @@ services:
     environment:
         - "CLOUD_URL=https://cloud.netsblox.org"
         - "PORT=2000"
+    depends_on:
+        - cloud
 
   mongo:  # Database for users, groups, project metadata, etc
     restart: always
     image: mongo:5.0-focal
+    volumes:
+        - mongodb_data:/data/db
 
   minio:  # Blob storage for project contents (media, etc)
     restart: always
     image: minio/minio:RELEASE.2022-11-11T03-44-20Z
-    command: server
+    command: server /mnt/data
     ports:
         - "9000:9000"
     environment:
         - "MINIO_ACCESS_KEY=KEY"
         - "MINIO_SECRET_KEY=MYSECRET"
+    volumes:
+        - s3_data:/mnt/data
+
+volumes:
+    s3_data:
+    mongodb_data:
