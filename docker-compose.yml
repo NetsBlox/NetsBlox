@@ -30,8 +30,16 @@ services:
         - "CLOUD_URL=https://cloud.netsblox.org"
         - "PORT=2000"
 
-  mongo:
+  mongo:  # Database for users, groups, project metadata, etc
     restart: always
     image: mongo:5.0-focal
 
-# Blob storage for project contents (media, etc)
+  minio:  # Blob storage for project contents (media, etc)
+    restart: always
+    image: minio/minio:RELEASE.2022-11-11T03-44-20Z
+    command: server
+    ports:
+        - "9000:9000"
+    environment:
+        - "MINIO_ACCESS_KEY=KEY"
+        - "MINIO_SECRET_KEY=MYSECRET"
