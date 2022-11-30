@@ -23,6 +23,9 @@ services:
         - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
         - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
+# Uncomment the following line to use the local services code in the container (for development)
+#    volumes:
+#        - "${PWD}/services/src:/netsblox/src"
     depends_on:
         - cloud
 
@@ -34,6 +37,9 @@ services:
     environment:
         - "CLOUD_URL=https://cloud.netsblox.org"
         - "PORT=2000"
+# Uncomment the following line to use the local browser code in the container (for development)
+#    volumes:
+#        - "${PWD}/browser/src:/netsblox/src"
     depends_on:
         - cloud
 
