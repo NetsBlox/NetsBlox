@@ -23,6 +23,8 @@ services:
         - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
         - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
+#    volumes:
+#        - "${PWD}/services/src:/netsblox/src"
     depends_on:
         - cloud
 
@@ -34,6 +36,8 @@ services:
     environment:
         - "CLOUD_URL=https://cloud.netsblox.org"
         - "PORT=2000"
+#    volumes:
+#        - "${PWD}/browser/src:/netsblox/src"
     depends_on:
         - cloud
 
