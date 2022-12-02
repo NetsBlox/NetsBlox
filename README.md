@@ -17,66 +17,33 @@ This results in the stage costume changing:
 
 ![Google map costume on the stage](./map-example.png)
 
-## Installation
-The recommended method of installation is using [Docker Compose](https://docs.docker.com/compose) as explained below. Otherwise, native installation instructions are also available.
+## Quick Start
+The recommended method of installation is using [Docker Compose](https://docs.docker.com/compose) as explained below. After starting all the services, use the [NetsBlox CLI](https://github.com/NetsBlox/cloud/releases) to configure the deployment. Native installation instructions are also available.
+
 ### Docker Compose
-First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](https://github.com/NetsBlox/cloud/blob/main/crates/cloud/config/default.toml) (or just clone this repository and use `cloudConfig.toml`). Then start all the services by running the following from the same directory as the docker-compose.yml file:
+First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](./cloudConfig.toml). Then start all the services by running the following from the same directory as the docker-compose.yml file:
 ```
 docker-compose up
 ```
 
-To enable more NetsBlox services (like `GoogleMaps`), define the required environment variables (ie, the API keys) under the `environment` section of the "NetsBlox RPCs" section of the docker-compose file.
+Next, we will connect to (and authenticate with) our deployment using the NetsBlox CLI:
+```
+netsblox host use dev
+netsblox login
+```
+Next, authenticate using the interactive prompt using the admin credentials defined in the config TOML file (default is `admin` and `somePassword`). Now we can set up the default services server which provides all the NetsBlox RPCs for users. First, we will need to authorize it on the NetsBlox cloud using the CLI:
+```
+netsblox service-hosts authorize http://localhost:8081 NetsBloxServices --public
+```
+This will print the secret that the server will be able to use to authenticate itself with the NetsBlox cloud. The `NETSBLOX_CLOUD_SECRET` environment variable needs to be set in the services section of the docker-compose file. After setting this environment variable, restart the containers by pressing CTRL+C in the terminal then run:
+```
+docker-compose up
+```
 
-Next, just navigate to `localhost:8080` in a web browser to try it out!
+Finally, navigate to `localhost:8080` in a web browser to try it out!
 
 #### Development with Docker
-Setup and start MongoDB as described in the last step.
-
-Pull in and create a container running the base image for NetsBlox
-` docker run -it -p 8080:8080 -e MONGO_URI='mongodb://172.17.0.1:27017/netsblox' -v my/netsblox/dir/path:/netsblox --name nb-base netsblox/base /bin/bash`
-
-Helpful commands:
-- start stop the container: `docker start nb-base` `docker stop nb-base`
-- attach to the container to run commands: `docker attach nb-base` and detach by sending EOL: Ctrl+d
-
-Finally attach to the instance and follow native installation. You can run the server in dev mode using `ENV=dev npm run dev`
-
-Access and edit the source files at the address you specified in the beginning `my/netsblox/dir/path`
+For services and browser development, uncomment the corresponding sections of the docker-compose file (for the [services](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L26-L28) or the [browser](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L40-L42)) then restart the containers as done at the end of the last section.
 
 ### Native
-Before installing, NetsBlox requires [nodejs](https://nodejs.org/en/) (>= 8) and a [MongoDB](https://www.mongodb.com/download-center?jmp=nav#community) database. By default, NetsBlox will expect MongoDB to be running locally (this can be changed by setting the `MONGO_URI` environment variable).
-
-Server protocol can also be set through `SERVER_PROTOCOL` environment variable.
-Host should be set using `HOST=.mydomain.com`.
-
-First clone the repository and install the dependencies.
-```
-git clone https://github.com/NetsBlox/NetsBlox.git --recursive
-cd NetsBlox
-npm install
-```
-Finally, start the server with `npm start` and navigate to `localhost:8080` in a web browser to try it out!
-
-## RPC Support
-RPCs that are using 3rd party API's often require getting an API key from the given 3rd party API. After obtaining a key, the appropriate environment variable should be set to given key value:
-
-### Required Environment Variables for RPCs
-- Maps
-  - `GOOGLE_MAPS_KEY` should be set to an API key from the [Google Static Maps](https://developers.google.com/maps/documentation/static-maps/)
-- Air Quality
-  - `AIR_NOW_KEY` should be set to an API key from [AirNow](https://airnow.gov/)
-- Weather
-  - `OPEN_WEATHER_MAP_KEY` should be set to an API key from [OpenWeatherMap](http://openweathermap.org/api)
-- NASA
-  - `NASA_KEY` should be set to an API key from [NASA](https://api.nasa.gov/)
-- Traffic
-  - `BING_TRAFFIC_KEY` should be set to an API key from [Bing Traffic](https://msdn.microsoft.com/en-us/library/hh441725.aspx)
-- Twitter
-  - `TWITTER_BEARER_TOKEN` should be set to an API key from Twitter
-- [Pixabay](https://pixabay.com)
-  - `PIXABAY` should be set to an API key from Pixabay
-
-To simplify this process (and to keep your `~/.bashrc` clean), these values can be stored in a `.env` file in the project root directory and they will be loaded into the environment on starting NetsBlox.
-
-## Examples
-After opening the browser, click the `file` button in the top left and click on `Examples` to check out some example networked apps!
+To run a native installation, check out the individual submodules and their installation instructions. These can be run in combination with the docker-based deployment by just commenting out the section you would like to run natively and running the given server on the same port.
