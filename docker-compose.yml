@@ -7,7 +7,7 @@ services:
     volumes:
         - ${PWD}/cloudConfig.toml:/config/default.toml
     ports:
-        - "8080:8080"
+        - "7777:7777"
     depends_on:
         - mongo
         - minio
@@ -18,12 +18,12 @@ services:
     ports:
         - "8081:8081"
     environment:
-        - "NETSBLOX_CLOUD=http://cloud:8080"
+        - "NETSBLOX_CLOUD=http://cloud:7777"
         - "NETSBLOX_CLOUD_ID=NetsBloxServices"
-        - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"
+        - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"  # TODO: Put the output from "netsblox service-hosts authorize" here
         - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
-# Uncomment the following line to use the local services code in the container (for development)
+# Uncomment the following 2 lines to use the local services code in the container (for development)
 #    volumes:
 #        - "${PWD}/services/src:/netsblox/src"
     depends_on:
@@ -33,11 +33,11 @@ services:
     restart: always
     image: netsblox/browser:latest
     ports:
-        - "2000:2000"
+        - "8080:8080"
     environment:
-        - "CLOUD_URL=https://cloud.netsblox.org"
-        - "PORT=2000"
-# Uncomment the following line to use the local browser code in the container (for development)
+        - "CLOUD_URL=http://127.0.0.1:7777"
+        - "PORT=8080"
+# Uncomment the following 2 lines to use the local browser code in the container (for development)
 #    volumes:
 #        - "${PWD}/browser/src:/netsblox/src"
     depends_on:
