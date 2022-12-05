@@ -20,10 +20,10 @@ services:
     environment:
         - "NETSBLOX_CLOUD=http://cloud:7777"
         - "NETSBLOX_CLOUD_ID=NetsBloxServices"
-        - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"  # TODO: Add the actual secret here!
+        - "NETSBLOX_CLOUD_SECRET=PUT_SECRET_HERE"  # TODO: Put the output from "netsblox service-hosts authorize" here
         - "PORT=8081"
         - "MONGO_URI=mongodb://mongo:27017"
-# Uncomment the following line to use the local services code in the container (for development)
+# Uncomment the following 2 lines to use the local services code in the container (for development)
 #    volumes:
 #        - "${PWD}/services/src:/netsblox/src"
     depends_on:
@@ -37,7 +37,7 @@ services:
     environment:
         - "CLOUD_URL=http://127.0.0.1:7777"
         - "PORT=8080"
-# Uncomment the following line to use the local browser code in the container (for development)
+# Uncomment the following 2 lines to use the local browser code in the container (for development)
 #    volumes:
 #        - "${PWD}/browser/src:/netsblox/src"
     depends_on:

@@ -43,7 +43,7 @@ docker-compose up
 Finally, navigate to `localhost:8080` in a web browser to try it out!
 
 #### Development with Docker
-For services and browser development, uncomment the corresponding sections of the docker-compose file (for the [services](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L26-L28) or the [browser](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L40-L42)) then restart the containers as done at the end of the last section.
+For development, first make sure the repository was cloned with the submodules (eg, using `git clone --recurse-submodules`). For services and browser development, uncomment the corresponding sections of the docker-compose file (for the [services](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L26-L28) or the [browser](https://github.com/NetsBlox/NetsBlox/blob/1efd34b5cbeb333c8f1c2f078e406315ff884ef1/docker-compose.yml#L40-L42)) then restart the containers as done at the end of the last section.
 
 ### Native
 To run a native installation, check out the individual submodules and their installation instructions. These can be run in combination with the docker-based deployment by just commenting out the section you would like to run natively and running the given server on the same port.
