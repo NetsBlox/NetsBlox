@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const logger = require('../utils/logger')('wildcam');
+const types = require('../../input-types');
 
 // -------------------------------------------------------------------------
 
@@ -46,7 +47,7 @@ function strictParseDate(val) {
     throw Error(`unknown date format '${val}'`);
 }
 
-const DATA = (function() {
+const { DATA, SPECIES } = (function() {
     const csvLines = fs.readFileSync(CSV_PATH, 'utf8').split(/\r?\n/);
     const res = {};
 
@@ -67,10 +68,6 @@ const DATA = (function() {
                 latitude: strictParseFloat(items[3]),
                 longitude: strictParseFloat(items[2]),
                 vegetationType: items[9].toLowerCase(),
-                waterType: items[12].toLowerCase(),
-                waterDistance: strictParseFloat(items[13]),
-                structureType: items[10].toLowerCase(),
-                structureDistance: strictParseFloat(items[11]),
                 species: [],
                 imageUrl: items[23],
             }
@@ -85,11 +82,34 @@ const DATA = (function() {
         }
     }
 
-    const sorted = Object.values(res);
-    sorted.sort((a, b) => +a.date - +b.date);
+    const DATA = Object.values(res);
+    DATA.sort((a, b) => +a.date - +b.date);
 
-    return sorted;
+    let SPECIES = new Set();
+    for (const entry of DATA) {
+        for (const species of entry.species) {
+            SPECIES.add(species.name);
+        }
+    }
+    SPECIES = [...SPECIES].sort();
+
+    types.defineType({
+        name: 'Species',
+        description: 'The species of animal in an image provided by :func:`Wildcam.search`.',
+        baseType: 'Enum',
+        baseParams: SPECIES,
+    });
+
+    return { DATA, SPECIES };
 })();
+
+/**
+ * Returns all the valid species that can be used by :func:`Wildcam.search`.
+ * @returns {Array<Species>} All valid species in alphabetical order.
+ */
+Wildcam.getSpecies = function() {
+    return SPECIES;
+};
 
 /**
  * Searches the database for wildlife camera entries.
@@ -98,15 +118,18 @@ const DATA = (function() {
  * 
  * @param {Date=} startDate The earliest date to include in the results. If omitted, no starting cutoff is used for filtering.
  * @param {Date=} stopDate The latest date to include in the results. If omitted, no stopping cutoff is used for filtering.
- * @returns {Array<Object>} all data entries matching the search, in chronological order
+ * @param {Species=} species Filters results to only entries which contained the requested species. If omitted, no species filtering is performed.
+ * @returns {Array<Object>} All data entries matching the search, in chronological order
  */
-Wildcam.search = function (startDate = null, stopDate = null) {
+Wildcam.search = function (startDate = null, stopDate = null, species = null) {
     startDate = startDate ? +startDate : -Infinity;
     stopDate = stopDate ? +stopDate : Infinity;
+    species = new Set(species ? [species] : SPECIES);
 
     return DATA.filter(x => {
         const time = +x.date;
         if (time < startDate || time > stopDate) return false;
+        if (!x.species.some(y => species.has(y.name))) return false;
         return true;
     });
 };
@@ -115,8 +138,8 @@ Wildcam.search = function (startDate = null, stopDate = null) {
  * Gets the image associated with a given entry.
  * The provided entry should be exactly the format that was returned by one of the various search RPCs in this service.
  * 
- * @param {Object} entry the search entry to get an image of
- * @returns {Image} the snapshot associated with the given entry
+ * @param {Object} entry The search entry to get an image of
+ * @returns {Image} The snapshot associated with the given entry
  */
 Wildcam.getImage = async function(entry) {
     const url = entry.imageUrl;
