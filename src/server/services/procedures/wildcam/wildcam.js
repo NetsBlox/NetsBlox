@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const geolib = require('geolib');
 const logger = require('../utils/logger')('wildcam');
 const types = require('../../input-types');
 
@@ -107,7 +108,7 @@ const { DATA, SPECIES } = (function() {
  * Returns all the valid species that can be used by :func:`Wildcam.search`.
  * @returns {Array<Species>} All valid species in alphabetical order.
  */
-Wildcam.getSpecies = function() {
+Wildcam.getSpeciesList = function() {
     return SPECIES;
 };
 
@@ -119,17 +120,31 @@ Wildcam.getSpecies = function() {
  * @param {Date=} startDate The earliest date to include in the results. If omitted, no starting cutoff is used for filtering.
  * @param {Date=} stopDate The latest date to include in the results. If omitted, no stopping cutoff is used for filtering.
  * @param {Species=} species Filters results to only entries which contained the requested species. If omitted, no species filtering is performed.
+ * @param {Latitude=} latitude Filters results to only entries within a given distance from a central location. Requires ``longitude`` and ``radius`` also be set.
+ * @param {Longitude=} longitude Filters results to only entries within a given distance from a central location. Requires ``latitude`` and ``radius`` also be set.
+ * @param {BoundedNumber<0>=} radius Filters results to only entries within a given distance from a central location. Requires ``latitude`` and ``longitude`` also be set.
  * @returns {Array<Object>} All data entries matching the search, in chronological order
  */
-Wildcam.search = function (startDate = null, stopDate = null, species = null) {
+Wildcam.search = function (startDate = null, stopDate = null, species = null, latitude = null, longitude = null, radius = null) {
     startDate = startDate ? +startDate : -Infinity;
     stopDate = stopDate ? +stopDate : Infinity;
     species = new Set(species ? [species] : SPECIES);
+
+    const center = { latitude, longitude };
+    if (latitude !== null || longitude !== null || radius !== null) {
+        if (latitude === null || longitude === null || radius === null) {
+            throw Error('Distance filtering requires three params: latitude, longitude, AND radius');
+        }
+    }
 
     return DATA.filter(x => {
         const time = +x.date;
         if (time < startDate || time > stopDate) return false;
         if (!x.species.some(y => species.has(y.name))) return false;
+        if (radius !== null) {
+            const dist = geolib.getDistance(center, { latitude: x.latitude, longitude: x.longitude });
+            if (dist > radius) return false;
+        }
         return true;
     });
 };
