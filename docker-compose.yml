@@ -37,9 +37,10 @@ services:
     environment:
         - "CLOUD_URL=http://127.0.0.1:7777"
         - "PORT=8080"
-# Uncomment the following 2 lines to use the local browser code in the container (for development)
+# Uncomment the following 3 lines to use the local browser code in the container (for development)
 #    volumes:
 #        - "${PWD}/browser/src:/netsblox/src"
+#        - "${PWD}/browser/test:/netsblox/test"
     depends_on:
         - cloud
 
