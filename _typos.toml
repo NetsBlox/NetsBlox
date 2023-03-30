@@ -37,6 +37,9 @@ extend-exclude = [
     "browser/src/sha512.js",
     #"src/common/sha512.js",
     #"test/utils/sha512.js",
+    "cloud/crates/cloud/todo.md",
+    "services/test/utils.spec.js",
+    "services/src/procedures/the-cat-api/types.js"
 ]
 
 [type.js]
