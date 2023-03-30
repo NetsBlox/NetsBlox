@@ -13,29 +13,33 @@ extend-exclude = [
     "*.xml",
     "*.svg",
     "*.min.js",
+    "*.dic",
 
     # auto-generated files
     "package-lock.json",
 
     # select submodule subdirectories
-    "src/browser/test/*",
-    "src/browser/dist/*",
-    "src/browser/locale/*",
-    "src/browser/src/morphic.js", # has german text
-    "src/server/services/procedures/roboscape/speckjs/*",
-
+    "browser/test/*",
+    "browser/dist/*",
+    "browser/locale/*",
+    "browser/src/morphic.js", # has german text
+    "services/src/procedures/roboscape/speckjs/*",
+    
     # data files
-    "src/server/services/procedures/common-words/words/*.txt",
-    "src/server/services/procedures/hurricane-data/*.txt",
-    "src/server/services/procedures/ice-core-data/data/domec-deuterium/*.txt",
-    "src/server/services/procedures/nexrad-radar/RadarLocations.js",
-    "src/server/services/procedures/word-guess/dict/*.*",
-    "src/server/services/procedures/financial-data/currency-types.js",
+    "services/src/procedures/common-words/words/*.txt",
+    "services/src/procedures/hurricane-data/*.txt",
+    "services/src/procedures/ice-core-data/data/domec-deuterium/*.txt",
+    "services/src/procedures/nexrad-radar/RadarLocations.js",
+    "services/src/procedures/word-guess/dict/*.*",
+    "services/src/procedures/financial-data/currency-types.js",
 
     # misc
-    "src/browser/src/sha512.js",
-    "src/common/sha512.js",
-    "test/utils/sha512.js",
+    "browser/src/sha512.js",
+    #"src/common/sha512.js",
+    #"test/utils/sha512.js",
+    "cloud/crates/cloud/todo.md",
+    "services/test/utils.spec.js",
+    "services/src/procedures/the-cat-api/types.js"
 ]
 
 [type.js]
