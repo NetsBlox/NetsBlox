@@ -28,7 +28,7 @@ docker-compose up
 
 Next, we will connect to (and authenticate with) our deployment using the NetsBlox CLI:
 ```
-netsblox host use dev
+netsblox host use local
 netsblox login
 ```
 Next, authenticate using the interactive prompt using the admin credentials defined in the config TOML file (default is `admin` and `somePassword`). Now we can set up the default services server which provides all the NetsBlox RPCs for users. First, we will need to authorize it on the NetsBlox cloud using the CLI:
