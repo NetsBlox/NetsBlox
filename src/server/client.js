@@ -182,7 +182,7 @@ class Client extends EventEmitter {
                 if (err instanceof RequestError) {
                     this._logger.trace(`Error w/ request: ${err.message}`);
                 } else {
-                    throw err;
+                    this._logger.trace(`Error processing request: ${err.message}`);
                 }
             }
         } else {
