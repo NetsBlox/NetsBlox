@@ -3,6 +3,7 @@
  * For more information, check out https://twitter.com.
  *
  * Terms of use: https://twitter.com/en/tos
+ * @deprecated
  * @service
  * @category Media
  * @category Society

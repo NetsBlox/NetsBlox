@@ -8,7 +8,7 @@
 
 const ApiConsumer = require('../utils/api-consumer');
 const {NewYorkPublicLibraryKey} = require('../utils/api-key');
-const NYPL = new ApiConsumer('NewYorkPublicLibrary', 'http://api.repo.nypl.org/api/v1', {cache: {ttl: 5*60}});
+const NYPL = new ApiConsumer('NewYorkPublicLibrary', 'http://api.repo.nypl.org/api/v2', {cache: {ttl: 5*60}});
 ApiConsumer.setRequiredApiKey(NYPL, NewYorkPublicLibraryKey);
 
 function listify(item) {
@@ -43,7 +43,7 @@ NYPL.search = async function(term, perPage = 50, page = 1) {
         queryString:`q=${term}&per_page=${perPage}&page=${page}&publicDomainOnly=true`,
         headers:{Authorization:`Token token=${this.apiKey.value}`},
     });
-    
+
     const ret = [];
     for (const item of listify(res.nyplAPI.response.result)) {
         const uuid = item.uuid;
