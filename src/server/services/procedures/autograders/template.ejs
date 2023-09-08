@@ -28,14 +28,17 @@
                     data
                 );
             });
+            this.config = config;
         }
 
         getMenu() {
             const dict = {};
             if (this.currentAssignment) {
                 dict[`Grade assignment`] = () => this.grade(this.currentAssignment);
-                if (this.integrations.includes('coursera')) {
-                    dict[`Submit...`] = () => this.submit(this.currentAssignment);
+                if (this.getActiveIntegration() === 'coursera') {
+                    dict[`Submit...`] = () => this.submitCoursera(this.currentAssignment);
+                } else if (this.getActiveIntegration() === 'lti1.1') {
+                    dict[`Submit...`] = () => this.submitLti(this.currentAssignment);
                 }
                 dict['~'] = '~';
                 const submenu = {};
@@ -50,6 +53,18 @@
             }
 
             return dict;
+        }
+
+        /**
+         * Get the active integration. If LTI was enabled, it will take precedence.
+         * Otherwise, check for legacy coursera integration.
+         */
+        getActiveIntegration() {
+          if (this.integrations.includes('lti1.1')) {
+            return 'lti1.1';
+          } else {
+            return this.integrations[0];
+          }
         }
 
         async showResults(testCases, testResults) {
@@ -67,10 +82,14 @@
                 dialog.createLabel();
                 dialog.addBody(frame);
                 dialog.addButton('ok', 'Rerun');
-                if (this.integrations.includes('coursera')) {
+                if (this.getActiveIntegration()) {
                     dialog.addButton('submit', 'Submit');
                     dialog.submit = () => {
-                        this.submit(this.currentAssignment);
+                        if (this.getActiveIntegration() === 'coursera') {
+                            this.submitCoursera(this.currentAssignment);
+                        } else if (this.getActiveIntegration() === 'lti1.1') {
+                            this.submitLti(this.currentAssignment);
+                        }
                         dialog.destroy();
                     };
                 }
@@ -192,6 +211,10 @@
                 if (this.resultsDialog) {
                     this.resultsDialog.destroy();
                 }
+                await this.grade(this.currentAssignment);
+                const padding = 20;
+                this.resultsDialog.setBottom(this.ide.bottom() - padding);
+                this.resultsDialog.setRight(this.ide.right() - padding);
             }
         }
 
@@ -200,7 +223,7 @@
             this.showResults(assignment.tests, testResults);
         }
 
-        async submit(assignment) {
+        async submitCoursera(assignment) {
             const assignmentKey = assignment.data.CourseraAssignmentKey;
             const partEntries = await assignment.tests.reduce(
                 async (entriesP, test) => {
@@ -235,6 +258,43 @@
                 this.ide.showMessage(`Successfully submitted ${assignment.name}!`);
             } else {
                 this.ide.inform('Submission Failed', await response.text());
+            }
+        }
+
+        async submitLti(assignment) {
+            const config = this.config['lti1.1'];
+            const passingTestCount = await assignment.tests.reduce(
+                async (countP, test) => {
+                    let count = await countP;
+                    const testResult = await test.run();
+                    if (testResult.status) {
+                        count += 1;
+                    }
+                    return count;
+                },
+                Promise.resolve(0)
+            );
+            const grade = passingTestCount / assignment.tests.length;
+
+            const submitUrl = config.submitUrl;
+            const response = await fetch(submitUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    grade,
+                    config,
+                }),
+            });
+
+            if (response.status < 400) {
+                this.ide.showMessage(`Successfully submitted ${assignment.name}!`);
+            } else {
+                this.ide.inform(
+                    'Submission Failed',
+                    'An internal error occurred. Please try again later.'
+                );
             }
         }
 
@@ -659,4 +719,21 @@
     }
 
     NetsBloxExtensions.register(CustomBlockAutograder);
+
+    if (config.initialAssignment) {
+        function checkLoaded() {
+            if (!NetsBloxExtensions.isLoaded(config.name)) {
+                return setTimeout(checkLoaded, 100);
+            }
+
+            const autograder = NetsBloxExtensions.registry.find(ext => ext.name === config.name);
+            const assignment = autograder.assignments
+                .find(a => a.name === config.initialAssignment);
+
+            if (assignment) {
+                autograder.loadAssignment(assignment);
+            }
+        }
+        checkLoaded();
+    }
 })();
