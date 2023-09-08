@@ -21,5 +21,6 @@
                     },
                 ]
             },
-        ]
+        ],
+        initialAssignment: 'Assignment 2: Between'  // optionally open this assignment on load
     }
