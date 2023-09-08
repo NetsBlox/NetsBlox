@@ -14,7 +14,7 @@ const MONGODB_DOC_TOO_LARGE = "Attempt to write outside buffer bounds";
 const getDatabase = require("./storage");
 const Integrations = require("./integrations");
 const TEST_TYPES = ["CustomBlockTest"];
-const SERVICES_URL = process.env.SERVER_URL;
+const SERVICES_URL = process.env.SERVER_URL + "/services";
 
 const validateName = (name) => {
   const validRegex = /^[a-zA-Z][a-zA-Z0-9_ :-]*$/;

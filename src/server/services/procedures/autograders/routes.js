@@ -13,8 +13,8 @@ const express = require("express");
 const router = express();
 const rp = require("request-promise");
 const { isValidLti1Signature, sha1 } = require("./utils");
-const SERVICES_URL = process.env.SERVER_URL;
-const EDITOR_URL = process.env.EDITOR_URL;
+const EDITOR_URL = process.env.SERVER_URL;
+const SERVICES_URL = process.env.SERVER_URL + "/services";
 
 router.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", req.get("origin"));
