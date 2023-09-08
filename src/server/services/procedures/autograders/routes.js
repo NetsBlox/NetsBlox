@@ -30,7 +30,7 @@ router.use(function (req, res, next) {
   next();
 });
 
-router.options("*", (req, res) => res.sendStatus(204));
+router.options("*", (_req, res) => res.sendStatus(204));
 
 //////////////////// Route Handlers ////////////////////
 async function listGraders(req, res) {
@@ -100,6 +100,7 @@ router.get("/v2/user/:author/:name/config.json", getGraderConfig);
 router.get("/v2/user/:author/:name.js", getGraderExtension);
 router.post(
   "/v2/lti/v1.1/user/:author/:name/launch",
+  parseJsonBody,
   async (req, res) => {
     const { author, name } = req.params;
     const { autograders, tokens } = getDatabase();
@@ -114,7 +115,8 @@ router.post(
     const consumer = consumers.find((c) => c.name === consumerName);
 
     if (!consumer) {
-      return res.sendStatus(400); // FIXME: handle errors here
+      console.log({ consumers });
+      return res.status(400).send(`Invalid consumer: ${consumerName}`);
     }
 
     if (!isValidLti1Signature(req.body, consumer.secret)) {
@@ -138,7 +140,7 @@ router.post(
     const baseUrl = SERVICES_URL;
     const editorUrl = EDITOR_URL;
     const extUrl =
-      `${baseUrl}/routes/autograders/v2/lti/v1.1/token/${token.id}/grader.js`;
+      `${baseUrl}/routes/Autograders/v2/lti/v1.1/token/${token.id}/grader.js`;
     const url = `${editorUrl}?extensions=[${
       encodeURIComponent(JSON.stringify(extUrl))
     }]`;
@@ -166,7 +168,7 @@ router.get(
     }
 
     const baseUrl = SERVICES_URL;
-    const submitUrl = `${baseUrl}/routes/autograders/v2/lti/v1.1/submit`;
+    const submitUrl = `${baseUrl}/routes/Autograders/v2/lti/v1.1/submit`;
     const ltiConfig = {
       "lti1.1": {
         consumer: token.consumer,
@@ -204,6 +206,7 @@ router.get(
 
 router.post(
   "/v2/lti/v1.1/submit/",
+  parseJsonBody,
   async (req, res) => {
     const { grade, config } = req.body;
     const { outcomeServiceUrl, sourcedId, author, name, consumer } =
@@ -281,6 +284,24 @@ router.post(
     return res.sendStatus(response.status);
   },
 );
+
+// This contains an ugly hack to work around a bug due to an
+// earlier middleware (urlencoded) incorrectly interpreting
+// nested "=" signs as url encoded params
+// I would fix this in a better way but this is only present
+// on the back-ported version of this...
+function parseJsonBody(req, _res, next) {
+  const keys = Object.keys(req.body);
+  const isBadParse = keys.find((k) => k.startsWith("{"));
+  if (isBadParse) {
+    const rawBody = Object.entries(req.body)
+      .map(([k, v]) => `${decodeURIComponent(k)}=${decodeURIComponent(v)}`)
+      .join("&");
+    req.body = JSON.parse(rawBody);
+  }
+
+  next();
+}
 
 //////////////////// v1 Routes ////////////////////
 router.get("/:author/", listGraders);
