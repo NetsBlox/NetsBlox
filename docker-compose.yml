@@ -33,8 +33,9 @@ services:
     ports:
         - "8000:8000"
     environment:
-        - "CLOUD_URL=http://127.0.0.1:7777"
+        - "CLOUD_URL=http://localhost:7777"
         - "PORT=8000"
+        - "ENV=dev"
     volumes:
        - "${PWD}/browser/:/usr/src/browser/"
     depends_on:
