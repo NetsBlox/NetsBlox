@@ -21,21 +21,8 @@ This results in the stage costume changing:
 The recommended method of installation is using [Docker Compose](https://docs.docker.com/compose) as explained below. After starting all the services, use the [NetsBlox CLI](https://github.com/NetsBlox/cloud/releases) to configure the deployment. Native installation instructions are also available.
 
 ### Docker Compose
-First, download the [docker-compose.yml](./docker-compose.yml) file and the [config file for NetsBlox cloud](./cloudConfig.toml). Then start all the services by running the following from the same directory as the docker-compose.yml file:
-```
-docker-compose up
-```
+First, download the [docker-compose.yml](./docker-compose.yml) file. Then start all the services by running the following from the same directory as the docker-compose.yml file:
 
-Next, we will connect to (and authenticate with) our deployment using the NetsBlox CLI:
-```
-netsblox host use local
-netsblox login
-```
-Next, authenticate using the interactive prompt using the admin credentials defined in the config TOML file (default is `admin` and `somePassword`). Now we can set up the default services server which provides all the NetsBlox RPCs for users. First, we will need to authorize it on the NetsBlox cloud using the CLI:
-```
-netsblox service-hosts authorize http://localhost:8081 NetsBloxServices --public
-```
-This will print the secret that the server will be able to use to authenticate itself with the NetsBlox cloud. The `NETSBLOX_CLOUD_SECRET` environment variable needs to be set in the services section of the docker-compose file. After setting this environment variable, restart the containers by pressing CTRL+C in the terminal then run:
 ```
 docker-compose up
 ```
