@@ -10,17 +10,23 @@ services:
     depends_on:
         - mongo
         - minio
+    volumes:
+       - "${PWD}/cloud/crates/cloud/config/:/config/"
 
   services:  # NetsBlox RPCs
     restart: always
     image: netsblox/services:nightly
     ports:
         - "8080:8080"
+        - "1975:1975/udp" # Port for IotScape
+        - "1975:1975/tcp" # Port for IotScape
     environment:
-        - "NETSBLOX_CLOUD=http://cloud:7777"
+        - "NETSBLOX_CLOUD=http://172.17.0.1:7777"
         - "NETSBLOX_CLOUD_ID=LocalServices"
         - "NETSBLOX_CLOUD_SECRET=SuperSecret"
         - "MONGO_URI=mongodb://mongo:27017"
+        - "IOTSCAPE_SERVER=http://localhost"
+        - "IOTSCAPE_PORT=1975"
     depends_on:
         - cloud
 
@@ -43,21 +49,38 @@ services:
 
   mongo:  # Database for users, groups, project metadata, etc
     restart: always
-    image: mongo:5.0-focal
+    image: mongo:8.2-noble
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
        - "27017:27017"
     volumes:
        - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--host", "mongo:27017", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  init-mongo-rs: # Container that initializes the mongo container's replica set, then exits  
+    restart: on-failure
+    image: mongo:8.2-noble
+    depends_on:
+      mongo:
+        condition: service_healthy
+    entrypoint: ["mongosh", "--host", "mongo:27017", "--eval", "try { rs.status() } catch(e) { rs.initiate() }"]
+
 
   minio:  # Blob storage for project contents (media, etc)
     restart: always
     image: minio/minio:RELEASE.2022-11-11T03-44-20Z
-    command: server /mnt/data
+    command: server /mnt/data --address :9000 --console-address :9001
     ports:
         - "9000:9000"
+        - "9001:9001"
     environment:
-        - "MINIO_ACCESS_KEY=KEY"
-        - "MINIO_SECRET_KEY=MYSECRET"
+        - "MINIO_ROOT_USER=KEY"
+        - "MINIO_ROOT_PASSWORD=MYSECRET"
     volumes:
         - s3_data:/mnt/data
 
