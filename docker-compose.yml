@@ -55,6 +55,21 @@ services:
        - "27017:27017"
     volumes:
        - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--host", "mongo:27017", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  init-mongo-rs: # Container that initializes the mongo container's replica set, then exits  
+    restart: on-failure
+    image: mongo:8.2-noble
+    depends_on:
+      mongo:
+        condition: service_healthy
+    entrypoint: ["mongosh", "--host", "mongo:27017", "--eval", "try { rs.status() } catch(e) { rs.initiate() }"]
+
 
   minio:  # Blob storage for project contents (media, etc)
     restart: always
