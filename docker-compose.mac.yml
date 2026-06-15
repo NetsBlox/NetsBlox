@@ -1,0 +1,5 @@
+services:
+  cloud:
+    network_mode: !reset null
+    ports:
+      - "7777:7777"
