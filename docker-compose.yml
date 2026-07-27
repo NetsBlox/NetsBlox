@@ -3,7 +3,7 @@ version: "3"
 services:
   cloud:  # Basic account management, network overlay, etc
     restart: always
-    image: netsblox/cloud:nightly
+    image: netsblox/cloud:local
     environment:
         - "RUN_MODE=local"
     network_mode: host
