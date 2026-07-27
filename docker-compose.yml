@@ -3,7 +3,7 @@ version: "3"
 services:
   cloud:  # Basic account management, network overlay, etc
     restart: always
-    image: netsblox/cloud:nightly
+    image: netsblox/cloud:local
     environment:
         - "RUN_MODE=local"
     network_mode: host
@@ -24,7 +24,7 @@ services:
         - "NETSBLOX_CLOUD=http://172.17.0.1:7777"
         - "NETSBLOX_CLOUD_ID=LocalServices"
         - "NETSBLOX_CLOUD_SECRET=SuperSecret"
-        - "MONGO_URI=mongodb://mongo:27017"
+        - "MONGO_URI=mongodb://mongo:27017?directConnection=true"
         - "IOTSCAPE_SERVER=http://localhost"
         - "IOTSCAPE_PORT=1975"
     depends_on:
@@ -55,22 +55,7 @@ services:
        - "27017:27017"
     volumes:
        - mongodb_data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--host", "mongo:27017", "--eval", "db.adminCommand('ping').ok", "--quiet"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-
-  init-mongo-rs: # Container that initializes the mongo container's replica set, then exits  
-    restart: on-failure
-    image: mongo:8.2-noble
-    depends_on:
-      mongo:
-        condition: service_healthy
-    entrypoint: ["mongosh", "--host", "mongo:27017", "--eval", "try { rs.status() } catch(e) { rs.initiate() }"]
-
-
+       
   minio:  # Blob storage for project contents (media, etc)
     restart: always
     image: minio/minio:RELEASE.2022-11-11T03-44-20Z
